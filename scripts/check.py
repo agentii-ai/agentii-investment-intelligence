@@ -3,7 +3,8 @@
 Lint all plugin + managed-agent manifests and verify cross-file references.
 
 Ported and extended from anthropics/financial-services/scripts/check.py
-(Apache 2.0) with 12 mandatory checks per spec 023 FR-014a/b, FR-020a/b, FR-054:
+(Apache 2.0) with 14 mandatory checks per spec 023 FR-014a/b, FR-020a/b, FR-054, FR-010, FR-052b
+(checks 13 + 14 added per Round 4 Q12 + Q15):
 
   1.  YAML parse all *.yaml under managed-agent-cookbooks/.
   2.  JSON parse all plugin.json / marketplace.json / steering-examples.json /
@@ -19,6 +20,10 @@ Ported and extended from anthropics/financial-services/scripts/check.py
   10. Every SKILL.md frontmatter has multi_ticker_semantics.
   11. Every SKILL.md has ## Defaults OR frontmatter `parameter_free: true`.
   12. Every SKILL.md has ## Triggers with ≥10 list items.
+  13. Every vertical's .mcp.json `agentii` entry is byte-identical to
+      contracts/mcp-canonical.json (FR-010, Round 4 Q15).
+  14. Every command .md file in plugins/**/commands/ ends with the canonical
+      MODE_SYNTAX.md footer link (FR-052b, Round 4 Q12).
 
 Exit 0 if clean, 1 otherwise. Requires: pyyaml, jsonschema.
 """
@@ -237,6 +242,54 @@ for sk in SKILL_FILES:
                 f"skill-triggers: {rel(sk)}: '## Triggers' has {len(items)} items "
                 f"(need ≥10 per FR-014a)"
             )
+
+# --- Check 13: vertical .mcp.json agentii entry == mcp-canonical.json --------
+MCP_CANONICAL = CONTRACTS / "mcp-canonical.json"
+if MCP_CANONICAL.exists():
+    try:
+        canonical = json.loads(MCP_CANONICAL.read_text())
+        canonical_agentii = canonical.get("agentii")
+    except json.JSONDecodeError as e:
+        err(f"mcp-canonical: {rel(MCP_CANONICAL)}: invalid JSON: {e}")
+        canonical_agentii = None
+    if canonical_agentii:
+        for vertical_dir in (PLUGINS / "vertical-plugins").glob("*/"):
+            mcp_path = vertical_dir / ".mcp.json"
+            if not mcp_path.exists():
+                err(
+                    f"mcp-replication: {rel(vertical_dir)}: missing .mcp.json "
+                    f"(FR-010 / Round 4 Q15 — every vertical must replicate canonical agentii entry)"
+                )
+                continue
+            checked += 1
+            try:
+                vertical_mcp = json.loads(mcp_path.read_text())
+            except json.JSONDecodeError as e:
+                err(f"mcp-replication: {rel(mcp_path)}: invalid JSON: {e}")
+                continue
+            servers = vertical_mcp.get("mcpServers", vertical_mcp)
+            vertical_agentii = servers.get("agentii")
+            if vertical_agentii != canonical_agentii:
+                err(
+                    f"mcp-replication: {rel(mcp_path)}: 'agentii' entry differs from "
+                    f"contracts/mcp-canonical.json (FR-010 / Round 4 Q15 byte-equality)"
+                )
+else:
+    err("mcp-canonical: contracts/mcp-canonical.json missing (FR-010 / Round 4 Q15)")
+
+# --- Check 14: command files end with MODE_SYNTAX.md footer link -------------
+MODE_SYNTAX_LINK_RE = re.compile(
+    r"\[Mode syntax\]\(\.\./\.\./\.\./docs/commands/MODE_SYNTAX\.md\)"
+)
+for cmd in PLUGINS.glob("**/commands/*.md"):
+    checked += 1
+    text = cmd.read_text()
+    if not MODE_SYNTAX_LINK_RE.search(text):
+        err(
+            f"command-mode-syntax: {rel(cmd)}: missing canonical MODE_SYNTAX.md footer "
+            f"link (FR-052b / Round 4 Q12 — every slash command must reference "
+            f"`../../../docs/commands/MODE_SYNTAX.md`)"
+        )
 
 # --- report ----------------------------------------------------------------
 if errors:

@@ -1,0 +1,7 @@
+{
+  "_comment": "Single source of truth for the canonical 'agentii' data-plane MCP server declaration. Per spec 023 FR-010 and Round 4 Q15, this entry MUST be replicated byte-identically into every vertical's .mcp.json (equity-research-core, business-intelligence, industry-analysis, models-and-pitches). scripts/check.py Check 13 enforces byte-equality and fails CI on drift. Host CLIs (Claude Code / OpenCode / Goose / Codex / OpenClaw / Claude Cowork) dedupe MCP servers by 'name', so duplicate declarations are runtime-free. The office-plane 'agentii-office' MCP is a separate entry declared ONLY in models-and-pitches/.mcp.json per FR-040.",
+  "agentii": {
+    "type": "http",
+    "url": "https://mcp.agentii.ai/mcp"
+  }
+}

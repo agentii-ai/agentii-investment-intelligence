@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agentii": {
+      "type": "http",
+      "url": "https://mcp.agentii.ai/mcp"
+    }
+  }
+}

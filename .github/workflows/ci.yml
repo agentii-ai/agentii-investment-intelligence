@@ -40,3 +40,8 @@ jobs:
 
       - name: validate-partner-plugin.py (FR-048, FR-049)
         run: python3 scripts/validate-partner-plugin.py
+
+      - name: test-cookbooks.sh (FR-046b cookbook lint; Phase-1 tolerant)
+        # Phase 1 tolerance: skips cookbooks without agent.yaml. Phase 7 (US7)
+        # populates cookbooks and removes the skip. Per phase1-analyze.md F3.
+        run: bash scripts/test-cookbooks.sh

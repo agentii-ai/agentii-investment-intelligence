@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 """
+DEV-ONLY tooling — NOT part of spec-023 CI surface.
+Spec 023's 15 mandated scripts are all under scripts/ (one level up).
+This helper lives in scripts/dev/ to keep namespace hygiene per
+phase1-analyze.md finding F1.
+
 One-shot scaffold generator for Phase 1 (T033–T040).
 
 Emits:
@@ -173,6 +178,8 @@ argument-hint: {arghint}
 3. Return the structured deliverable produced by the skill.
 
 *Full workflow authored alongside the skill methodology (Phase 3/4/5).*
+
+> See [Mode syntax](../../../docs/commands/MODE_SYNTAX.md) for `--mode=` / `--modes=` / `--peers=` invocation rules.
 """
 
 
@@ -194,7 +201,7 @@ COMMANDS = [
      "Earnings sentiment analysis", "<TICKER> [--mode=<slug>]"),
     ("equity-research-core", "valuation-methods", "dim-valuation-methods",
      "Valuation methods analysis", "<TICKER> [--mode=<slug>]"),
-    # business-intelligence (4 commands; operational-kpi-tracker has no command at v1.0)
+    # business-intelligence (5 commands per Round 4 Q13 full slash-command symmetry)
     ("business-intelligence", "business-model", "business-model-analysis",
      "Business model analysis", "<TICKER>"),
     ("business-intelligence", "revenue-decomp", "revenue-decomposition",
@@ -203,13 +210,17 @@ COMMANDS = [
      "Unit economics analysis", "<TICKER>"),
     ("business-intelligence", "what-if", "what-if-scenario",
      "What-if scenario analysis", "<TICKER> [--mode=<scenario-slug>]"),
-    # industry-analysis (3 commands; competitive-positioning has no command at v1.0)
+    ("business-intelligence", "operational-kpi", "operational-kpi-tracker",
+     "Operational KPI dashboard", "<TICKER>"),
+    # industry-analysis (4 commands per Round 4 Q13 full slash-command symmetry)
     ("industry-analysis", "peer-bench", "peer-benchmarking",
      "Peer benchmarking", "<TICKER> --peers=<T1>,<T2>,<T3>"),
     ("industry-analysis", "sector-overview", "sector-overview",
      "Sector overview", "<TICKER> [--peers=<T1>,<T2>]"),
     ("industry-analysis", "supply-chain", "supply-chain-map",
      "Supply-chain map", "<TICKER>"),
+    ("industry-analysis", "competitive-positioning", "competitive-positioning",
+     "Porter-style competitive positioning analysis", "<TICKER>"),
     # models-and-pitches (6 commands)
     ("models-and-pitches", "dcf", "dcf-model",
      "Build a DCF valuation model", "<TICKER> [--peers=<T1>,<T2>]"),

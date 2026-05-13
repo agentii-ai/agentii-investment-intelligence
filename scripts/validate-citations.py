@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 CANONICAL_RE = re.compile(
-    r"\[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)"
+    r"\[📄 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)"
 )
 
 FORBIDDEN_PATTERNS = [
@@ -28,12 +28,12 @@ FORBIDDEN_PATTERNS = [
     (re.compile(r"\[FactSet[^\]]*\]"), "upstream-factset"),
     (re.compile(r"\[S&P Global[^\]]*\]"), "upstream-spglobal"),
     (re.compile(r"\[Bloomberg[^\]]*\]"), "upstream-bloomberg"),
-    (re.compile(r"\[\ud83d\udcc4\]\([\w-]+-row\)"), "legacy-tuple-row"),
+    (re.compile(r"\[📄\]\([\w-]+-row\)"), "legacy-tuple-row"),
 ]
 
 # Matches "citation-like" chunks that SHOULD be FR-050 but might not be.
 # Anything starting with the 📄 emoji that doesn't match CANONICAL_RE.
-LOOSE_CITATION_RE = re.compile(r"\[\ud83d\udcc4[^\]]*\]\([^)]*\)")
+LOOSE_CITATION_RE = re.compile(r"\[📄[^\]]*\]\([^)]*\)")
 
 
 def scan(path: Path) -> list[str]:
