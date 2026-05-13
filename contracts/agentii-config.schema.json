@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agentii User Config (~/.agentii/config.json)",
+  "description": "Schema for the per-user agentii config file (FR-053a, FR-043c, FR-006a). Lives at ~/.agentii/config.json on POSIX; file perms 0600, directory 0700.",
+  "type": "object",
+  "required": ["install_uuid", "telemetry"],
+  "additionalProperties": true,
+  "properties": {
+    "install_uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Auto-generated on first install, persisted, never re-generated. Used as a stable anonymous identifier in telemetry events."
+    },
+    "telemetry": {
+      "type": "object",
+      "description": "Telemetry controls per FR-053a.",
+      "required": ["server_export", "tier", "failure_traces", "usage_metrics", "cost_counters"],
+      "additionalProperties": false,
+      "properties": {
+        "server_export": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, events are exported to agentii.ai backend. Default false (local-only)."
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["off", "anonymous", "identified"],
+          "default": "off"
+        },
+        "failure_traces": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture failure tracebacks locally (not exported unless server_export=true)."
+        },
+        "usage_metrics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Count skill invocations and MCP tool calls locally."
+        },
+        "cost_counters": {
+          "type": "boolean",
+          "default": true,
+          "description": "Track cost in micro-USD locally."
+        }
+      }
+    },
+    "models-and-pitches": {
+      "type": "object",
+      "description": "Per-vertical overrides (FR-043c).",
+      "properties": {
+        "office_binding": {
+          "type": "string",
+          "enum": ["plugin-mcp", "cowork-office-js", "user-mcp"],
+          "description": "Binding resolution for office plane. plugin-mcp = FR-043a, cowork-office-js = FR-043b, user-mcp = FR-043c."
+        }
+      },
+      "additionalProperties": true
+    },
+    "offline_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, skills refuse MCP calls and surface a user-facing error explaining offline-mode limitations (FR-043c)."
+    },
+    "x402_wallet_address": {
+      "type": "string",
+      "description": "FR-006a forward-compat reserved key. Silently ignored in v1.0 (SC-019c). Do NOT validate format; future version will enforce."
+    },
+    "agentmail_inbox_id": {
+      "type": "string",
+      "description": "FR-006a forward-compat reserved key. Silently ignored in v1.0 (SC-019c)."
+    }
+  }
+}

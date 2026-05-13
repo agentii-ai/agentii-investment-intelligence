@@ -1,0 +1,28 @@
+{
+  "name": "agentii-investment-intelligence",
+  "version": "1.0.0",
+  "description": "SEC filings, clinical trials, FDA approvals, FAERS, earnings, and company profiles for 1,000+ US equities.",
+  "author": "agentii-ai",
+  "license": "MIT",
+  "homepage": "https://agentii.ai",
+  "tools": [
+    "search_documents",
+    "get_company_profile",
+    "list_coverage",
+    "read_source_outline",
+    "read_source_pages",
+    "search_keyword_in_source",
+    "search_unified"
+  ],
+  "env": {
+    "AGENTII_API_KEY": {
+      "required": true,
+      "description": "Generate at https://agentii.ai/api-keys"
+    },
+    "AGENTII_BASE_URL": {
+      "required": false,
+      "default": "https://api.agentii.ai",
+      "description": "Override API base URL for testing"
+    }
+  }
+}

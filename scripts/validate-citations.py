@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+r"""
+Validate every citation in committed SKILL.md files matches the FR-050 format.
+
+Canonical regex per FR-050 v1.0:
+    \[📄 <ticker> <form> p\.<N>\]\(agentii://source/<uuid>\?accession=<acc>&page=<N>\)
+
+Also scans for un-rewritten upstream citation patterns and fails on any hit:
+  - [Daloopa Source N]
+  - [FactSet]
+  - legacy tuple [📄](id-row) syntax
+  - [S&P Global ...]
+
+Exits 0 on clean scan, 1 on any violation. Scaffold-safe: skips empty files.
+"""
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+CANONICAL_RE = re.compile(
+    r"\[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)"
+)
+
+FORBIDDEN_PATTERNS = [
+    (re.compile(r"\[Daloopa Source \d+\]"), "upstream-daloopa"),
+    (re.compile(r"\[FactSet[^\]]*\]"), "upstream-factset"),
+    (re.compile(r"\[S&P Global[^\]]*\]"), "upstream-spglobal"),
+    (re.compile(r"\[Bloomberg[^\]]*\]"), "upstream-bloomberg"),
+    (re.compile(r"\[\ud83d\udcc4\]\([\w-]+-row\)"), "legacy-tuple-row"),
+]
+
+# Matches "citation-like" chunks that SHOULD be FR-050 but might not be.
+# Anything starting with the 📄 emoji that doesn't match CANONICAL_RE.
+LOOSE_CITATION_RE = re.compile(r"\[\ud83d\udcc4[^\]]*\]\([^)]*\)")
+
+
+def scan(path: Path) -> list[str]:
+    text = path.read_text()
+    errs: list[str] = []
+    for pat, name in FORBIDDEN_PATTERNS:
+        for m in pat.finditer(text):
+            errs.append(f"{path.relative_to(ROOT)}: forbidden {name}: '{m.group(0)}'")
+    # Loose 📄 citations that don't match canonical
+    for m in LOOSE_CITATION_RE.finditer(text):
+        if not CANONICAL_RE.fullmatch(m.group(0)):
+            errs.append(
+                f"{path.relative_to(ROOT)}: non-conforming citation "
+                f"(does not match FR-050 canonical regex): '{m.group(0)}'"
+            )
+    return errs
+
+
+def main() -> int:
+    errs: list[str] = []
+    targets = (
+        list(ROOT.glob("plugins/**/*.md"))
+        + list(ROOT.glob("managed-agent-cookbooks/**/*.md"))
+        + list(ROOT.glob("tests/fixtures/**/*.md"))
+    )
+    count = 0
+    for p in sorted(targets):
+        if not p.is_file():
+            continue
+        count += 1
+        errs.extend(scan(p))
+    if errs:
+        print(f"FAIL — {len(errs)} citation violation(s) across {count} file(s):", file=sys.stderr)
+        for e in errs:
+            print(f"  ✗ {e}", file=sys.stderr)
+        return 1
+    print(f"OK — {count} file(s) scanned, 0 citation violations.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

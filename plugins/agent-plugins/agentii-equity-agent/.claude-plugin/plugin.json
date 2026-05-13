@@ -1,0 +1,18 @@
+{
+  "name": "agentii-equity-agent",
+  "version": "0.1.0",
+  "description": "Orchestrating equity-research agent that bundles all 24 skills from the 4 vertical plugins (equity-research-core, business-intelligence, industry-analysis, models-and-pitches) with a long-range analytical system prompt ported from references/prompts/system_v2_7.py. Invokes the agentii.ai data plane for SEC filings, XBRL, earnings, and knowledge-store retrieval.",
+  "author": {
+    "name": "agentii-ai",
+    "url": "https://agentii.ai"
+  },
+  "keywords": [
+    "equity-research",
+    "agent",
+    "investment-intelligence",
+    "long-range-analysis",
+    "agentii"
+  ],
+  "prompt_version": "v2.7",
+  "agentii_api_version": "1.0.0"
+}

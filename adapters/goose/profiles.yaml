@@ -1,0 +1,6 @@
+mcp:
+  agentii:
+    command: npx
+    args: ["-y", "@agentii/investment-intelligence"]
+    env:
+      AGENTII_API_KEY: "${AGENTII_API_KEY}"

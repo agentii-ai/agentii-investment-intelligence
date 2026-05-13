@@ -1,0 +1,9 @@
+{
+  "name": "agentii-investment-intelligence",
+  "description": "Agent-use-ready financial data: SEC filings, clinical trials, FDA approvals, FAERS, earnings.",
+  "version": "1.0.0",
+  "entry": "npx -y @agentii/investment-intelligence",
+  "env": {
+    "AGENTII_API_KEY": "${AGENTII_API_KEY}"
+  }
+}

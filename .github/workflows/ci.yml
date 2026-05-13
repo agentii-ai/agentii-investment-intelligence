@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: check.py (manifest lint + skill structure)
+        run: python3 scripts/check.py
+
+      - name: validate-citations.py (FR-050)
+        run: python3 scripts/validate-citations.py
+
+      - name: validate-mode-syntax.py (FR-052b)
+        run: python3 scripts/validate-mode-syntax.py
+
+      - name: validate-prose-safety.py (FR-020e)
+        run: python3 scripts/validate-prose-safety.py
+
+      - name: validate-multi-ticker-syntax.py (FR-054b)
+        run: python3 scripts/validate-multi-ticker-syntax.py
+
+      - name: validate-telemetry-redaction.py (FR-053b)
+        run: python3 scripts/validate-telemetry-redaction.py
+
+      - name: validate-partner-plugin.py (FR-048, FR-049)
+        run: python3 scripts/validate-partner-plugin.py

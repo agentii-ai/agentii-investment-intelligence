@@ -1,0 +1,12 @@
+{
+  "name": "agentii-investment-intelligence",
+  "version": "1.0.0",
+  "description": "Financial data for AI agents — SEC filings, clinical trials, FDA, FAERS, earnings",
+  "entry": {
+    "command": "npx",
+    "args": ["-y", "@agentii/investment-intelligence"]
+  },
+  "env": {
+    "AGENTII_API_KEY": "${AGENTII_API_KEY}"
+  }
+}

@@ -1,0 +1,24 @@
+agentii-investment-intelligence
+Copyright 2026 agentii-ai
+
+This product includes software derived from anthropics/financial-services
+(Apache License 2.0, https://github.com/anthropics/financial-services).
+
+Ported skills retain original copyright notices. See individual skill directories
+for upstream commit SHAs recorded in each skill's `.upstream-fingerprint` file and
+the consolidated pin in `.upstream-pin.yaml`.
+
+Upstream attribution summary (per FR-029, FR-030):
+- models-and-pitches: 6 skills ported from plugins/vertical-plugins/financial-analysis/skills/
+  (dcf-model, comps-analysis, 3-statement-model, lbo-model, audit-xls, xlsx-author)
+- models-and-pitches/pitch-deck: composite-origin from 4 upstream skills
+  (pptx-author, ppt-template-creator, deck-refresh, ib-check-deck)
+- Original author lineage: Matt Piccolella / Anthropic (see upstream LICENSE + NOTICE)
+
+Methodology bodies are byte-stable from upstream (verified by deterministic port
+scripts and per-skill `.upstream-fingerprint` files). Only data-source blocks and
+MCP tool references are rewritten to target agentii.ai's data plane.
+
+Full per-skill fingerprints are recorded at
+`plugins/vertical-plugins/models-and-pitches/skills/<skill>/.upstream-fingerprint`
+and validated in CI against `.upstream-pin.yaml`.

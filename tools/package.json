@@ -1,0 +1,24 @@
+{
+  "name": "@agentii/investment-intelligence",
+  "version": "1.0.0",
+  "description": "Agent-use-ready financial data MCP server — SEC filings, clinical trials, FDA, FAERS, earnings",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agentii-mcp": "./bin/agentii-mcp.js"
+  },
+  "files": ["dist/", "bin/"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/server.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.venv/
+venv/
+
+# Node (MCP server under tools/)
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log
+
+# Distribution
+*.zip
+*.tar.gz
+
+# Runtime state
+~/.agentii/
+.agentii/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets
+.env
+.env.*
+!.env.example

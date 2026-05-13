@@ -1,0 +1,17 @@
+{
+  "name": "equity-research-core",
+  "version": "0.1.0",
+  "description": "8 equity-research dimension skills with ~48 addressable sub-prompt modes, backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar). Each skill covers one analytical dimension: recent-quarter performance (dim-1), competitive landscape (dim-2), growth strategy (dim-3), secular tech trends (dim-4), turnaround analysis (dim-5), risk analysis (dim-6), earnings sentiment (dim-7), valuation methods (dim-8).",
+  "author": {
+    "name": "agentii-ai",
+    "url": "https://agentii.ai"
+  },
+  "keywords": [
+    "equity-research",
+    "sec-edgar",
+    "financial-analysis",
+    "investment-intelligence",
+    "earnings-analysis",
+    "agentii"
+  ]
+}

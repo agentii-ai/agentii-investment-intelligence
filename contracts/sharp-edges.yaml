@@ -1,0 +1,73 @@
+# Sharp edges catalog for agentii-investment-intelligence (FR-020c).
+# Modeled on the edgartools sharp-edges.yaml pattern.
+# Every entry: id, summary, severity, solution, detection_pattern.
+version: "1.0"
+entries:
+  - id: hardcoded-dcf-projection
+    summary: >-
+      Projection/margin/discount-factor/PV/sensitivity cells in an Excel workbook
+      contain literal values instead of live formulas. Violates FR-020 / FR-044
+      and the xlsx.audit hard gate (hardcoded_count MUST be 0 for category in
+      [projection|margin|discount_factor|pv|sensitivity]).
+    severity: critical
+    solution: >-
+      Skill body MUST construct xlsx_spec.formula_cells[] with explicit formula
+      strings (e.g., "=B5*(1+$B$10)") and MUST invoke xlsx.recalc → xlsx.audit
+      before declaring the workbook deliverable. Refuse delivery if
+      hardcoded_count > 0.
+    detection_pattern: >-
+      xlsx_spec.formula_cells[].formula matches ^=-?\d+(\.\d+)?$ AND
+      xlsx_spec.formula_cells[].category IN
+      {projection, margin, discount_factor, pv, sensitivity}
+
+  - id: citation-format-drift
+    summary: >-
+      Skill output contains citations in upstream format ([Daloopa Source N],
+      [FactSet], legacy [📄](id-row) tuple syntax) instead of the FR-050 v1.0
+      frozen format.
+    severity: critical
+    solution: >-
+      Apply contracts/tool-name-map.json.citation_rewrite_rules during port. All
+      citations MUST match regex \[📄 <ticker> <form> p\.\d+\]\(agentii://source/<uuid>\?accession=<accession>&page=\d+\).
+      scripts/validate-citations.py enforces at CI time.
+    detection_pattern: >-
+      Output contains \[(Daloopa|FactSet|S&P Global|Bloomberg) OR
+      \[📄\]\([\w-]+-row\) AND NOT matching canonical FR-050 regex.
+
+  - id: missing-output-structure
+    summary: >-
+      SKILL.md lacks ## Output Structure section required by FR-020a. Agent
+      produces unstructured prose without prescribed deliverable format.
+    severity: high
+    solution: >-
+      Every skill MUST declare ## Output Structure with explicit section list
+      (headings, expected content, citation density). check.py Check 9 enforces.
+    detection_pattern: >-
+      SKILL.md file lacks "## Output Structure" heading.
+
+  - id: missing-error-handling
+    summary: >-
+      SKILL.md lacks ## Error Handling section covering the 5 mandatory rows
+      (missing data, partial data, sector mismatch, insufficient history,
+      MCP unreachable) per FR-020b.
+    severity: high
+    solution: >-
+      Every skill MUST declare ## Error Handling with at least 5 rows. check.py
+      Check 9 enforces the presence of the heading.
+    detection_pattern: >-
+      SKILL.md file lacks "## Error Handling" heading OR has fewer than 5 rows
+      in the error-handling table.
+
+  - id: cross-vertical-tool-drift
+    summary: >-
+      A skill in one vertical invokes an MCP tool declared in another vertical's
+      .mcp.json, causing dependency-resolution failures when users install only
+      the first vertical.
+    severity: medium
+    solution: >-
+      Each vertical's .mcp.json MUST declare every MCP tool the vertical's
+      skills invoke. Agent plugins MAY bundle skills from multiple verticals;
+      the bundle MUST re-declare MCP servers at the agent-plugin level.
+    detection_pattern: >-
+      Skill body references tool name X, but X is not declared in the same
+      vertical's .mcp.json tool list.

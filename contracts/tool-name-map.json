@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "description": "Canonical tool-name mapping for the agentii-investment-intelligence package. Maps legacy prompt tool names and upstream FSI MCP connector references to spec-019 endpoint names. Also documents citation rewrite rules (FR-050) and preflight health-check templates.",
+  "system_v2_7": {
+    "_comment": "Maps tool names used in references/prompts/system_v2_7.py (the well-tested agentic long-range financial analysis prompt set) to spec-019 endpoint names that agentii-ai/apps/api/ exposes.",
+    "fetch_financial_statement": "search_xbrl_facts",
+    "fetch_filtered_document_names": "list_sources",
+    "fetch_document_outline": "read_source_outline",
+    "fetch_document_chunk_content": "read_source_pages",
+    "search_keyword_in_filtered_documents": "search_keyword_in_source",
+    "fetch_company_profile": "get_company_profile",
+    "search_documents_by_keyword": "search_documents",
+    "unified_search": "search_unified",
+    "get_financial_highlights": "get_company_financials",
+    "get_filing_metadata": "get_sec_filing",
+    "search_filings": "search_sec_filings",
+    "get_xbrl_concept_value": "search_xbrl_facts",
+    "list_available_xbrl_concepts": "list_xbrl_concepts",
+    "get_rendered_statement": "read_rendered_statement",
+    "get_earnings_calendar": "search_earnings_calendar",
+    "get_upcoming_earnings": "list_upcoming_earnings",
+    "get_fiscal_calendar": "get_company_fiscal_calendar",
+    "get_earnings_event": "get_earnings_calendar_event",
+    "list_data_coverage": "list_coverage",
+    "get_coverage_for_ticker": "get_ticker_coverage",
+    "list_knowledge_domains": "list_domains"
+  },
+  "upstream_fsi": {
+    "_comment": "Maps upstream Daloopa/FactSet/S&P Global/Bloomberg/LSEG MCP connector tool references (used in anthropics/financial-services) to agentii equivalents backed by spec-019.",
+    "daloopa_search_company": "search_companies",
+    "daloopa_get_financials": "get_company_financials",
+    "daloopa_get_line_items": "search_xbrl_facts",
+    "daloopa_get_metadata": "get_sec_filing",
+    "factset_get_fundamentals": "get_company_financials",
+    "factset_get_estimates": "search_earnings_calendar",
+    "factset_get_peers": "search_companies",
+    "spglobal_company_tearsheet": "get_company_profile",
+    "spglobal_earnings_preview": "list_upcoming_earnings",
+    "bloomberg_historical_price": "__UNSUPPORTED_V1__",
+    "lseg_yield_curve": "__UNSUPPORTED_V1__"
+  },
+  "citation_rewrite_rules": {
+    "_comment": "Regex-based rewrites to convert upstream citation formats to the FR-050 v1.0 frozen format: [📄 <ticker> <form> p.<page>](agentii://source/<uuid>?accession=<accession>&page=<page>). The canonical format is validated by scripts/validate-citations.py.",
+    "canonical_regex": "\\[\\ud83d\\udcc4 [^\\]]+ p\\.\\d+\\]\\(agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+\\)",
+    "rules": [
+      {
+        "name": "daloopa_source_n",
+        "pattern": "\\[Daloopa Source \\d+\\]",
+        "replacement": "__REQUIRES_CONTEXT__",
+        "note": "Daloopa citation format has no direct agentii equivalent without filing context. Port script must reconstruct the citation by joining the upstream source row to an agentii source UUID."
+      },
+      {
+        "name": "factset_bare",
+        "pattern": "\\[FactSet\\]",
+        "replacement": "__REQUIRES_CONTEXT__",
+        "note": "FactSet references lack enough metadata to construct an FR-050 citation. Port must fail loud."
+      },
+      {
+        "name": "legacy_tuple_row",
+        "pattern": "\\[\\ud83d\\udcc4\\]\\([\\w-]+-row\\)",
+        "replacement": "__REQUIRES_CONTEXT__",
+        "note": "Legacy tuple-row syntax is deprecated; must be expanded to full FR-050 form."
+      }
+    ]
+  },
+  "preflight_templates": {
+    "_comment": "Reusable MCP health-check snippets for ## Preflight sections in SKILL.md. Both must complete in <2s.",
+    "data_plane": "curl -s -o /dev/null -w \"%{http_code}\" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo \"UNREACHABLE\"",
+    "office_plane": "curl -s -o /dev/null -w \"%{http_code}\" --max-time 2 https://mcp.agentii.ai/office/mcp/health 2>/dev/null || echo \"UNREACHABLE\""
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agentii Telemetry Event v1.0",
+  "description": "Frozen telemetry event contract per FR-053. Forbidden fields per FR-053b: ticker, prompt, model_response, evidence_pack, xlsx_spec, pptx_spec, file_path, citation_uri, document_chunk_id. This schema is shipped to ~/.agentii/logs/telemetry.schema.json at install time (FR-053c).",
+  "type": "object",
+  "required": ["event_name", "install_uuid", "ts_iso8601", "duration_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "event_name": {
+      "type": "string",
+      "enum": [
+        "skill.invocation.start",
+        "skill.invocation.end",
+        "mcp.tool.call.start",
+        "mcp.tool.call.end",
+        "office.call.start",
+        "office.call.end",
+        "cookbook.subagent.start",
+        "cookbook.subagent.end",
+        "validation.failure",
+        "audit.hardcode.detected"
+      ]
+    },
+    "install_uuid": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Anonymous stable install identifier (generated at first run, persisted to ~/.agentii/config.json, never re-generated)."
+    },
+    "ts_iso8601": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "error_code": {
+      "type": ["string", "null"],
+      "pattern": "^AGENTII_[A-Z_]+$",
+      "description": "Canonical error code per failure-policy.yaml. Null for success events."
+    },
+    "sector": {
+      "type": "string",
+      "enum": ["med", "tech", "other"],
+      "description": "Coarse sector bucket only; NEVER the ticker itself (FR-053b)."
+    },
+    "dimension": {
+      "type": "string",
+      "enum": [
+        "dim-1", "dim-2", "dim-3", "dim-4", "dim-5", "dim-6", "dim-7", "dim-8",
+        "bi", "industry", "modeling"
+      ]
+    },
+    "cost_usd_microunits": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Cost counter in micro-USD (1_000_000 = $1.00). Optional."
+    },
+    "mcp_tool": {
+      "type": "string",
+      "description": "MCP tool name (e.g., search_xbrl_facts). Required for mcp.tool.call.* events."
+    },
+    "host_cli": {
+      "type": "string",
+      "enum": ["claude-code", "codex", "goose", "claude-cowork", "openclaw", "agentii-cli", "other"]
+    }
+  },
+  "_forbidden_fields": {
+    "description": "FR-053b: the following field names MUST NEVER appear in any telemetry event. scripts/validate-telemetry-redaction.py performs static analysis on all emission points.",
+    "names": [
+      "ticker", "tickers", "symbol", "symbols",
+      "prompt", "user_prompt", "system_prompt",
+      "model_response", "llm_response", "completion",
+      "evidence_pack",
+      "xlsx_spec", "pptx_spec",
+      "file_path", "absolute_path",
+      "citation_uri", "citation",
+      "document_chunk_id", "chunk_id", "page_content",
+      "email", "user_id", "username",
+      "api_key", "apiKey", "x-api-key"
+    ]
+  }
+}

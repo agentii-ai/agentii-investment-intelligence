@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write  # for Sigstore signing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: Full CI
+        run: |
+          python3 scripts/check.py
+          python3 scripts/validate-citations.py
+          python3 scripts/validate-mode-syntax.py
+          python3 scripts/validate-prose-safety.py
+          python3 scripts/validate-multi-ticker-syntax.py
+          python3 scripts/validate-telemetry-redaction.py
+          python3 scripts/validate-partner-plugin.py
+
+      - name: Dry-run cookbooks
+        run: bash scripts/test-cookbooks.sh || echo "SKIP — cookbooks not yet populated at v0.1.0"
+
+      - name: Generate skill bundles
+        run: |
+          mkdir -p dist
+          for p in plugins/vertical-plugins/*/ plugins/agent-plugins/*/; do
+            name=$(basename "$p")
+            (cd plugins && zip -qr "../dist/${name}.zip" "$(echo $p | sed 's|plugins/||;s|/$||')")
+          done
+          (cd dist && sha256sum *.zip > SHA256SUMS)
+
+      - name: Sign with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: dist/SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS
+            dist/SHA256SUMS.sigstore

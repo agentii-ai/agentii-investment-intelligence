@@ -1,0 +1,17 @@
+{
+  "name": "business-intelligence",
+  "version": "0.1.0",
+  "description": "5 business-intelligence skills for deep analysis of revenue models, unit economics, and operational KPIs: business-model analysis, revenue decomposition, unit economics, what-if scenarios, and operational KPI tracking. Backed by agentii.ai's data API.",
+  "author": {
+    "name": "agentii-ai",
+    "url": "https://agentii.ai"
+  },
+  "keywords": [
+    "business-intelligence",
+    "revenue-analysis",
+    "unit-economics",
+    "scenario-analysis",
+    "kpi-tracking",
+    "agentii"
+  ]
+}
