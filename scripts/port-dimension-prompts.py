@@ -208,7 +208,7 @@ _DOLLAR_PLACEHOLDER_RE = re.compile(r"\$(X[\w.]*M?)\b")
 
 def sanitize_ported_text(text: str) -> str:
     """Apply FR-050a + FR-020e cleanups to ported prompt content."""
-    text = _LEGACY_CITATION_RE.sub("_(cite source filing in FR-050 format at runtime)_", text)
+    text = _LEGACY_CITATION_RE.sub("_(cite source filing in v1.0 citation format at runtime)_", text)
     text = _DOLLAR_BRACE_RE.sub(r"<\1>", text)
     text = _DOLLAR_PLACEHOLDER_RE.sub(r"<\1-amount>", text)
     return text

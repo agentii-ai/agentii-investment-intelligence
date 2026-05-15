@@ -1,6 +1,6 @@
 # Subagent Handoff Contract (v1.0 frozen)
 
-Human-readable companion to `failure-policy.yaml` + `evidence-pack.schema.json` + `../subagents/*.yaml`. Codifies which Cowork subagent produces/consumes which artifact, the invocation order, and the fail-safe semantics for each handoff edge. Per spec 023 **FR-046b** (subagent decomposition by capability axis, not by task name) + **FR-051a** (max-1-bounce policy, deterministic halts).
+Human-readable companion to `failure-policy.yaml` + `evidence-pack.schema.json` + `../subagents/*.yaml`. Codifies which Cowork subagent produces/consumes which artifact, the invocation order, and the fail-safe semantics for each handoff edge. Per spec 023 **the inter-subagent handoff contract** (subagent decomposition by capability axis, not by task name) + **the failure-recovery policya** (max-1-bounce policy, deterministic halts).
 
 ## Subagents
 
@@ -13,7 +13,7 @@ Four YAML-defined Cowork subagents, each capability-isolated:
 | `bi-subagent` | Business-intelligence reasoning + scenario sensitivity reads | Read evidence pack; run scenario calculations; emit BI deliverables | Execute office tools; gather new data |
 | `visualization-subagent` | Office-plane execution + final deliverable rendering | Invoke `xlsx.*` / `pptx.*` tools per `tool_alias_map`; deliver R2-presigned URLs | Gather data; author independent analytical prose |
 
-**Capability axis** (FR-046a) — decomposition is by *what the subagent can do* (retrieve / reason / render), not by *what task it serves* (DCF / comps / pitch). The same `analytical-subagent` handles every dimension's analytical work; the same `visualization-subagent` renders every workbook.
+**Capability axis** (the capability-isolated subagent decomposition) — decomposition is by *what the subagent can do* (retrieve / reason / render), not by *what task it serves* (DCF / comps / pitch). The same `analytical-subagent` handles every dimension's analytical work; the same `visualization-subagent` renders every workbook.
 
 ## Invocation order (deterministic)
 
@@ -27,7 +27,7 @@ Four YAML-defined Cowork subagents, each capability-isolated:
                  ┌────────────────────┐
                  │ retrieval-subagent │  ALWAYS first
                  └─────────┬──────────┘
-                           │  evidence_pack.json (FR-046b)
+                           │  evidence_pack.json (the inter-subagent handoff contract)
                            ▼
               ┌─────────────────────────────┐
               │ analytical OR bi subagent   │  (based on dim/skill kind)
@@ -44,7 +44,7 @@ Four YAML-defined Cowork subagents, each capability-isolated:
                         user reply
 ```
 
-**Invariant**: `retrieval-subagent` ALWAYS precedes any reasoning subagent. FR-020 hard-gate is a *process* invariant (orchestrator refuses to invoke analytical/bi before evidence pack exists), not a *prompt* convention. This is the entire reason for the FR-046a capability-axis decomposition.
+**Invariant**: `retrieval-subagent` ALWAYS precedes any reasoning subagent. the hard gate against hardcoded cells hard-gate is a *process* invariant (orchestrator refuses to invoke analytical/bi before evidence pack exists), not a *prompt* convention. This is the entire reason for the the capability-isolated subagent decomposition capability-axis decomposition.
 
 ## Handoff edges
 
@@ -76,8 +76,8 @@ Four YAML-defined Cowork subagents, each capability-isolated:
 
 ### Edge D: any subagent → halt
 
-- **Halt error codes** (FR-008 stable, FR-051a frozen): `AGENTII_ANALYTICAL_EXHAUSTED`, `AGENTII_ANALYTICAL_API_FAILURE`, `AGENTII_AUDIT_HARDCODE_FAIL`, `AGENTII_RECALC_TIMEOUT`, `AGENTII_SPEC_VERSION_MISMATCH`.
-- **Never silent**: every halt MUST emit (i) the error code, (ii) the user-facing message from `failure-policy.yaml`, (iii) a telemetry event per FR-053 with `error_code` populated.
+- **Halt error codes** (the auth-required error contract stable, the failure-recovery policya frozen): `AGENTII_ANALYTICAL_EXHAUSTED`, `AGENTII_ANALYTICAL_API_FAILURE`, `AGENTII_AUDIT_HARDCODE_FAIL`, `AGENTII_RECALC_TIMEOUT`, `AGENTII_SPEC_VERSION_MISMATCH`.
+- **Never silent**: every halt MUST emit (i) the error code, (ii) the user-facing message from `failure-policy.yaml`, (iii) a telemetry event per the telemetry emission contract with `error_code` populated.
 - **No auto-coercion**: `AGENTII_SPEC_VERSION_MISMATCH` halts immediately — no schema migration is attempted across version boundaries.
 
 ## Cross-references

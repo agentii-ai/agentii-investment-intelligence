@@ -32,10 +32,10 @@ structure_hints:
   |:-------------------|:-----------------:|:-----------------------------|
 
   | Revenues | <XXXM-amount> | Avg of MS: <XXXM-amount>, Jefferies: <XXXM-amount>
-  _(cite source filing in FR-050 format at runtime)_ |
+  _(cite source filing in standard agentii citation format at runtime)_ |
 
   | EPS (Non-GAAP) | <X.XX-amount> | Avg of MS: <X.XX-amount>, Jefferies: <X.XX-amount>
-  _(cite source filing in FR-050 format at runtime)_ |
+  _(cite source filing in standard agentii citation format at runtime)_ |
 
   | EBITDA | <XXXM-amount> | {or N/A if not disclosed} |
 

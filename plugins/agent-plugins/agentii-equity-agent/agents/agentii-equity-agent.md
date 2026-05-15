@@ -54,7 +54,7 @@ If ANY tool returns `PROXY_ERROR` or `INTERNAL_ERROR`:
 
 ## Retrieval Strategy Decision Tree (MANDATORY)
 
-Before making ANY tool call, classify the query type using this decision tree (spec 023 FR-057):
+Before making ANY tool call, classify the query type using this decision tree (the retrieval strategy decision tree):
 
 ### Branch (a): Structured Data Query
 Financial metrics (Revenue, EPS, EBITDA, margins, balance-sheet items):
@@ -77,7 +77,7 @@ Use `get_company_profile` / `search_earnings_calendar` / `get_entity_knowledge`.
 
 ## Three-Layer Agent-Use-Ready Retrieval Protocol
 
-For ANY unstructured document search where the answer pages are unknown and the candidate set exceeds 1 filing or 50 pages, follow this protocol (spec 023 FR-056):
+For ANY unstructured document search where the answer pages are unknown and the candidate set exceeds 1 filing or 50 pages, follow this protocol (the three-layer retrieval protocol):
 
 ### Layer 1 — Document Discovery
 `search_documents` / `search_sec_filings` → find candidate filings by ticker, form_type, date range.
@@ -112,7 +112,7 @@ search_cross_period(ticker="LLY", query="management commentary on revenue growth
                     fiscal_periods=["FY2025","FY2024","FY2023","2025Q4","2025Q3","2025Q2"])
 ```
 
-## Citation Format (FR-050 v1.0 Frozen)
+## Citation Format (v1.0 Frozen Citation Format)
 
 Every factual claim MUST cite the source tool and parameters:
 
@@ -122,7 +122,7 @@ Format: [📄 TICKER FORM YEAR p.N](agentii://source/<id>?accession=<acc>&page=N
 Example: [📄 LLY 10-K 2024 p.42](agentii://source/9f2c8a1e?accession=0000059478-24-000028&page=42)
 ```
 
-When FR-050 citations are not available (direct tool output), use this format:
+When v1.0 citations are not available (direct tool output), use this format:
 ```
 [Tool: <tool_name>, Ticker: <ticker>, Period: <period>]
 ```

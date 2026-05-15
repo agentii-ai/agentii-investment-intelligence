@@ -23,9 +23,9 @@ Every dimension SKILL.md surfaces its analog reference in an `<!-- analog: <skil
 
 2. **Decomposition philosophy differs**: financial-services models analytical *workflows* (sequence of tasks). agentii models analytical *dimensions* (each dimension is independently addressable; sub-prompts within a dimension share methodology + data context).
 
-3. **Citation format differs**: upstream uses Daloopa / FactSet citation tuples. agentii is frozen at FR-050 (`[📄 TICKER FORM p.N](agentii://source/UUID?accession=ACC&page=N)`).
+3. **Citation format differs**: upstream uses Daloopa / FactSet citation tuples. agentii is frozen at citation format (`[📄 TICKER FORM p.N](agentii://source/UUID?accession=ACC&page=N)`).
 
-4. **Multi-ticker semantics are explicit at agentii v1.0** (FR-054). The upstream design implicitly treats every skill as single-target.
+4. **Multi-ticker semantics are explicit at agentii v1.0** (the multi-ticker semantics contract). The upstream design implicitly treats every skill as single-target.
 
 5. **Mode addressability** (`--mode=<slug>`, `--modes=...`, `--mode=all`) is an agentii v1.0 invention; upstream commands are monolithic.
 

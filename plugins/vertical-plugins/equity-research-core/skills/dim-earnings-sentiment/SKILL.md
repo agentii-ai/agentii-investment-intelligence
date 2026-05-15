@@ -55,7 +55,7 @@ essentials_modes:
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies per spec 023 FR-056.
+This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -121,11 +121,11 @@ Classify analyst tone for each key financial metric as:
 
 | **Key Financials** | **Expected Tone** | **Commentary / Notes** |
 |:-------------------|:-----------------:|:-----------------------|
-| Revenues | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
-| EPS | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
-| EBITDA | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
-| **Adj. EBITDA** | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
-| Net Income | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
+| Revenues | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in standard agentii citation format at runtime)_ |
+| EPS | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in standard agentii citation format at runtime)_ |
+| EBITDA | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in standard agentii citation format at runtime)_ |
+| **Adj. EBITDA** | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in standard agentii citation format at runtime)_ |
+| Net Income | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst quotes} _(cite source filing in standard agentii citation format at runtime)_ |
 
 **Overall Sentiment Summary**:
 {2-3 sentence synthesis of overall analyst sentiment for upcoming quarter}
@@ -163,8 +163,8 @@ from Morgan Stanley and Jefferies preview reports for upcoming earnings release.
 
 | **Key Financials** | **Mean Estimate** | **Notes / Source Commentary** |
 |:-------------------|:-----------------:|:-----------------------------|
-| Revenues | <XXXM-amount> | Avg of MS: <XXXM-amount>, Jefferies: <XXXM-amount> _(cite source filing in FR-050 format at runtime)_ |
-| EPS (Non-GAAP) | <X.XX-amount> | Avg of MS: <X.XX-amount>, Jefferies: <X.XX-amount> _(cite source filing in FR-050 format at runtime)_ |
+| Revenues | <XXXM-amount> | Avg of MS: <XXXM-amount>, Jefferies: <XXXM-amount> _(cite source filing in standard agentii citation format at runtime)_ |
+| EPS (Non-GAAP) | <X.XX-amount> | Avg of MS: <X.XX-amount>, Jefferies: <X.XX-amount> _(cite source filing in standard agentii citation format at runtime)_ |
 | EBITDA | <XXXM-amount> | {or N/A if not disclosed} |
 | **Adj. EBITDA** | <XXXM-amount> | {or N/A if not disclosed} |
 | Net Income | <XXXM-amount> | {or N/A if not disclosed} |
@@ -217,8 +217,8 @@ for BOTH:
 | Net Income | <XXXM-amount> | <XXXM-amount> |
 
 **Sources and Calculations**:
-- Revenues (Quarter): Mean of MS: <XXXM-amount>, Jefferies: <XXXM-amount> _(cite source filing in FR-050 format at runtime)_, _(cite source filing in FR-050 format at runtime)_
-- Revenues (FY0): Mean of MS: <XXXM-amount>, Jefferies: <XXXM-amount> _(cite source filing in FR-050 format at runtime)_, _(cite source filing in FR-050 format at runtime)_
+- Revenues (Quarter): Mean of MS: <XXXM-amount>, Jefferies: <XXXM-amount> _(cite source filing in standard agentii citation format at runtime)_, _(cite source filing in standard agentii citation format at runtime)_
+- Revenues (FY0): Mean of MS: <XXXM-amount>, Jefferies: <XXXM-amount> _(cite source filing in standard agentii citation format at runtime)_, _(cite source filing in standard agentii citation format at runtime)_
 {Repeat for each metric}
 
 **Notes**:
@@ -266,8 +266,8 @@ Use midpoint if range provided. Average across documents if multiple sources.
 | Net Income | <XXXM-amount> | <XXXM-amount> |
 
 **Guidance Details**:
-- Revenues (Quarter): {<XXX-amount>-XXXM range → midpoint <XXXM-amount>} _(cite source filing in FR-050 format at runtime)_
-- Revenues (FY0): {<XXX-amount>-XXXM range → midpoint <XXXM-amount>} _(cite source filing in FR-050 format at runtime)_
+- Revenues (Quarter): {<XXX-amount>-XXXM range → midpoint <XXXM-amount>} _(cite source filing in standard agentii citation format at runtime)_
+- Revenues (FY0): {<XXX-amount>-XXXM range → midpoint <XXXM-amount>} _(cite source filing in standard agentii citation format at runtime)_
 {Repeat for each metric}
 
 **Guidance Notes**:
@@ -310,9 +310,9 @@ Calculate and present variance (delta) between analyst expectations and official
 
 **Variance Analysis**:
 - {Metric with largest positive variance}: Analysts {X}% above guidance
-  - Potential drivers: {Brief explanation} _(cite source filing in FR-050 format at runtime)_
+  - Potential drivers: {Brief explanation} _(cite source filing in standard agentii citation format at runtime)_
 - {Metric with negative variance if any}: Analysts {X}% below guidance
-  - Potential concerns: {Brief explanation} _(cite source filing in FR-050 format at runtime)_
+  - Potential concerns: {Brief explanation} _(cite source filing in standard agentii citation format at runtime)_
 
 **Overall Assessment**:
 {2-3 sentences summarizing whether analysts are generally above, in-line, or below guidance,
@@ -366,13 +366,13 @@ Calculate variance to assess if analysts are above, in-line, or below guidance.
 ### Metrics Above Guidance
 {For each metric with +variance > 5%}:
 - **{Metric}**: Analysts {X}% above guidance
-  - Analyst rationale: {Key drivers from preview reports} _(cite source filing in FR-050 format at runtime)_
+  - Analyst rationale: {Key drivers from preview reports} _(cite source filing in standard agentii citation format at runtime)_
   - Implied upside: <XXM> or <X.XX> per share
 
 ### Metrics Below Guidance
 {For each metric with -variance > 5%}:
 - **{Metric}**: Analysts {X}% below guidance
-  - Analyst concerns: {Key reasons from preview reports} _(cite source filing in FR-050 format at runtime)_
+  - Analyst concerns: {Key reasons from preview reports} _(cite source filing in standard agentii citation format at runtime)_
   - Potential downside: <XXM> or <X.XX> per share
 
 ### Metrics In-Line (±2%)
@@ -397,7 +397,7 @@ for potential guidance revisions in upcoming earnings.}
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include per FR-020a: section headings, expected content per section, citation density (≥1 per 200 words).*
+*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
 
 ## Error Handling
 

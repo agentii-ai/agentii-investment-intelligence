@@ -1,6 +1,6 @@
 # Period-Search Subagent Prompt Construction Contract
 
-Documents the runtime prompt construction for `period-search-subagent` instances spawned by `search_cross_period` per spec 023 FR-063.
+Documents the runtime prompt construction for `period-search-subagent` instances spawned by `search_cross_period` per spec 023 the period-search-subagent prompt contract.
 
 ## Overview
 
@@ -32,7 +32,7 @@ From `retrieval.md` block 1: "data-gathering and agentic search specialist. You 
 
 ### 3. `<retrieval_strategy>` Block
 
-From `retrieval.md` block 2: the full 4-branch decision tree (FR-057). The **full** decision tree operates within the sub-agent — not scoped to single-period only — because the sub-agent may need structured data (`search_xbrl_facts`), unstructured document search (three-layer protocol), single-document retrieval, OR simple lookups within its assigned period.
+From `retrieval.md` block 2: the full 4-branch decision tree (the retrieval strategy decision tree). The **full** decision tree operates within the sub-agent — not scoped to single-period only — because the sub-agent may need structured data (`search_xbrl_facts`), unstructured document search (three-layer protocol), single-document retrieval, OR simple lookups within its assigned period.
 
 ### 4. `<three_layer_protocol>` Block
 
@@ -64,7 +64,7 @@ From `retrieval.md` block 5, scoped to single-period output:
       "accession": "string",
       "page_range": "string",
       "snippet": "string",
-      "citation_label": "string (FR-050 format)",
+      "citation_label": "string (v1.0 citation format)",
       "page_outline?": [
         {
           "page_no": "integer",
@@ -90,7 +90,7 @@ From `retrieval.md` block 5, scoped to single-period output:
   "findings": [
     {
       "claim": "string (factual statement)",
-      "citation_label": "string (FR-050 format)",
+      "citation_label": "string (v1.0 citation format)",
       "confidence": "string (high|medium|low)"
     }
   ],
@@ -108,11 +108,11 @@ From `retrieval.md` block 5, scoped to single-period output:
 The `period-search-subagent` is a **general-purpose per-period retriever**:
 
 - **Has access to**: BOTH `search_xbrl_facts` (structured financial data within its assigned period) AND the three-layer document retrieval tools (`search_documents`, `read_source_outline`, `read_source_pages`, `search_keyword_in_source`).
-- **Decision tree**: The full 4-branch decision tree (FR-057) operates within the sub-agent. If the task asks for Revenue by segment, the sub-agent uses `search_xbrl_facts`. If it asks for management commentary, it uses the three-layer protocol.
-- **Must NOT do**: Cross-period comparison or synthesis. The sub-agent is purely a single-period data collector. Cross-period verification (FR-055(e)) is the responsibility of the parent `retrieval-subagent`.
+- **Decision tree**: The full 4-branch decision tree (the retrieval strategy decision tree) operates within the sub-agent. If the task asks for Revenue by segment, the sub-agent uses `search_xbrl_facts`. If it asks for management commentary, it uses the three-layer protocol.
+- **Must NOT do**: Cross-period comparison or synthesis. The sub-agent is purely a single-period data collector. Cross-period verification (the parallel multi-period search mechanism(e)) is the responsibility of the parent `retrieval-subagent`.
 
 ## Concurrency
 
-- `search_cross_period` fans out period sub-queries concurrently server-side (max 8 concurrent per Neon connection pool per spec 019 FR-116).
+- `search_cross_period` fans out period sub-queries concurrently server-side (max 8 concurrent per Neon connection pool per spec 019 the concurrency limit).
 - Periods beyond 8 execute in sequential batches transparently.
 - The skill makes exactly ONE tool call to `search_cross_period` regardless of how many fiscal periods it covers.

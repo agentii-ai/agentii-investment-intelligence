@@ -23,9 +23,9 @@ structure_hints:
   \ | $0M | 0.0% |\n| Net Income | <XXXM-amount> | <XXXM-amount> | +<XXM-amount> |\
   \ +X.X% |\n\n**Variance Analysis**:\n- {Metric with largest positive variance}:\
   \ Analysts {X}% above guidance\n  - Potential drivers: {Brief explanation} _(cite\
-  \ source filing in FR-050 format at runtime)_\n- {Metric with negative variance\
+  \ source filing in standard agentii citation format at runtime)_\n- {Metric with negative variance\
   \ if any}: Analysts {X}% below guidance\n  - Potential concerns: {Brief explanation}\
-  \ _(cite source filing in FR-050 format at runtime)_\n\n**Overall Assessment**:\n\
+  \ _(cite source filing in standard agentii citation format at runtime)_\n\n**Overall Assessment**:\n\
   {2-3 sentences summarizing whether analysts are generally above, in-line, or below\
   \ guidance,\nand potential implications for upcoming earnings}\n\n**Key Observations**:\n\
   - {Notable variance patterns}\n- {Consistency or inconsistency across metrics}\n\

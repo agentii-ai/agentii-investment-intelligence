@@ -1,7 +1,7 @@
 # CLI: `agentii plugin telemetry` + `agentii plugin inspect`
 
 Documents the two CLI subcommands that expose local telemetry state and recent
-plugin activity per FR-053a and FR-035.
+plugin activity per the telemetry server-export tier and the agentii plugin inspect command.
 
 ## `agentii plugin telemetry`
 
@@ -29,14 +29,14 @@ agentii plugin telemetry --disable-server-export
 ## `agentii plugin inspect --recent`
 
 Shows the most recent skill/MCP activity at a user-friendly granularity
-(FR-035).
+(the agentii plugin inspect command).
 
 ### Flags
 
 | Flag | Description |
 |---|---|
-| `--recent [N]` | Show the most recent N plugin invocations (default N=50) with: skill name, MCP tool used, latency, resolved binding source for office calls (plugin-mcp / cowork-office-js / user-mcp per FR-043) |
-| `--capabilities` | Print detected auth_modes + agentii_api_version from the MCP server (FR-006a) |
+| `--recent [N]` | Show the most recent N plugin invocations (default N=50) with: skill name, MCP tool used, latency, resolved binding source for office calls (plugin-mcp / cowork-office-js / user-mcp per the abstract tool layer for office tools) |
+| `--capabilities` | Print detected auth_modes + agentii_api_version from the MCP server (the agentic-commerce forward-compat hook) |
 
 ### Examples
 
@@ -63,7 +63,7 @@ agentii plugin inspect --capabilities
 - File `~/.agentii/logs/telemetry.jsonl` is `0600`.
 - Violations of these permissions cause the CLI to refuse to read/write telemetry until corrected (defense against shared-filesystem leakage).
 
-## Redaction guarantees (FR-053b)
+## Redaction guarantees (the telemetry content redaction rules)
 
 The following field names are forbidden in any telemetry event:
 

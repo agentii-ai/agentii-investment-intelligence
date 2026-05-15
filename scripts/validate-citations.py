@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 r"""
-Validate every citation in committed SKILL.md files matches the FR-050 format.
+Validate every citation in committed SKILL.md files matches the v1.0 citation format.
 
 Canonical regex per FR-050 v1.0:
     \[📄 <ticker> <form> p\.<N>\]\(agentii://source/<uuid>\?accession=<acc>&page=<N>\)
@@ -47,7 +47,7 @@ def scan(path: Path) -> list[str]:
         if not CANONICAL_RE.fullmatch(m.group(0)):
             errs.append(
                 f"{path.relative_to(ROOT)}: non-conforming citation "
-                f"(does not match FR-050 canonical regex): '{m.group(0)}'"
+                f"(does not match v1.0 citation format regex): '{m.group(0)}'"
             )
     return errs
 

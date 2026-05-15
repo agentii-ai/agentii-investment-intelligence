@@ -24,11 +24,11 @@ structure_hints:
   \ | -<XXM-amount> | -X.X% |\n| Net Income | <XXXM-amount> | <XXXM-amount> | $0M\
   \ | 0.0% |\n\n**Variance Analysis**:\n\n### Metrics Above Guidance\n{For each metric\
   \ with +variance > 5%}:\n- **{Metric}**: Analysts {X}% above guidance\n  - Analyst\
-  \ rationale: {Key drivers from preview reports} _(cite source filing in FR-050 format\
+  \ rationale: {Key drivers from preview reports} _(cite source filing in standard agentii citation format\
   \ at runtime)_\n  - Implied upside: <XXM> or <X.XX> per share\n\n### Metrics Below\
   \ Guidance\n{For each metric with -variance > 5%}:\n- **{Metric}**: Analysts {X}%\
   \ below guidance\n  - Analyst concerns: {Key reasons from preview reports} _(cite\
-  \ source filing in FR-050 format at runtime)_\n  - Potential downside: <XXM> or\
+  \ source filing in standard agentii citation format at runtime)_\n  - Potential downside: <XXM> or\
   \ <X.XX> per share\n\n### Metrics In-Line (\xB12%)\n{List metrics with minimal variance}\n\
   \n**Overall Assessment**:\n{Summary paragraph assessing whether analysts are generally\
   \ constructive,\nin-line, or cautious relative to management guidance. Discuss implications\n\

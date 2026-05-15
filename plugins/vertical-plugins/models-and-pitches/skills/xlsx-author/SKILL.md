@@ -58,7 +58,7 @@ allowed_tools:
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale across SEC filings (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies per spec 023 FR-056.
+This skill performs unstructured document search at scale across SEC filings (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -85,11 +85,23 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
    - Layer 2: `read_source_outline` to scan page-level metadata.
    - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
    - Layer 3: `read_source_pages` to deep-read only selected pages.
-4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per FR-046b.
+4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
+
+## Deliverable Chain
+
+```
+[custom Python script] → xlsx_build(method: script) → xlsx_recalc → xlsx_audit → [.xlsx output]
+```
+
+## Validation Gates
+
+1. **output integrity**: .xlsx opens without corruption. *If failed*: If corrupted: refuse delivery.
+2. **named ranges**: all named ranges resolve. *If failed*: If unresolved: refuse delivery.
+3. **script execution**: Python script executed without exception. *If failed*: If fails: return stderr.
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include per FR-020a: section headings, expected content per section, citation density (≥1 per 200 words).*
+*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
 
 ## Error Handling
 

@@ -37,14 +37,14 @@ structure_hints:
   - {List identified organic initiatives with citations}
 
   - {Example: Product development programs mentioned in Q2 earnings call _(cite source
-  filing in FR-050 format at runtime)_}
+  filing in standard agentii citation format at runtime)_}
 
 
   ### Inorganic Growth Indicators
 
   - {List identified inorganic initiatives with citations}
 
-  - {Example: M&A transaction announced in 8-K filing _(cite source filing in FR-050
+  - {Example: M&A transaction announced in 8-K filing _(cite source filing in standard agentii citation
   format at runtime)_}
 
 

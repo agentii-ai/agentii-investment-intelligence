@@ -2,7 +2,7 @@
 name: dcf-model
 description: 'DCF valuation model: 5-10 year projection, terminal value, WACC construction,
   and sensitivity tables. All projection/margin/discount/PV cells must be live formulas
-  (FR-020/FR-044 hard gate).'
+  (hardcode gate enforced).'
 multi_ticker_semantics: single_target
 parameter_free: false
 temporal_scope:
@@ -59,7 +59,7 @@ allowed_tools:
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale across SEC filings (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies per spec 023 FR-056.
+This skill performs unstructured document search at scale across SEC filings (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -86,11 +86,24 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
    - Layer 2: `read_source_outline` to scan page-level metadata.
    - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
    - Layer 3: `read_source_pages` to deep-read only selected pages.
-4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per FR-046b.
+4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
+
+## Deliverable Chain
+
+```
+[search_xbrl_facts + get_company_financials] → xlsx_build(spec: dcf) → xlsx_recalc → xlsx_audit(hardcoded_count==0) → [.xlsx output] → (optional) pptx_build(executive-summary) → xlsx_convert(pdf)
+```
+
+## Validation Gates
+
+1. **projection horizon**: ≥ 5 years (10 years for secular-trends analysis). *If failed*: If < 5 years: refuse delivery, report actual horizon.
+2. **terminal growth rate**: < risk-free rate proxy (current 10Y UST). *If failed*: If terminal_g ≥ rf: flag in assumptions section, note conservatism violation.
+3. **WACC components**: WACC = (E/V × Ke) + (D/V × Kd × (1-T)) with all components cited to source data. *If failed*: If components uncited: refuse delivery, list missing citations.
+4. **hardcoded_count**: == 0 for all cells tagged projection|margin|discount_factor|pv|sensitivity per xlsx_audit output. *If failed*: If hardcoded_count > 0: per the hardcode gate, refuse delivery. Bounce back to analytical-subagent ONCE with audit report.
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include per FR-020a: section headings, expected content per section, citation density (≥1 per 200 words).*
+*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
 
 ## Error Handling
 

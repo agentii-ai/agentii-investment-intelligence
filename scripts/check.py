@@ -34,9 +34,14 @@ agentic-search mechanisms FR-056, FR-058, FR-060, FR-064):
       exclude document tools (FR-060 / Phase 10).
   21. Every SKILL.md has three-layer protocol in ## Methodology OR
       valid retrieval_scope opt-out in frontmatter (FR-056 / Phase 10).
-  22. Every SKILL.md ## Methodology has all 5 required subsections:
-      Retrieval Scope, Retrieval Strategy, Temporal Scope, Tool Allowlist,
-      Protocol (FR-064 / Phase 10 skill-methodology-template.md).
+  22. Every SKILL.md ## Methodology has all 5 required subsections
+      (FR-064 / Phase 10).
+  23. Every models-and-pitches skill has references/{formula-sheet,
+      validation-checklist, institutional-defaults}.md (FR-068 / Phase 11).
+  24. Every models-and-pitches SKILL.md has ## Deliverable Chain with
+      Inputs→Build→Validate→Output→Next flow (FR-066 / Phase 11).
+  25. Every models-and-pitches SKILL.md has ## Validation Gates with
+      3–5 concrete assertions (FR-067 / Phase 11).
 
 Exit 0 if clean, 1 otherwise. Requires: pyyaml, jsonschema.
 """
@@ -343,7 +348,7 @@ for sk in SKILL_FILES:
 # --- Check 20: allowed_tools frontmatter field (FR-060) ---------------------
 # Gather canonical MCP tool names from tool-name-map.json
 CANONICAL_TOOLS: set[str] = set()
-OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "pptx.build", "pptx.refresh"}
+OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "xlsx.convert", "pptx.build", "pptx.refresh", "pptx.edit", "xlsx.edit"}
 DOCUMENT_TOOLS = {"read_source_outline", "read_source_pages", "search_keyword_in_source", "search_documents", "search_sec_filings"}
 # Full canonical surface: FR-011 MCP tools + office tools
 FR011_TOOLS = {
@@ -464,6 +469,56 @@ for sk in SKILL_FILES:
                 f"skill-methodology: {rel(sk)}: missing '{sub}' subsection "
                 f"under ## Methodology (FR-064 — skill-methodology-template.md)"
             )
+
+# --- Check 23: models-and-pitches references/ directory (FR-068) -------------
+MODELS_DIR = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills"
+REQUIRED_REFS = {"formula-sheet.md", "validation-checklist.md", "institutional-defaults.md"}
+for sk_dir in sorted(MODELS_DIR.iterdir()) if MODELS_DIR.is_dir() else []:
+    if not sk_dir.is_dir():
+        continue
+    refs_dir = sk_dir / "references"
+    if not refs_dir.is_dir():
+        err(f"skill-references: {rel(sk_dir)}: missing 'references/' directory (FR-068)")
+        continue
+    for req in REQUIRED_REFS:
+        ref_file = refs_dir / req
+        if not ref_file.is_file():
+            err(f"skill-references: {rel(sk_dir)}: missing references/{req} (FR-068)")
+        elif ref_file.stat().st_size < 50:
+            err(f"skill-references: {rel(sk_dir)}: references/{req} is empty or too short (FR-068)")
+
+# --- Check 24: models-and-pitches Deliverable Chain (FR-066) -----------------
+for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else []:
+    text = sk_md.read_text()
+    if "## Deliverable Chain" not in text:
+        err(f"skill-chain: {rel(sk_md)}: missing '## Deliverable Chain' section (FR-066)")
+        continue
+    # Extract the chain section and verify it has the 5 sub-steps
+    chain_match = re.search(r"## Deliverable Chain\s*\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    if chain_match:
+        chain_body = chain_match.group(1)
+        for step in ("Inputs", "Build", "Validate", "Output", "Next"):
+            if step.lower() not in chain_body.lower() and step not in chain_body:
+                # Check for common representations
+                has_build = any(kw in chain_body for kw in ["xlsx_build", "pptx_build", "xlsx_audit", "pptx_edit"])
+                has_chain = "→" in chain_body or "->" in chain_body
+                if not (has_build and has_chain):
+                    err(f"skill-chain: {rel(sk_md)}: Deliverable Chain missing '{step}' sub-step (FR-066)")
+
+# --- Check 25: models-and-pitches Validation Gates (FR-067) ------------------
+for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else []:
+    text = sk_md.read_text()
+    if "## Validation Gates" not in text:
+        err(f"skill-gates: {rel(sk_md)}: missing '## Validation Gates' section (FR-067)")
+        continue
+    gates_match = re.search(r"## Validation Gates\s*\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+    if gates_match:
+        gates_body = gates_match.group(1)
+        items = re.findall(r"^\s*\d+\.\s+\*\*", gates_body, re.MULTILINE)
+        if len(items) < 3:
+            err(f"skill-gates: {rel(sk_md)}: Validation Gates has {len(items)} items (need >= 3 per FR-067)")
+        elif len(items) > 5:
+            err(f"skill-gates: {rel(sk_md)}: Validation Gates has {len(items)} items (max 5 per FR-067)")
 
 # --- report ----------------------------------------------------------------
 if errors:

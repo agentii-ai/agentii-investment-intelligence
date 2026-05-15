@@ -54,7 +54,7 @@ essentials_modes:
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies per spec 023 FR-056.
+This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -115,11 +115,11 @@ to determine if growth is driven by:
 
 ### Organic Growth Indicators
 - {List identified organic initiatives with citations}
-- {Example: Product development programs mentioned in Q2 earnings call _(cite source filing in FR-050 format at runtime)_}
+- {Example: Product development programs mentioned in Q2 earnings call _(cite source filing in standard agentii citation format at runtime)_}
 
 ### Inorganic Growth Indicators
 - {List identified inorganic initiatives with citations}
-- {Example: M&A transaction announced in 8-K filing _(cite source filing in FR-050 format at runtime)_}
+- {Example: M&A transaction announced in 8-K filing _(cite source filing in standard agentii citation format at runtime)_}
 
 **Data Sources Analyzed**:
 - {List key documents reviewed: 10-K, earnings calls, analyst reports}
@@ -182,8 +182,8 @@ For each dimension, determine:
 
 ### Product
 {If Presence=Yes, provide detailed description}
-- Initiative 1: {Description} _(cite source filing in FR-050 format at runtime)_
-- Initiative 2: {Description} _(cite source filing in FR-050 format at runtime)_
+- Initiative 1: {Description} _(cite source filing in standard agentii citation format at runtime)_
+- Initiative 2: {Description} _(cite source filing in standard agentii citation format at runtime)_
 
 {Repeat for each dimension with Presence=Yes}
 
@@ -251,9 +251,9 @@ For each growth driver dimension with Presence=Yes from task 3_2_1, determine:
 {Brief recap of initiative identified previously}
 
 **Current Progress**:
-- Evidence Point 1: {Description with metrics} _(cite source filing in FR-050 format at runtime)_
-- Evidence Point 2: {Description with metrics} _(cite source filing in FR-050 format at runtime)_
-- Management Commentary: {Relevant quote or summary} _(cite source filing in FR-050 format at runtime)_
+- Evidence Point 1: {Description with metrics} _(cite source filing in standard agentii citation format at runtime)_
+- Evidence Point 2: {Description with metrics} _(cite source filing in standard agentii citation format at runtime)_
+- Management Commentary: {Relevant quote or summary} _(cite source filing in standard agentii citation format at runtime)_
 
 **Status Rationale**:
 {Explanation of why this status was assigned based on evidence}
@@ -334,7 +334,7 @@ For each inorganic activity category, determine:
 - **Impact Assessment**: Factor-in / On-going / Unclear
   - {Explanation of impact assessment}
   - {Revenue contribution, synergies, integration status}
-- **Sources**: _(cite source filing in FR-050 format at runtime)_, _(cite source filing in FR-050 format at runtime)_
+- **Sources**: _(cite source filing in standard agentii citation format at runtime)_, _(cite source filing in standard agentii citation format at runtime)_
 
 #### Transaction 2: {Name}
 {Repeat structure for each transaction}
@@ -418,32 +418,32 @@ Focus on:
 **Current Progress**:
 
 #### Organizational Integration
-- Evidence Point 1: {Leadership retention, employee metrics} _(cite source filing in FR-050 format at runtime)_
-- Evidence Point 2: {Organizational structure changes} _(cite source filing in FR-050 format at runtime)_
+- Evidence Point 1: {Leadership retention, employee metrics} _(cite source filing in standard agentii citation format at runtime)_
+- Evidence Point 2: {Organizational structure changes} _(cite source filing in standard agentii citation format at runtime)_
 
 #### Systems and Operations
-- Evidence Point 1: {IT integration status, system cutover milestones} _(cite source filing in FR-050 format at runtime)_
-- Evidence Point 2: {Process harmonization progress} _(cite source filing in FR-050 format at runtime)_
+- Evidence Point 1: {IT integration status, system cutover milestones} _(cite source filing in standard agentii citation format at runtime)_
+- Evidence Point 2: {Process harmonization progress} _(cite source filing in standard agentii citation format at runtime)_
 
 #### Commercial Integration
-- Evidence Point 1: {Customer retention metrics} _(cite source filing in FR-050 format at runtime)_
-- Evidence Point 2: {Cross-sell or revenue synergy progress} _(cite source filing in FR-050 format at runtime)_
+- Evidence Point 1: {Customer retention metrics} _(cite source filing in standard agentii citation format at runtime)_
+- Evidence Point 2: {Cross-sell or revenue synergy progress} _(cite source filing in standard agentii citation format at runtime)_
 
 #### Synergy Realization
-- Revenue Synergies: {Quantified amount vs. target} _(cite source filing in FR-050 format at runtime)_
-- Cost Synergies: {Quantified amount vs. target} _(cite source filing in FR-050 format at runtime)_
+- Revenue Synergies: {Quantified amount vs. target} _(cite source filing in standard agentii citation format at runtime)_
+- Cost Synergies: {Quantified amount vs. target} _(cite source filing in standard agentii citation format at runtime)_
 - Total Synergies: {$ realized YTD vs. full-year or cumulative target}
 
 #### Financial Performance
-- Revenue Contribution: {Acquired business revenue in quarter} _(cite source filing in FR-050 format at runtime)_
-- Margin Impact: {Accretion/dilution to margins} _(cite source filing in FR-050 format at runtime)_
-- EPS Impact: {Accretive/dilutive vs. guidance} _(cite source filing in FR-050 format at runtime)_
+- Revenue Contribution: {Acquired business revenue in quarter} _(cite source filing in standard agentii citation format at runtime)_
+- Margin Impact: {Accretion/dilution to margins} _(cite source filing in standard agentii citation format at runtime)_
+- EPS Impact: {Accretive/dilutive vs. guidance} _(cite source filing in standard agentii citation format at runtime)_
 
 **Management Commentary**:
-{Relevant quotes or summaries from earnings call} _(cite source filing in FR-050 format at runtime)_
+{Relevant quotes or summaries from earnings call} _(cite source filing in standard agentii citation format at runtime)_
 
 **Analyst Perspective** (if available):
-{Sell-side view on integration execution} _(cite source filing in FR-050 format at runtime)_
+{Sell-side view on integration execution} _(cite source filing in standard agentii citation format at runtime)_
 
 **Status Rationale**:
 {Explanation of why this status was assigned based on evidence across dimensions}
@@ -461,7 +461,7 @@ Focus on:
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include per FR-020a: section headings, expected content per section, citation density (≥1 per 200 words).*
+*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
 
 ## Error Handling
 

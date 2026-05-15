@@ -61,9 +61,9 @@ structure_hints:
 
   {If Presence=Yes, provide detailed description}
 
-  - Initiative 1: {Description} _(cite source filing in FR-050 format at runtime)_
+  - Initiative 1: {Description} _(cite source filing in standard agentii citation format at runtime)_
 
-  - Initiative 2: {Description} _(cite source filing in FR-050 format at runtime)_
+  - Initiative 2: {Description} _(cite source filing in standard agentii citation format at runtime)_
 
 
   {Repeat for each dimension with Presence=Yes}

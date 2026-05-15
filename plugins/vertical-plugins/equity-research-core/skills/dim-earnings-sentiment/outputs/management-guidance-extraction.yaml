@@ -21,9 +21,9 @@ structure_hints:
   \ <X.XX-amount> |\n| EBITDA | <XXXM-amount> | <XXXM-amount> |\n| **Adj. EBITDA**\
   \ | <XXXM-amount> | <XXXM-amount> |\n| Net Income | <XXXM-amount> | <XXXM-amount>\
   \ |\n\n**Guidance Details**:\n- Revenues (Quarter): {<XXX-amount>-XXXM range \u2192\
-  \ midpoint <XXXM-amount>} _(cite source filing in FR-050 format at runtime)_\n-\
+  \ midpoint <XXXM-amount>} _(cite source filing in standard agentii citation format at runtime)_\n-\
   \ Revenues (FY0): {<XXX-amount>-XXXM range \u2192 midpoint <XXXM-amount>} _(cite\
-  \ source filing in FR-050 format at runtime)_\n{Repeat for each metric}\n\n**Guidance\
+  \ source filing in standard agentii citation format at runtime)_\n{Repeat for each metric}\n\n**Guidance\
   \ Notes**:\n- All values represent midpoint of ranges where applicable\n- Guidance\
   \ provided by management on {earnings date}\n- N/A indicates no guidance provided\
   \ for that metric\n"

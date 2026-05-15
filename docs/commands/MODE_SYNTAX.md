@@ -1,6 +1,6 @@
 # Slash-command Mode & Peer Syntax (v1.0 frozen)
 
-Canonical reference for invoking `agentii-investment-intelligence` slash commands across Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork. Frozen at v1.0 per spec 023 FR-052b + Round 4 Q12.
+Canonical reference for invoking `agentii-investment-intelligence` slash commands across Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork. Frozen at v1.0 per spec 023 the mode-addressability syntax + Round 4 Q12.
 
 ## Invocation Forms
 
@@ -70,7 +70,7 @@ Basket-positional invocation `/agentii:<command> LLY,NVO,PFE` is parseable today
 
 ```
 /agentii:dcf LLY                                  # 5-year DCF, default assumptions
-/agentii:dcf LLY --mode=10-year-extended          # 10-year DCF per spec 023 FR-017a optimization
+/agentii:dcf LLY --mode=10-year-extended          # 10-year DCF per spec 023 the models-and-pitches vertical optimization
 /agentii:comps LLY --peers=NVO,PFE,MRK            # comps-analysis: required_peers
 /agentii:pitch-deck LLY --mode=ic-memo            # specific deliverable kind
 ```
@@ -86,10 +86,10 @@ This syntax works identically across:
 - **OpenClaw** — `openclaw add @agentii/investment-intelligence`
 - **Claude Cowork** — managed-agent cookbook + steering-examples (primary marketplace target)
 
-Validated by `scripts/validate-mode-syntax.py` (FR-052b CI gate).
+Validated by `scripts/validate-mode-syntax.py` (the mode-addressability syntax CI gate).
 
 ## See Also
 
-- [Multi-Ticker Semantics (FR-054)](../../specs/023-agentii-financial-analysis/spec.md#fr-054)
+- [Multi-Ticker Semantics (the multi-ticker semantics contract)](../../specs/023-agentii-financial-analysis/spec.md#fr-054)
 - [Mode Naming Convention (Round 3 Q12)](../../specs/023-agentii-financial-analysis/spec.md#clarifications)
 - [Per-skill `essentials_modes` declaration](../../contracts/agentii-config.schema.json)

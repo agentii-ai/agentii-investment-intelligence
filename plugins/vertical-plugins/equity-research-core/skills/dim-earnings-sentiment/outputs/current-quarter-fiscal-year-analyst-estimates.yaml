@@ -22,10 +22,10 @@ structure_hints:
   \ <X.XX-amount> |\n| EBITDA | <XXXM-amount> | <XXXM-amount> |\n| **Adj. EBITDA**\
   \ | <XXXM-amount> | <XXXM-amount> |\n| Net Income | <XXXM-amount> | <XXXM-amount>\
   \ |\n\n**Sources and Calculations**:\n- Revenues (Quarter): Mean of MS: <XXXM-amount>,\
-  \ Jefferies: <XXXM-amount> _(cite source filing in FR-050 format at runtime)_, _(cite\
-  \ source filing in FR-050 format at runtime)_\n- Revenues (FY0): Mean of MS: <XXXM-amount>,\
-  \ Jefferies: <XXXM-amount> _(cite source filing in FR-050 format at runtime)_, _(cite\
-  \ source filing in FR-050 format at runtime)_\n{Repeat for each metric}\n\n**Notes**:\n\
+  \ Jefferies: <XXXM-amount> _(cite source filing in standard agentii citation format at runtime)_, _(cite\
+  \ source filing in standard agentii citation format at runtime)_\n- Revenues (FY0): Mean of MS: <XXXM-amount>,\
+  \ Jefferies: <XXXM-amount> _(cite source filing in standard agentii citation format at runtime)_, _(cite\
+  \ source filing in standard agentii citation format at runtime)_\n{Repeat for each metric}\n\n**Notes**:\n\
   - All estimates represent analyst consensus as of {date}\n- Estimates averaged across\
   \ available sources\n- N/A indicates metric not disclosed by any source\n"
 validation_rules:

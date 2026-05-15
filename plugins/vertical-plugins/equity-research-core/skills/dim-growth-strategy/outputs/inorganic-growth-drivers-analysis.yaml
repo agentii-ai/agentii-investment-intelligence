@@ -40,8 +40,8 @@ structure_hints:
   - **Financial Terms**: {Purchase price, structure, ownership %}\n- **Strategic Rationale**:\
   \ {Why this transaction supports growth strategy}\n- **Impact Assessment**: Factor-in\
   \ / On-going / Unclear\n  - {Explanation of impact assessment}\n  - {Revenue contribution,\
-  \ synergies, integration status}\n- **Sources**: _(cite source filing in FR-050\
-  \ format at runtime)_, _(cite source filing in FR-050 format at runtime)_\n\n####\
+  \ synergies, integration status}\n- **Sources**: _(cite source filing in standard agentii citation\
+  \ format at runtime)_, _(cite source filing in standard agentii citation format at runtime)_\n\n####\
   \ Transaction 2: {Name}\n{Repeat structure for each transaction}\n\n{Repeat for\
   \ each category with Presence=Yes}\n\n**Key Observations**:\n- {Total count of inorganic\
   \ activities across all categories}\n- {Dominant inorganic growth approach: M&A,\
