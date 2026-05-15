@@ -1,0 +1,213 @@
+{
+  "audit_table_total": 48,
+  "dims": {
+    "dim-1": {
+      "essentials_budget": 2,
+      "essentials_modes": [
+        "business-model-offerings-analysis",
+        "distribution-channels-go-to-market-analysis"
+      ],
+      "inputs": {
+        "1_1.yaml": "7b0bdb916abb90fe6484eb82986603567fbbea141f5ab634e774a59ee6b436a0",
+        "1_2.yaml": "31fb4a0ca03566b976aea06300e2f65727a107198d89902bbf770f7d945c3565",
+        "1_3.yaml": "fa1645b3b05e9013adb365710d2e5c61f852506e04f3e5d218538088474f2fd9",
+        "1_4.yaml": "8a5ff7d8402ceaff8e099bb0b240af21d8e9532565d5330b8c338c4ee9fad85f",
+        "1_5.yaml": "249a624327bd5000f19a7e6d55238f731ff7567d27d61cb84322a9fb57c737da"
+      },
+      "modes": [
+        "business-model-offerings-analysis",
+        "distribution-channels-go-to-market-analysis",
+        "management-team-leadership-analysis",
+        "market-sizing-growth-analysis",
+        "revenue-composition-concentration-risk-analysis"
+      ],
+      "mts": "single_target",
+      "skill": "dim-recent-quarter-performance",
+      "source_yaml_count": 5
+    },
+    "dim-2": {
+      "essentials_budget": 6,
+      "essentials_modes": [
+        "direct-competitor-identification-and-analysis",
+        "indirect-competition-and-substitution-threat-analysis"
+      ],
+      "inputs": {
+        "2_1_1.yaml": "92b421940ff7033ac5538f6590dca68c5a68e85d373fa60e5a4854419744a331",
+        "2_1_2.yaml": "94fa082c6cce2083948f208d323b5ebfe87b51d8c44ce53900d2ccb395483225",
+        "2_1_3.yaml": "298fbfec9632c5a7894d9ffa3566eb2a831d6c2182fc9ec8936ab69fe9bd8190",
+        "2_1_4.yaml": "1ae8807719f5f38597482650393ae044d886e5819fc7f92de0bc8eee1d37f698",
+        "2_1_5.yaml": "7e52fe227424bd5bddc0c3b02568b83d14e3c8863997fc87bfe064bf7440a5b2",
+        "2_1_6.yaml": "ae1b5c961c6f1e57f6e82d83bba7074001e2ec29599a83cb05b93bb3f2b89d58",
+        "2_1_7.yaml": "27d902813c224a9e6635c37fdeb8066bf70adf33ca1f576af4b600adabb8c45e",
+        "2_2.yaml": "e60741c21c379a18da070fff3b0793e65e359393557f23d781eda2b957c29ebd"
+      },
+      "modes": [
+        "direct-competitor-identification-and-analysis",
+        "forward-looking-market-share-outlook-and-strategic-assessment",
+        "indirect-competition-and-substitution-threat-analysis",
+        "market-concentration-and-competitive-positioning-analysis",
+        "market-share-capture-efficiency-and-execution-analysis",
+        "market-share-dynamics-analysis",
+        "market-share-evolution-and-competitive-benchmarking",
+        "market-share-growth-drivers-and-retention-risk-analysis"
+      ],
+      "mts": "target_with_optional_peers",
+      "skill": "dim-competitive-landscape",
+      "source_yaml_count": 8
+    },
+    "dim-3": {
+      "essentials_budget": 9,
+      "essentials_modes": [
+        "growth-strategy-assessment",
+        "organic-growth-drivers-analysis"
+      ],
+      "inputs": {
+        "3_1.yaml": "140e06dd2f94bab7605e84e7104274df2078d18f6ab5e7c7e4b113b5972689fd",
+        "3_2_1.yaml": "8e2191e4669e09e663c46ab53c7aa0938a19032ec51f7c97f8735da282c81f09",
+        "3_2_2.yaml": "2c3dbf784f5702831d1a9ee123c24ffbf19f7770834ca7ca02e90fc8f144b3b0",
+        "3_3_1.yaml": "a46e1b52744c8cadc0930c994f2c9d14826d1b1a3d618b50a2bdcf4da5349f09",
+        "3_3_2.yaml": "3269f76df00cbf48a419f60dc90a55fc92be6b41ee9471d9dba98c6717e0ace9"
+      },
+      "modes": [
+        "growth-strategy-assessment",
+        "inorganic-growth-driver-execution-assessment",
+        "inorganic-growth-drivers-analysis",
+        "organic-growth-driver-execution-assessment",
+        "organic-growth-drivers-analysis"
+      ],
+      "mts": "single_target",
+      "skill": "dim-growth-strategy",
+      "source_yaml_count": 5
+    },
+    "dim-4": {
+      "essentials_budget": 12,
+      "essentials_modes": [
+        "evaluate-company-s-exposure-to-major-secular-technology-trends",
+        "evaluate-company-s-strategic-position-within-identified-technology-trends"
+      ],
+      "inputs": {
+        "4_1_optimized.yaml": "b6c46fd22b2cc9b42103f371f7b2d8a7440db1d67e06f2323ac67b7c6fad1e06",
+        "4_2_1_optimized.yaml": "8f4ee953b1d90021b793e48637be9448b1c485a21bbc7ca8746524bd9d4fdd48",
+        "4_2_2_optimized.yaml": "9b1e6ca6749c312d13fed03b608796bd2a2281c2851bb1135d7c19fdc82cb659",
+        "4_2_3_optimized.yaml": "2cc84b64bde398f9e1a57983fe0c49b91e1806973e3197d616beee5ceab21322",
+        "4_2_4_optimized.yaml": "80edf22438ec00ed5c614b21e8a737ccd68daa79a73a10c105a8d519d2de4abe",
+        "4_2_optimized.yaml": "f5aa0417b8b11e7dc1939c74de6a9b414d932a87a9dde0d731fc140975650697",
+        "4_3_optimized.yaml": "0919a5fc9647dd30edc2cc09a2bd9df4ffe37e38d903c08bf62dbe5cfc9ef2b0",
+        "4_4_optimized.yaml": "8bc2ef242ceb2c23c7b58e7682a8b68853b1e221f10d28e3e0b011f4bedd43f7"
+      },
+      "modes": [
+        "assess-the-significance-of-technology-trends-in-current-investment-debate-and-market-perception",
+        "deep-dive-ai-trend-assessment-for-companies-with-identified-ai-exposure",
+        "deep-dive-analysis-for-quantum-computing-renewable-energy-and-other-emerging-tech-trends",
+        "deep-dive-data-value-trend-assessment-for-companies-with-identified-data-exposure",
+        "deep-dive-ev-trend-assessment-for-companies-with-identified-ev-exposure",
+        "evaluate-company-s-capacity-and-readiness-to-invest-in-technology-transformation",
+        "evaluate-company-s-exposure-to-major-secular-technology-trends",
+        "evaluate-company-s-strategic-position-within-identified-technology-trends"
+      ],
+      "mts": "target_with_optional_peers",
+      "skill": "dim-secular-tech-trends",
+      "source_yaml_count": 8
+    },
+    "dim-5": {
+      "essentials_budget": 5,
+      "essentials_modes": [
+        "performance-stagnation-detection-and-classification",
+        "operational-execution-progress-and-effectiveness-assessment"
+      ],
+      "inputs": {
+        "5_1.yaml": "2b0500faa57529508d5486f1593e6fa11f965269547d29f7a356bc0a6caae5b1",
+        "5_2_1.yaml": "97f284954145d1394bb57d9f3ed8e232f92250def0cd289a28a0a7cfdf6a7fc0",
+        "5_2_1_1.yaml": "071c0d5c19dd119acf99390b5ea3017437311f8075429a1f1ee9a82c3db8bddb",
+        "5_2_2.yaml": "d2936430f037d650c443e5c26e34724aa7098c17f62a2a02222655cbdfca98ea",
+        "5_2_3.yaml": "a32e5790b0c78dc3736b623218220726a3b2a1c9f5176e483416b25b0e82f3eb",
+        "5_2_3_1.yaml": "7d4d52ab32de8128df082b5ef68dae669eb4bb914515adbc0fc31c2a5b76af67",
+        "5_3.yaml": "2421e231dc45d7305f54a9b29e83d8e481ea92bf8b2a109e838488ccd1ae5653",
+        "5_4_1.yaml": "119229ae97cfdf23d2bea2af99bd6622abf01ba45f82d8b967ea06a39f39edf7",
+        "5_4_2.yaml": "e8c92c140ab423366d4bd7a14ab31ac31ee6f756609be99775cfb68cabff16c0"
+      },
+      "modes": [
+        "financial-turnaround-metrics-and-performance-validation",
+        "growth-catalyst-execution-monitoring-and-progress-assessment",
+        "growth-catalyst-identification-and-assessment",
+        "leadership-change-impact-analysis",
+        "new-product-performance-evaluation-and-turnaround-contribution-assessment",
+        "operational-execution-progress-and-effectiveness-assessment",
+        "performance-stagnation-detection-and-classification",
+        "strategic-initiative-execution-status-and-effectiveness-assessment",
+        "strategic-leadership-impact-assessment-and-financial-projection"
+      ],
+      "mts": "target_with_required_peers",
+      "skill": "dim-turnaround-stagnation",
+      "source_yaml_count": 9
+    },
+    "dim-6": {
+      "essentials_budget": 0,
+      "essentials_modes": [
+        "general-risk-factors-identification-assessment",
+        "technology-disruption-risk-analysis"
+      ],
+      "inputs": {
+        "6.yaml": "4753f6d5360e86184a41881df29003ed8ba5109be9755eae732c5fc5f01fd0a0",
+        "6_1.yaml": "50c6fcb3267bb7fa36e2e6e67eef647498e8e8ab85d7ed7ba259ce8652254b9c",
+        "6_4.yaml": "81ede95d1cdd8f6c3767929220a1ccd848dce0e55c32d188413268feaf466743",
+        "6_5.yaml": "9eb790f6cdc31f3b698d9a60776e991292034986df81034570ec1efa2383b69d"
+      },
+      "modes": [
+        "external-shock-macro-risk-evaluation",
+        "general-risk-factors-identification-assessment",
+        "regulatory-compliance-risk-assessment",
+        "technology-disruption-risk-analysis"
+      ],
+      "mts": "single_target",
+      "skill": "dim-risk-analysis",
+      "source_yaml_count": 4
+    },
+    "dim-7": {
+      "essentials_budget": 7,
+      "essentials_modes": [
+        "analyst-sentiment-assessment-current-quarter",
+        "fy0-analyst-estimates-extraction"
+      ],
+      "inputs": {
+        "7_1.yaml": "6bdbf63a50ea164fc4d814a1a2d3ad8d45bea7df8c28585081fdc094e4205e01",
+        "7_2.yaml": "0a7a1e699839e62f8f75a4ac4c78fe9c171d73355fec76b47447f7859b535ae1",
+        "7_3_1.yaml": "4a8c15521a9fdd5aff442d8afa392801d08bd7ee3d8662f2bba3dd159ad5626d",
+        "7_3_2.yaml": "a0d3981c10011955583ef900f7d32682f87290c9d8c04c4b74fd4c006ed7e95d",
+        "7_3_3.yaml": "be071e341b23117c9cdf26c4ce307e810bb05507a771fb17b9bed7300015363e",
+        "7_3_4.yaml": "25c5088783ea353e4f320d68bdd646c810ef0abde83da2aca2313137601b4639"
+      },
+      "modes": [
+        "analyst-sentiment-assessment-current-quarter",
+        "current-quarter-estimates-vs-guidance",
+        "current-quarter-fiscal-year-analyst-estimates",
+        "full-year-estimates-vs-guidance",
+        "fy0-analyst-estimates-extraction",
+        "management-guidance-extraction"
+      ],
+      "mts": "single_target",
+      "skill": "dim-earnings-sentiment",
+      "source_yaml_count": 6
+    },
+    "dim-8": {
+      "essentials_budget": 0,
+      "essentials_modes": [
+        "analyst-valuation-methods-comparison"
+      ],
+      "inputs": {
+        "8_1.yaml": "8a167bdcba588ff4cbcf6d902dd5fa1c977a3b5ff726471660c0329c34df539e",
+        "8_1_1.yaml": "06abd45372a3737b56b8c456b6485aa37df86fdf39739caafd75116014622e01",
+        "8_1_2.yaml": "deb971a89870fd8c9c8836f2c6b96e8be707aeab652c3f747b89d3e0086d7862"
+      },
+      "modes": [
+        "analyst-valuation-methods-comparison",
+        "comprehensive-valuation-summary-analysis",
+        "valuation-assumptions-extraction"
+      ],
+      "mts": "single_target",
+      "skill": "dim-valuation-methods",
+      "source_yaml_count": 3
+    }
+  },
+  "tool_map_version": "1.0.0"
+}

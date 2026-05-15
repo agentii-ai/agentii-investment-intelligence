@@ -1,0 +1,47 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 7
+mode_slug: full-year-estimates-vs-guidance
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- "- **structure**: ## Full-Year Analyst Estimates vs. Management Guidance\n\n**Fiscal\
+  \ Year**: FY{Year} (ending {month/day/year})\n**Data as of**: {current date}\n\n\
+  **Data Sources**:\n- Analyst Estimates (FY0): {MS and Jefferies previews, dates}\n\
+  - Management Guidance (FY0): {8-K from last earnings, date}\n\n| **Key Financials**\
+  \ | **Analyst Estimates** | **Management Guidance** | **Variance** | **% Var** |\n\
+  |:-------------------|:---------------------:|:-----------------------:|:------------:|:---------:|\n\
+  | Revenues | <XXXM-amount> | <XXXM-amount> | +<XXM-amount> | +X.X% |\n| EPS (Non-GAAP)\
+  \ | <X.XX-amount> | <X.XX-amount> | +$0.XX | +X.X% |\n| EBITDA | <XXXM-amount> |\
+  \ <XXXM-amount> | +<XXM-amount> | +X.X% |\n| **Adj. EBITDA** | <XXXM-amount> | <XXXM-amount>\
+  \ | -<XXM-amount> | -X.X% |\n| Net Income | <XXXM-amount> | <XXXM-amount> | $0M\
+  \ | 0.0% |\n\n**Variance Analysis**:\n\n### Metrics Above Guidance\n{For each metric\
+  \ with +variance > 5%}:\n- **{Metric}**: Analysts {X}% above guidance\n  - Analyst\
+  \ rationale: {Key drivers from preview reports} _(cite source filing in FR-050 format\
+  \ at runtime)_\n  - Implied upside: <XXM> or <X.XX> per share\n\n### Metrics Below\
+  \ Guidance\n{For each metric with -variance > 5%}:\n- **{Metric}**: Analysts {X}%\
+  \ below guidance\n  - Analyst concerns: {Key reasons from preview reports} _(cite\
+  \ source filing in FR-050 format at runtime)_\n  - Potential downside: <XXM> or\
+  \ <X.XX> per share\n\n### Metrics In-Line (\xB12%)\n{List metrics with minimal variance}\n\
+  \n**Overall Assessment**:\n{Summary paragraph assessing whether analysts are generally\
+  \ constructive,\nin-line, or cautious relative to management guidance. Discuss implications\n\
+  for potential guidance revisions in upcoming earnings.}\n\n**Strategic Implications**:\n\
+  - **For Investors**: {What variance pattern suggests about potential outcomes}\n\
+  - **Guidance Outlook**: {Likelihood of guidance raise/lower/maintain based on variance}\n\
+  - **Key Drivers of Variance**: {Top 2-3 factors explaining estimate vs. guidance\
+  \ delta}\n"
+- '- **variance_significance**:'
+- '  - in_line'
+- '  - material'
+- '  - moderate'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

@@ -1,0 +1,82 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 3
+mode_slug: organic-growth-drivers-analysis
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **quality_standards**:'
+- '  - citation_discipline'
+- '  - evidence_requirements'
+- '  - presence_determination'
+- '  - temporal_accuracy'
+- '- **structure**: ## Organic Growth Drivers Analysis
+
+
+  **Analysis Period**: {Specify fiscal quarters analyzed, e.g., "2024 Q1-Q2"}
+
+
+  **Data Sources**:
+
+  - Most Recent 10-K: {Filing date}
+
+  - Quarterly Materials: {List earnings calls, 10-Qs analyzed}
+
+  - Sell-Side Research: {List analyst reports reviewed}
+
+
+  **Growth Driver Assessment**:
+
+
+  | Dimension | Presence | Summary of Evidence | Source(s) |
+
+  |:----------|:---------|:-------------------|:----------|
+
+  | Product | Yes/No/Nil | {Brief description of initiatives} | {Citations} |
+
+  | Market | Yes/No/Nil | {Brief description of initiatives} | {Citations} |
+
+  | Customer Retention | Yes/No/Nil | {Brief description of initiatives} | {Citations}
+  |
+
+  | Pricing | Yes/No/Nil | {Brief description of initiatives} | {Citations} |
+
+  | Sales & Channel | Yes/No/Nil | {Brief description of initiatives} | {Citations}
+  |
+
+  | Marketing | Yes/No/Nil | {Brief description of initiatives} | {Citations} |
+
+
+  **Detailed Evidence**:
+
+
+  ### Product
+
+  {If Presence=Yes, provide detailed description}
+
+  - Initiative 1: {Description} _(cite source filing in FR-050 format at runtime)_
+
+  - Initiative 2: {Description} _(cite source filing in FR-050 format at runtime)_
+
+
+  {Repeat for each dimension with Presence=Yes}
+
+
+  **Key Observations**:
+
+  - {Synthesize overall organic growth approach}
+
+  - {Note any patterns or emphasis across dimensions}
+
+  '
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

@@ -1,0 +1,27 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 6
+mode_slug: external-shock-macro-risk-evaluation
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **citation_required**: True'
+- '- **evidence_standard**: institutional_grade'
+- '- **format**: external_risk_assessment'
+- '- **structure**:'
+- '  - executive_summary'
+- '  - external_shock_analysis'
+- '  - financial_sensitivity_analysis'
+- '  - risk_management_assessment'
+- '  - vulnerability_analysis'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

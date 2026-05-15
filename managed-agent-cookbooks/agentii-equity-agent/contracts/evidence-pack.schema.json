@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentii.ai/schemas/v1/evidence-pack.schema.json",
+  "title": "Evidence Pack (v1.0 frozen)",
+  "description": "Inter-subagent data artifact produced by retrieval-subagent and consumed by analytical/bi/visualization subagents. Frozen at v1.0 per spec 023 FR-046b. Models the 'data-puller output_schema' pattern from financial-services/managed-agent-cookbooks/model-builder/subagents/data-puller.yaml.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["spec_version", "task_id", "tickers", "time_window", "sources", "coverage_attestation"],
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version. Must be '1.0' at v1.0. Any drift raises AGENTII_SPEC_VERSION_MISMATCH (failure-policy.yaml)."
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^task_[a-z0-9_-]+$",
+      "description": "Caller-assigned task identifier; included in telemetry events for FR-053 correlation."
+    },
+    "tickers": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[A-Z0-9.-]{1,10}$" },
+      "minItems": 1,
+      "maxItems": 11,
+      "description": "Primary ticker first, then peers (max 10 per FR-054 / Round 3 Q11). Order is significant."
+    },
+    "primary_ticker": {
+      "type": "string",
+      "description": "Convenience accessor for tickers[0]. MUST equal tickers[0] when present."
+    },
+    "time_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "format": "date" },
+        "end": { "type": "string", "format": "date" },
+        "fiscal_year_anchor": { "type": "integer", "minimum": 2000, "maximum": 2100 }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "citation_label"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["filing", "xbrl", "transcript", "sell_side", "news"] },
+          "url": { "type": "string", "format": "uri" },
+          "agentii_uri": {
+            "type": "string",
+            "pattern": "^agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+$",
+            "description": "Canonical FR-050 citation target."
+          },
+          "ticker": { "type": "string" },
+          "accession": { "type": "string" },
+          "form_type": { "type": "string" },
+          "page_range": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1 },
+            "minItems": 1,
+            "maxItems": 2,
+            "description": "[start_page] or [start_page, end_page]"
+          },
+          "snippet": { "type": "string", "maxLength": 4000 },
+          "citation_label": {
+            "type": "string",
+            "pattern": "^\\[\ud83d\udcc4 [^\\]]+ p\\.\\d+\\]\\(agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+\\)$",
+            "description": "Pre-rendered FR-050 v1.0 citation label. MUST match validate-citations.py CANONICAL_RE."
+          },
+          "retrieved_at": { "type": "string", "format": "date-time" },
+          "page_outline": {
+            "type": "array",
+            "minItems": 0,
+            "description": "Optional Layer 2 page map metadata — structured JSON from read_source_outline for pages scanned and selected. Gives downstream sub-agents document structure context without re-fetching the outline. Pure API-level enrichment. Companion evidence-digest.md carries a flattened text rendering in agno Python format (page{idx}: description, keywords) for LLM consumption.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["page_no", "description", "keywords"],
+              "properties": {
+                "page_no": { "type": "integer", "minimum": 1 },
+                "description": { "type": "string", "description": "One-sentence LLM-extracted summary of page content" },
+                "keywords": { "type": "array", "items": { "type": "string" } },
+                "table_titles": { "type": "array", "items": { "type": "string" }, "description": "Optional — titles of tables present on the page" },
+                "views": { "type": "array", "items": { "type": "string" }, "description": "Optional — analytical lens applied" },
+                "drivers": { "type": "array", "items": { "type": "string" }, "description": "Optional — business drivers discussed" },
+                "metrics": { "type": "array", "items": { "type": "string" }, "description": "Optional — financial metrics present on the page" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "xbrl_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["concept", "value", "period", "source_accession"],
+        "properties": {
+          "concept": { "type": "string", "description": "XBRL element name, e.g. us-gaap:Revenues" },
+          "value": { "type": ["number", "string"] },
+          "unit": { "type": "string" },
+          "period": { "type": "string", "description": "ISO period or duration" },
+          "ticker": { "type": "string" },
+          "source_accession": { "type": "string" },
+          "decimals": { "type": "integer" }
+        }
+      }
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "columns", "rows"],
+        "properties": {
+          "label": { "type": "string" },
+          "columns": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "rows": {
+            "type": "array",
+            "items": { "type": "array", "items": { "type": ["string", "number", "null"] } }
+          },
+          "source_citation": { "type": "string" }
+        }
+      }
+    },
+    "coverage_attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dimensions_covered", "gaps"],
+      "properties": {
+        "dimensions_covered": {
+          "type": "array",
+          "items": { "type": "string", "enum": [
+            "dim-1", "dim-2", "dim-3", "dim-4", "dim-5", "dim-6", "dim-7", "dim-8",
+            "bi", "industry", "modeling"
+          ] }
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["dimension", "reason"],
+            "properties": {
+              "dimension": { "type": "string" },
+              "reason": { "type": "string" },
+              "fiscal_period": { "type": "string", "description": "Optional — the fiscal period label (e.g., 'FY24') for search_cross_period partial failures per FR-063a. Only present when the gap is period-specific." },
+              "attempted_actions": { "type": "array", "items": { "type": "string" }, "description": "Optional — what was tried before declaring this gap per FR-063a. Empty if no actions were attempted." },
+              "suggested_remediation": { "type": "string" }
+            }
+          }
+        },
+        "auto_peers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Peer tickers auto-resolved per FR-054 target_with_optional_peers semantics; populated by retrieval-subagent when --peers= omitted."
+        },
+        "data_freshness": {
+          "type": "object",
+          "properties": {
+            "gold_pipeline_lock": { "type": "string", "format": "date-time" },
+            "completeness_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+          },
+          "description": "Per FR-018 — surfaces gold.launch_ticker_registry completeness."
+        }
+      }
+    }
+  }
+}

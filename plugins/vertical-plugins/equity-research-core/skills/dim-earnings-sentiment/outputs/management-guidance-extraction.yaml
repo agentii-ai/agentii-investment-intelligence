@@ -1,0 +1,33 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 7
+mode_slug: management-guidance-extraction
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- "- **structure**: ## Management Guidance \u2013 Current Quarter & Fiscal Year\n\n\
+  **Source Earnings Date**: {last earnings date}\n**Current Quarter**: Q{X} {Year}\n\
+  **Current Fiscal Year**: FY{Year}\n\n**Data Sources**:\n- SEC 8-K: {filing date}\n\
+  - Earnings Presentation: {title, date if applicable}\n\n| **Key Financials** | **Current\
+  \ Quarter Guidance** | **Current Fiscal Year Guidance (FY0)** |\n|:-------------------|:---------------------------:|:-------------------------------------:|\n\
+  | Revenues | <XXXM-amount> | <XXXM-amount> |\n| EPS (Non-GAAP) | <X.XX-amount> |\
+  \ <X.XX-amount> |\n| EBITDA | <XXXM-amount> | <XXXM-amount> |\n| **Adj. EBITDA**\
+  \ | <XXXM-amount> | <XXXM-amount> |\n| Net Income | <XXXM-amount> | <XXXM-amount>\
+  \ |\n\n**Guidance Details**:\n- Revenues (Quarter): {<XXX-amount>-XXXM range \u2192\
+  \ midpoint <XXXM-amount>} _(cite source filing in FR-050 format at runtime)_\n-\
+  \ Revenues (FY0): {<XXX-amount>-XXXM range \u2192 midpoint <XXXM-amount>} _(cite\
+  \ source filing in FR-050 format at runtime)_\n{Repeat for each metric}\n\n**Guidance\
+  \ Notes**:\n- All values represent midpoint of ranges where applicable\n- Guidance\
+  \ provided by management on {earnings date}\n- N/A indicates no guidance provided\
+  \ for that metric\n"
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

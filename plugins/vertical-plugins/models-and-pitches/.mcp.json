@@ -1,4 +1,6 @@
 {
+  "_doc": "Two MCP servers: 'agentii' data plane (replicated byte-identically from contracts/mcp-canonical.json per FR-010 / Round 4 Q15) and 'agentii-office' office plane (declared ONLY here per FR-040). The office plane authenticates via the same AGENTII_API_KEY (FR-045) but counts against a separate office_calls_per_day quota tier (spec-022 T093).",
+  "_tool_alias_map_doc": "Per FR-043a plugin-level binding: skills reference abstract tool names (xlsx.build, pptx.refresh, etc.); deployment manifests resolve them to concrete MCP tools. agent.yaml (managed-agent cookbook) and ~/.agentii/config.toml (agentii-cli) MAY override this mapping for alternate office backends.",
   "mcpServers": {
     "agentii": {
       "type": "http",
@@ -8,5 +10,13 @@
       "type": "http",
       "url": "https://mcp.agentii.ai/office/mcp"
     }
+  },
+  "tool_alias_map": {
+    "xlsx.build":    "agentii-office.xlsx_build",
+    "xlsx.recalc":   "agentii-office.xlsx_recalc",
+    "xlsx.evaluate": "agentii-office.xlsx_evaluate",
+    "xlsx.audit":    "agentii-office.xlsx_audit",
+    "pptx.build":    "agentii-office.pptx_build",
+    "pptx.refresh":  "agentii-office.pptx_refresh"
   }
 }

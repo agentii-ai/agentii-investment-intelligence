@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentii.ai/schemas/v1/failure-policy.schema.json",
+  "title": "Cookbook Failure Policy (v1.0)",
+  "description": "Schema for managed-agent-cookbooks/*/contracts/failure-policy.yaml per spec 023 FR-051 + FR-051a.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["spec_version", "failures"],
+  "properties": {
+    "spec_version": { "type": "string", "const": "1.0" },
+    "failures": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/FailureEntry" }
+    }
+  },
+  "$defs": {
+    "FailureEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "trigger", "action_1", "halt_error_code", "user_facing_message", "rationale"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "retrieval_gaps",
+            "analytical_context_exhausted",
+            "analytical_api_failure",
+            "audit_hardcode_fail",
+            "recalc_timeout",
+            "spec_version_mismatch"
+          ]
+        },
+        "trigger": { "type": "string", "minLength": 20 },
+        "action_1": { "$ref": "#/$defs/Action" },
+        "action_2": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/Action" }
+          ]
+        },
+        "halt_error_code": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^AGENTII_[A-Z_]+$" }
+          ]
+        },
+        "user_facing_message": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 20 }
+          ]
+        },
+        "rationale": { "type": "string", "minLength": 30 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "id": { "const": "audit_hardcode_fail" } } },
+          "then": {
+            "properties": {
+              "action_1": {
+                "properties": { "kind": { "const": "bounce_back" } },
+                "required": ["kind"]
+              }
+            },
+            "description": "FR-051a: audit_hardcode_fail MUST have action_1.kind = bounce_back and the max-1-bounce cap is enforced at runtime by the orchestrator, not the schema."
+          }
+        }
+      ]
+    },
+    "Action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["retry", "proceed_with_gaps", "chunk_by_ticker", "demote_model", "backoff_retry", "bounce_back", "safe_mode_retry", "halt_immediate"]
+        },
+        "detail": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string" }
+          ]
+        }
+      }
+    }
+  }
+}

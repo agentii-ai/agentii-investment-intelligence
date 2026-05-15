@@ -5,6 +5,7 @@
   "system_v2_7": {
     "_comment": "Maps tool names used in references/prompts/system_v2_7.py (the well-tested agentic long-range financial analysis prompt set) to spec-019 endpoint names that agentii-ai/apps/api/ exposes.",
     "fetch_financial_statement": "search_xbrl_facts",
+    "fetch_stock_info": "get_company_profile",
     "fetch_filtered_document_names": "list_sources",
     "fetch_document_outline": "read_source_outline",
     "fetch_document_chunk_content": "read_source_pages",
@@ -24,7 +25,8 @@
     "get_earnings_event": "get_earnings_calendar_event",
     "list_data_coverage": "list_coverage",
     "get_coverage_for_ticker": "get_ticker_coverage",
-    "list_knowledge_domains": "list_domains"
+    "list_knowledge_domains": "list_domains",
+    "knowledge_staff_task": "search_cross_period"
   },
   "upstream_fsi": {
     "_comment": "Maps upstream Daloopa/FactSet/S&P Global/Bloomberg/LSEG MCP connector tool references (used in anthropics/financial-services) to agentii equivalents backed by spec-019.",
@@ -68,5 +70,14 @@
     "_comment": "Reusable MCP health-check snippets for ## Preflight sections in SKILL.md. Both must complete in <2s.",
     "data_plane": "curl -s -o /dev/null -w \"%{http_code}\" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo \"UNREACHABLE\"",
     "office_plane": "curl -s -o /dev/null -w \"%{http_code}\" --max-time 2 https://mcp.agentii.ai/office/mcp/health 2>/dev/null || echo \"UNREACHABLE\""
+  },
+  "mcp_tool_descriptions": {
+    "_comment": "Protocol-sequence position guidance for the 5 critical-path three-layer tools per spec 023 FR-059a. Consumed by spec 019 MCP tools/list generation (FR-119). Descriptions use explicit 'AFTER X, BEFORE Y' language so agents discover the correct call sequence via tools/list without reading external documentation.",
+    "search_documents": "Layer 1 document discovery. Use FIRST before any page-level operation to identify candidate filings by ticker, form_type, date range. Returns page-based silver records with pre-computed labels for 8-K/6-K filings.",
+    "search_sec_filings": "Layer 1 filing metadata index for standardized SEC forms (10-K, 10-Q, 20-F, S-1, DEF 14A). Use to discover which filings exist for a ticker and fiscal period before content retrieval.",
+    "read_source_outline": "Layer 2 page map. Use AFTER document discovery (search_documents/search_sec_filings) and BEFORE read_source_pages. Returns ALL pages' description + keywords WITHOUT loading page_content — scan hundreds of pages' metadata to pinpoint the 3-5 relevant pages. Optional deeper labels (table_titles, views, drivers, metrics) available with include_deep_labels=true.",
+    "search_keyword_in_source": "Layer 2.5 optional keyword filter. Use AFTER read_source_outline and BEFORE read_source_pages to keyword-filter pages within a known document. Best for narrowing large documents (>50 pages) where the outline returns >10 candidate pages.",
+    "read_source_pages": "Layer 3 deep read. Use AFTER read_source_outline (and optionally search_keyword_in_source) to load full page_content with [[Table{idx}]] markers for ONLY the pages identified in prior layers. Each page carries a citation_id (UUID+page_index) for FR-050 citation traceability.",
+    "search_cross_period": "Wraps the full three-layer protocol (Layer 1→2→2.5→3) in parallel across fiscal periods. Use AFTER get_company_fiscal_calendar to resolve period format labels. Each period's sub-agent independently executes the three-layer protocol against its assigned period's documents. Results merged by fiscal_quarter tag."
   }
 }

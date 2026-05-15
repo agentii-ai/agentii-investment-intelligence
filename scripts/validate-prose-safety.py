@@ -22,7 +22,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-SHELL_VAR = re.compile(r"(?<![\\`])(\$\w+|\$\{[^}]+\}|\$\([^)]+\))")
+SHELL_VAR = re.compile(r"(?<![\\`])(\$[A-Za-z_]\w*|\$\{[^}]+\}|\$\([^)]+\))")
 ABS_PATH = re.compile(r"(?<![\w/])/(?:usr|home|var|etc|tmp)(?:/[\w.-]+)+")
 BACKTICK_SHELL = re.compile(r"`(npm|pip|pip3|brew|apt|apt-get|yum|gem|go)\s+\w+[^`]*`")
 DEP_FOLDER = re.compile(

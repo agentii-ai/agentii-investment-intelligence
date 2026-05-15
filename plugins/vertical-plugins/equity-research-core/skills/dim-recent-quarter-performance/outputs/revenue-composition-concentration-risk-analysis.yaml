@@ -1,0 +1,27 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 1
+mode_slug: revenue-composition-concentration-risk-analysis
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **citation_required**: True'
+- '- **evidence_standard**: institutional_grade'
+- '- **format**: comprehensive_risk_analysis'
+- '- **structure**:'
+- '  - concentration_risk_analysis'
+- '  - executive_summary'
+- '  - latest_quarter_breakdown'
+- '  - risk_matrix'
+- '  - temporal_analysis'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

@@ -19,7 +19,7 @@ Idempotent — skips files that already exist.
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 PLUGINS = ROOT / "plugins" / "vertical-plugins"
 
 # (vertical, skill_name, description_stub, mts, analog_note)

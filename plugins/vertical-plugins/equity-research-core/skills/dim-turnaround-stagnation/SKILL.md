@@ -1,9 +1,24 @@
 ---
+temporal_scope:
+  default_quarters: 8
+  max_quarters: 16
+  description: 'Turnaround/stagnation: 8 quarters for operational trend detection
+    and inflection-point analysis'
+allowed_tools:
+- search_xbrl_facts
+- list_xbrl_concepts
+- get_company_financials
+- get_company_profile
+- search_earnings_calendar
+- search_documents
+- read_source_outline
+- read_source_pages
 name: dim-turnaround-stagnation
-description: >-
-  Turnaround vs stagnation analysis: margin-recovery potential, leadership change impact, cost rationalization, and peer benchmarking for inflection signals.
 multi_ticker_semantics: target_with_required_peers
-parameter_free: false
+essentials_modes:
+- performance-stagnation-detection-and-classification
+- operational-execution-progress-and-effectiveness-assessment
+
 ---
 
 <!-- analog: thesis-tracker -->
@@ -34,9 +49,171 @@ parameter_free: false
 | lookback_years | 3 | Historical data window |
 | include_peers | false | Whether to surface a peer comparison block |
 
+<!-- BEGIN port-dimension-prompts methodology + modes -->
+
 ## Methodology
 
-*This is a Phase 1 scaffold. Full methodology authored in Phase 3/4/5 (see tasks.md).*
+### Retrieval Scope
+
+This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies per spec 023 FR-056.
+
+### Retrieval Strategy
+
+Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
+- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts.
+- Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
+- Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
+
+### Temporal Scope
+
+Default: 8 fiscal quarters (max 16). Turnaround/stagnation: 8 quarters for operational trend detection and inflection-point analysis
+
+### Tool Allowlist
+
+See frontmatter `allowed_tools` — 8 tools declared for this dimension.
+
+### Protocol
+
+This skill delivers analyst-grade output via 9 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+
+## Mode: performance-stagnation-detection-and-classification
+
+**Display name**: performance-stagnation-detection-and-classification
+
+<!-- ported_from: references/prompts/5/5_1.yaml -->
+
+### Objective
+
+Identify and extract indicators of performance stagnation across four key dimensions using comprehensive financial and operational analysis. Classify company performance status based on stagnation pattern severity to guide turnaround investment decisions.
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+- `search_xbrl_facts`
+
+## Mode: growth-catalyst-identification-and-assessment
+
+**Display name**: growth-catalyst-identification-and-assessment
+
+<!-- ported_from: references/prompts/5/5_2_1.yaml -->
+
+### Objective
+
+Identify and extract announcements related to new products, services, or business initiatives that could serve as major catalysts to reaccelerate growth trajectory or shift market sentiment for companies previously classified as [stagnant] or [potential turnaround candidate].
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+
+## Mode: growth-catalyst-execution-monitoring-and-progress-assessment
+
+**Display name**: growth-catalyst-execution-monitoring-and-progress-assessment
+
+<!-- ported_from: references/prompts/5/5_2_1_1.yaml -->
+
+### Objective
+
+Monitor and assess the execution progress of identified growth catalyst initiatives through trackable metrics, market sentiment analysis, and milestone evaluation to determine ramp-up effectiveness and future monitoring priorities.
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+
+## Mode: leadership-change-impact-analysis
+
+**Display name**: leadership-change-impact-analysis
+
+<!-- ported_from: references/prompts/5/5_2_2.yaml -->
+
+### Objective
+
+Identify and analyze senior leadership or key personnel changes that could materially shift company strategy, investor sentiment, or growth trajectory for companies previously classified as [stagnant] or [potential turnaround candidate].
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+
+## Mode: strategic-leadership-impact-assessment-and-financial-projection
+
+**Display name**: strategic-leadership-impact-assessment-and-financial-projection
+
+<!-- ported_from: references/prompts/5/5_2_3.yaml -->
+
+### Objective
+
+Analyze the speculated strategy or strategic shift tied to new executive appointments and assess the expected financial statement impacts based on the executive's track record and stated strategic focus areas.
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+
+## Mode: strategic-initiative-execution-status-and-effectiveness-assessment
+
+**Display name**: strategic-initiative-execution-status-and-effectiveness-assessment
+
+<!-- ported_from: references/prompts/5/5_2_3_1.yaml -->
+
+### Objective
+
+Monitor and assess the execution status and effectiveness of strategic initiatives announced or underway, focusing on transformation levers that could drive company repositioning and growth reset. Evaluate progress against stated timelines and measure impact through operational KPIs and market feedback.
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+
+## Mode: operational-execution-progress-and-effectiveness-assessment
+
+**Display name**: operational-execution-progress-and-effectiveness-assessment
+
+<!-- ported_from: references/prompts/5/5_3.yaml -->
+
+### Objective
+
+Identify and extract trackable metrics and qualitative signals that reflect the execution progress and early results of the company's turnaround strategies across five operational dimensions. Assess performance effectiveness and strategic momentum through comprehensive operational analysis.
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+
+## Mode: new-product-performance-evaluation-and-turnaround-contribution-assessment
+
+**Display name**: new-product-performance-evaluation-and-turnaround-contribution-assessment
+
+<!-- ported_from: references/prompts/5/5_4_1.yaml -->
+
+### Objective
+
+Identify and extract trackable metrics and indicators that evaluate the execution, market feedback, and impact of new products/services launched as growth catalysts. Determine whether performance aligns with analyst expectations or management's stated turnaround goals through comprehensive market reception analysis.
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+
+## Mode: financial-turnaround-metrics-and-performance-validation
+
+**Display name**: financial-turnaround-metrics-and-performance-validation
+
+<!-- ported_from: references/prompts/5/5_4_2.yaml -->
+
+### Objective
+
+Identify and extract quantitative financial metrics and supporting commentary that assess the financial outcomes of strategic turnaround initiatives. Determine whether financial performance metrics align with or outperform expectations from analyst models, consensus estimates, and management's stated turnaround goals.
+
+### Tool calls (rewritten via tool-name-map.json:system_v2_7)
+
+- `get_company_profile`
+- `search_keyword_in_source`
+- `search_xbrl_facts`
+
+<!-- END port-dimension-prompts methodology + modes -->
 
 ## Output Structure
 

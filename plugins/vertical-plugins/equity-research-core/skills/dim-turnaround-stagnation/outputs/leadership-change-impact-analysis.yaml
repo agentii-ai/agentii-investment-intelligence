@@ -1,0 +1,19 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 5
+mode_slug: leadership-change-impact-analysis
+multi_ticker_semantics: target_with_required_peers
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '(per parent SKILL.md ## Output Structure)'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

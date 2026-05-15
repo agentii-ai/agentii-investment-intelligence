@@ -4,7 +4,8 @@ Lint all plugin + managed-agent manifests and verify cross-file references.
 
 Ported and extended from anthropics/financial-services/scripts/check.py
 (Apache 2.0) with 14 mandatory checks per spec 023 FR-014a/b, FR-020a/b, FR-054, FR-010, FR-052b
-(checks 13 + 14 added per Round 4 Q12 + Q15):
+(checks 13 + 14 added per Round 4 Q12 + Q15; checks 19–22 added per Phase 10
+agentic-search mechanisms FR-056, FR-058, FR-060, FR-064):
 
   1.  YAML parse all *.yaml under managed-agent-cookbooks/.
   2.  JSON parse all plugin.json / marketplace.json / steering-examples.json /
@@ -24,6 +25,18 @@ Ported and extended from anthropics/financial-services/scripts/check.py
       contracts/mcp-canonical.json (FR-010, Round 4 Q15).
   14. Every command .md file in plugins/**/commands/ ends with the canonical
       MODE_SYNTAX.md footer link (FR-052b, Round 4 Q12).
+  15–18. (Reserved for FR-044 protocol, pre-publish gate, essentials.yaml, fingerprint drift)
+  19. Every SKILL.md has temporal_scope frontmatter block with valid
+      default_quarters (1-20), max_quarters (>= default_quarters, <= 20),
+      description (FR-058 / Phase 10 agentic search).
+  20. Every SKILL.md has allowed_tools list with valid canonical tool names,
+      office-plane tools only in models-and-pitches, structured_only skills
+      exclude document tools (FR-060 / Phase 10).
+  21. Every SKILL.md has three-layer protocol in ## Methodology OR
+      valid retrieval_scope opt-out in frontmatter (FR-056 / Phase 10).
+  22. Every SKILL.md ## Methodology has all 5 required subsections:
+      Retrieval Scope, Retrieval Strategy, Temporal Scope, Tool Allowlist,
+      Protocol (FR-064 / Phase 10 skill-methodology-template.md).
 
 Exit 0 if clean, 1 otherwise. Requires: pyyaml, jsonschema.
 """
@@ -290,6 +303,167 @@ for cmd in PLUGINS.glob("**/commands/*.md"):
             f"link (FR-052b / Round 4 Q12 — every slash command must reference "
             f"`../../../docs/commands/MODE_SYNTAX.md`)"
         )
+
+# --- Check 15-18: reserved for Phase 4 (FR-044 protocol), Phase 9 (pre-publish gate),
+#     Phase 3 essentials.yaml presence, and .upstream-pin.yaml fingerprint drift.
+
+# --- Check 19: temporal_scope frontmatter field (FR-058) --------------------
+for sk in SKILL_FILES:
+    try:
+        _, fm_text, _ = sk.read_text().split("---", 2)
+        meta = yaml.safe_load(fm_text) or {}
+    except (ValueError, yaml.YAMLError):
+        continue
+    ts = meta.get("temporal_scope")
+    if not isinstance(ts, dict):
+        err(
+            f"skill-temporal-scope: {rel(sk)}: missing 'temporal_scope' frontmatter block "
+            f"(FR-058 — must have default_quarters, max_quarters, description)"
+        )
+        continue
+    dq = ts.get("default_quarters")
+    mq = ts.get("max_quarters")
+    desc = ts.get("description")
+    if not isinstance(dq, (int, float)) or dq < 1 or dq > 20:
+        err(
+            f"skill-temporal-scope: {rel(sk)}: default_quarters={dq} invalid "
+            f"(must be 1-20) (FR-058)"
+        )
+    if not isinstance(mq, (int, float)) or mq < (dq or 1) or mq > 20:
+        err(
+            f"skill-temporal-scope: {rel(sk)}: max_quarters={mq} invalid "
+            f"(must be >= default_quarters and <= 20) (FR-058)"
+        )
+    if not isinstance(desc, str) or len(desc.strip()) < 10:
+        err(
+            f"skill-temporal-scope: {rel(sk)}: description missing or too short "
+            f"(FR-058 — human-readable rationale required)"
+        )
+
+# --- Check 20: allowed_tools frontmatter field (FR-060) ---------------------
+# Gather canonical MCP tool names from tool-name-map.json
+CANONICAL_TOOLS: set[str] = set()
+OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "pptx.build", "pptx.refresh"}
+DOCUMENT_TOOLS = {"read_source_outline", "read_source_pages", "search_keyword_in_source", "search_documents", "search_sec_filings"}
+# Full canonical surface: FR-011 MCP tools + office tools
+FR011_TOOLS = {
+    "search_clinical_trials", "search_xbrl_facts", "read_rendered_statement",
+    "search_documents", "search_sec_filings", "get_sec_filing",
+    "get_entity_knowledge", "read_source_pages", "search_keyword_in_source",
+    "read_source_outline", "list_sources", "get_company_profile",
+    "search_companies", "search_catalysts", "get_company_financials",
+    "search_insider_trades", "search_biotech_news", "search_medical_devices",
+    "get_homepage_summary", "search_earnings_calendar", "get_company_fiscal_calendar",
+    "list_xbrl_concepts", "search_cross_period", "search_ipos",
+    "get_stock_quote", "get_options_chain", "get_index_quotes",
+    "search_stock_movers", "search_faers_events", "list_coverage",
+    "get_ticker_coverage", "list_upcoming_earnings", "get_earnings_calendar_event",
+    "list_domains",
+}
+CANONICAL_TOOLS.update(FR011_TOOLS)
+CANONICAL_TOOLS.update(OFFICE_TOOLS)
+CANONICAL_TOOLS.update(DOCUMENT_TOOLS)
+# Also load from tool-name-map for any missing
+tnm_path = CONTRACTS / "tool-name-map.json"
+if tnm_path.exists():
+    try:
+        tnm = json.loads(tnm_path.read_text())
+        CANONICAL_TOOLS.update(tnm.get("system_v2_7", {}).values())
+        if isinstance(tnm.get("mcp_tool_descriptions"), dict):
+            CANONICAL_TOOLS.update(tnm["mcp_tool_descriptions"].keys())
+    except (json.JSONDecodeError, KeyError):
+        pass
+
+for sk in SKILL_FILES:
+    try:
+        _, fm_text, _ = sk.read_text().split("---", 2)
+        meta = yaml.safe_load(fm_text) or {}
+    except (ValueError, yaml.YAMLError):
+        continue
+    at = meta.get("allowed_tools")
+    if not isinstance(at, list) or len(at) < 1:
+        err(
+            f"skill-allowed-tools: {rel(sk)}: missing or empty 'allowed_tools' list "
+            f"(FR-060 — must declare ~5-10 tools the skill uses)"
+        )
+        continue
+    skill_dir = str(sk.parent.parent.parent.name)  # vertical plugin directory name
+    is_models = (skill_dir == "models-and-pitches")
+    rs = meta.get("retrieval_scope", "")
+    for tool in at:
+        if tool in CANONICAL_TOOLS:
+            continue
+        # Also accept office tools and tools in the MCP canonical + FR-011 list
+        if tool in OFFICE_TOOLS or tool in DOCUMENT_TOOLS:
+            CANONICAL_TOOLS.add(tool)  # lazily expand
+            continue
+        err(
+            f"skill-allowed-tools: {rel(sk)}: tool '{tool}' not found in canonical "
+            f"tool surface (FR-060)"
+        )
+    # office-plane tools only in models-and-pitches
+    if not is_models:
+        for tool in at:
+            if tool in OFFICE_TOOLS:
+                err(
+                    f"skill-allowed-tools: {rel(sk)}: office-plane tool '{tool}' "
+                    f"declared by non-models-and-pitches skill (FR-060)"
+                )
+    # structured_only skills exclude document-retrieval tools
+    if rs == "structured_only":
+        for tool in at:
+            if tool in DOCUMENT_TOOLS:
+                err(
+                    f"skill-allowed-tools: {rel(sk)}: document-retrieval tool '{tool}' "
+                    f"declared by retrieval_scope: structured_only skill (FR-060)"
+                )
+
+# --- Check 21: three-layer protocol presence OR retrieval_scope opt-out (FR-056) ---
+for sk in SKILL_FILES:
+    try:
+        _, fm_text, _ = sk.read_text().split("---", 2)
+        meta = yaml.safe_load(fm_text) or {}
+    except (ValueError, yaml.YAMLError):
+        continue
+    rs = meta.get("retrieval_scope")
+    valid_rs = {"structured_only", "single_document", "simple_lookup"}
+    has_layer1 = "read_source_outline" in sk.read_text()
+    has_layer3 = "read_source_pages" in sk.read_text()
+    has_protocol = has_layer1 and has_layer3
+    if rs and rs not in valid_rs:
+        err(
+            f"skill-retrieval-scope: {rel(sk)}: retrieval_scope '{rs}' invalid "
+            f"(must be one of {sorted(valid_rs)}) (FR-056)"
+        )
+    if not rs and not has_protocol:
+        err(
+            f"skill-retrieval-scope: {rel(sk)}: no retrieval_scope opt-out and "
+            f"no three-layer protocol found in methodology (FR-056 — must contain "
+            f"Layer 1→2→2.5→3 OR declare retrieval_scope)"
+        )
+
+# --- Check 22: methodology template subsection conformance (FR-064) ----------
+METHODOLOGY_SUBS = [
+    "### Retrieval Scope",
+    "### Retrieval Strategy",
+    "### Temporal Scope",
+    "### Tool Allowlist",
+    "### Protocol",
+]
+for sk in SKILL_FILES:
+    text = sk.read_text()
+    if "## Methodology" not in text:
+        err(
+            f"skill-methodology: {rel(sk)}: missing '## Methodology' section "
+            f"(FR-064 — all 5 subsections required: {', '.join(METHODOLOGY_SUBS)})"
+        )
+        continue
+    for sub in METHODOLOGY_SUBS:
+        if sub not in text:
+            err(
+                f"skill-methodology: {rel(sk)}: missing '{sub}' subsection "
+                f"under ## Methodology (FR-064 — skill-methodology-template.md)"
+            )
 
 # --- report ----------------------------------------------------------------
 if errors:

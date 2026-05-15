@@ -1,0 +1,27 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 1
+mode_slug: management-team-leadership-analysis
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **citation_required**: True'
+- '- **evidence_standard**: institutional_grade'
+- '- **format**: comprehensive_leadership_analysis'
+- '- **structure**:'
+- '  - analyst_perspectives'
+- '  - current_leadership_team'
+- '  - executive_summary'
+- '  - recent_leadership_changes'
+- '  - strategic_implications'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

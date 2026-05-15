@@ -1,0 +1,25 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 4
+mode_slug: evaluate-company-s-strategic-position-within-identified-technology-trends
+multi_ticker_semantics: target_with_optional_peers
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **trend_analysis_structure**:'
+- '  - supporting_evidence'
+- '  - trend_header'
+- '- **validation_framework**:'
+- '  - competitive_benchmarking'
+- '  - consistency_check'
+- '  - financial_validation'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

@@ -1,0 +1,152 @@
+# Cookbook failure-policy.yaml (v1.0 frozen)
+# Per spec 023 FR-051 + FR-051a. Six mandatory failure modes; each has
+# Action 1, optional Action 2, and a deterministic halt path with a stable
+# error-code surfaced to the user. NO silent failures, NO infinite retries,
+# NO auto-coercion across spec versions.
+#
+# Consumed by:
+#   - managed-agent-cookbooks/agentii-equity-agent/agent.yaml (top-level orchestration)
+#   - all 4 subagents (each subagent SHOULD honor its slice of this policy)
+#   - scripts/validate.py (validates this file against failure-policy.schema.json)
+#
+# References: FR-051 (6 modes), FR-051a (rationales), FR-008 (error-code stability)
+
+spec_version: "1.0"
+
+failures:
+
+  - id: retrieval_gaps
+    trigger: |
+      retrieval-subagent reports < 80% of expected sources retrieved
+      for the requested ticker/time-window.
+    action_1:
+      kind: retry
+      detail: |
+        Widen time_window by ±90 days, retry retrieval ONCE. Document
+        the widened window in coverage_attestation.gaps[].
+    action_2:
+      kind: proceed_with_gaps
+      detail: |
+        If still incomplete, proceed to analytical subagent with the
+        partial evidence pack. Analytical MUST emit "Coverage Gaps"
+        section per FR-019 and qualify all affected claims.
+    halt_error_code: null
+    user_facing_message: null
+    rationale: |
+      Equity research is degraded but not invalidated by data gaps; the
+      analyst convention is to ship with explicit gap disclosure rather
+      than refuse to deliver. NEVER halt silently.
+
+  - id: analytical_context_exhausted
+    trigger: |
+      Analytical subagent reports context-window utilization > 90%
+      AFTER attempting to inline evidence-pack tables.
+    action_1:
+      kind: chunk_by_ticker
+      detail: |
+        Split the work by primary_ticker (peer at a time) and re-invoke
+        analytical with a single-ticker evidence-pack subset.
+    action_2:
+      kind: demote_model
+      detail: |
+        Fall back to a smaller-context model (e.g., claude-sonnet ->
+        claude-haiku) with the same prompt. Document model demotion
+        in telemetry per FR-053.
+    halt_error_code: AGENTII_ANALYTICAL_EXHAUSTED
+    user_facing_message: |
+      Analytical capacity exhausted even after chunking and model demotion.
+      Re-run with a narrower scope (fewer peers, shorter time window).
+    rationale: |
+      Context exhaustion is recoverable through scope reduction; a hard
+      halt with a clear ticker-narrowing instruction is more useful than
+      silent quality degradation.
+
+  - id: analytical_api_failure
+    trigger: |
+      Anthropic API returns 5xx, 429-after-retry, or connection-reset
+      to the analytical-subagent invocation.
+    action_1:
+      kind: backoff_retry
+      detail: |
+        Wait 30 seconds, retry ONCE with identical prompt + evidence pack.
+    action_2:
+      kind: null
+      detail: null
+    halt_error_code: AGENTII_ANALYTICAL_API_FAILURE
+    user_facing_message: |
+      Upstream model API is currently unavailable. Please retry in a few
+      minutes. If the issue persists, check status.anthropic.com.
+    rationale: |
+      Transient API failures recover with a single backoff; persistent
+      failures should escalate immediately rather than burn retry budget.
+
+  - id: audit_hardcode_fail
+    trigger: |
+      visualization-subagent's xlsx.audit step reports any projection
+      cell containing a hardcoded numeric literal (not a formula
+      referencing inputs/assumptions).
+    action_1:
+      kind: bounce_back
+      detail: |
+        Return audit report to analytical-subagent. Analytical revises
+        xlsx_spec to replace hardcoded values with formula expressions
+        referencing the named-range inputs. MAX 1 bounce (FR-051a hard cap).
+    action_2:
+      kind: null
+      detail: null
+    halt_error_code: AGENTII_AUDIT_HARDCODE_FAIL
+    user_facing_message: |
+      Workbook audit detected hardcoded projection values after 1 revision
+      round. Workbook NOT delivered. Re-run with explicit assumption
+      pinning, or hand off to a human analyst for spec review.
+    rationale: |
+      Hardcoded projection cells are the #1 failure mode of LLM-generated
+      financial models (sharp-edges.yaml hardcoded-dcf-projection). One
+      bounce gives analytical a chance to fix; two bounces indicates a
+      systemic prompt issue that needs human intervention rather than
+      another machine retry. ZERO workbook delivery on halt — better to
+      ship nothing than ship a misleading model.
+
+  - id: recalc_timeout
+    trigger: |
+      agentii-office.xlsx_recalc tool returns timeout (>60s) when
+      evaluating formulas in the spec'd workbook.
+    action_1:
+      kind: safe_mode_retry
+      detail: |
+        Re-invoke xlsx_recalc with safe_mode:true (disables volatile
+        functions like INDIRECT, OFFSET; sequential cell evaluation).
+    action_2:
+      kind: null
+      detail: null
+    halt_error_code: AGENTII_RECALC_TIMEOUT
+    user_facing_message: |
+      Workbook recalculation timed out even in safe-mode. Spec may contain
+      a circular reference or pathological formula. xlsx_spec.json
+      attached for human review.
+    rationale: |
+      Circular references in DCF/LBO models are common; safe_mode usually
+      resolves them by serializing evaluation. Hard halt with the spec
+      attached lets the user repair manually.
+
+  - id: spec_version_mismatch
+    trigger: |
+      Any contract artifact (evidence-pack, xlsx_spec, pptx_spec,
+      failure-policy) declares a spec_version != "1.0".
+    action_1:
+      kind: halt_immediate
+      detail: |
+        Halt at the earliest detection point. Do NOT attempt schema
+        migration. Do NOT proceed with version coercion.
+    action_2:
+      kind: null
+      detail: null
+    halt_error_code: AGENTII_SPEC_VERSION_MISMATCH
+    user_facing_message: |
+      A contract artifact declared spec_version='{observed}' but this
+      cookbook only supports '1.0'. Upgrade the cookbook OR regenerate
+      the artifact against the v1.0 schema. NO auto-migration is performed.
+    rationale: |
+      Schema migrations silently change semantics of every downstream
+      consumer. v1.0 -> v1.x transitions MUST be explicit, version-pinned,
+      and require a cookbook redeploy. Auto-coercion is forbidden.

@@ -1,0 +1,27 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 6
+mode_slug: technology-disruption-risk-analysis
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **citation_required**: True'
+- '- **evidence_standard**: institutional_grade'
+- '- **format**: technology_risk_assessment'
+- '- **structure**:'
+- '  - emerging_technology_analysis'
+- '  - executive_summary'
+- '  - risk_factors'
+- '  - secular_trend_analysis'
+- '  - strategic_response_assessment'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

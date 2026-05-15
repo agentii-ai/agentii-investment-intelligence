@@ -54,6 +54,12 @@ def scan(path: Path) -> list[str]:
 
 def main() -> int:
     errs: list[str] = []
+    # System prompts and agent system files contain template/placeholder citations
+    # (e.g., `<TICKER> <filing_type> <filing_year>`) — exempt from validation.
+    def is_exempt(path: Path) -> bool:
+        rp = str(path.relative_to(ROOT))
+        return "/system-prompts/" in rp or "/agents/" in rp
+
     targets = (
         list(ROOT.glob("plugins/**/*.md"))
         + list(ROOT.glob("managed-agent-cookbooks/**/*.md"))
@@ -62,6 +68,8 @@ def main() -> int:
     count = 0
     for p in sorted(targets):
         if not p.is_file():
+            continue
+        if is_exempt(p):
             continue
         count += 1
         errs.extend(scan(p))

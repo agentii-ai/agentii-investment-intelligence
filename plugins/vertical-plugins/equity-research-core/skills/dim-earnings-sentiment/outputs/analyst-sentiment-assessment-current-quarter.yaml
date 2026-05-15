@@ -1,0 +1,72 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 7
+mode_slug: analyst-sentiment-assessment-current-quarter
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **quality_standards**:'
+- '  - consistency_checks'
+- '  - evidence_requirements'
+- '  - sentiment_classification'
+- '- **structure**: ## Current-Quarter Analyst Sentiment Assessment
+
+
+  **Assessment Date**: {Current date}
+
+  **Upcoming Earnings Date**: {Next earnings date from fetch_stock_info}
+
+  **Analysis Period**: {30-day window before earnings}
+
+
+  **Data Sources Analyzed**:
+
+  - Morgan Stanley: {Report title and date if available, or "N/A"}
+
+  - Jefferies: {Report title and date if available, or "N/A"}
+
+
+  ### Current-Quarter Estimates & Tone Summary
+
+
+  | **Key Financials** | **Expected Tone** | **Commentary / Notes** |
+
+  |:-------------------|:-----------------:|:-----------------------|
+
+  | Revenues | Highly Convicted / Positive / Negative / N/A | {Brief explanation with
+  analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
+
+  | EPS | Highly Convicted / Positive / Negative / N/A | {Brief explanation with analyst
+  quotes} _(cite source filing in FR-050 format at runtime)_ |
+
+  | EBITDA | Highly Convicted / Positive / Negative / N/A | {Brief explanation with
+  analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
+
+  | **Adj. EBITDA** | Highly Convicted / Positive / Negative / N/A | {Brief explanation
+  with analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
+
+  | Net Income | Highly Convicted / Positive / Negative / N/A | {Brief explanation
+  with analyst quotes} _(cite source filing in FR-050 format at runtime)_ |
+
+
+  **Overall Sentiment Summary**:
+
+  {2-3 sentence synthesis of overall analyst sentiment for upcoming quarter}
+
+
+  **Key Sentiment Drivers**:
+
+  - {List 2-3 main factors driving analyst conviction or concern}
+
+  '
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage

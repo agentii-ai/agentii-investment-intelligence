@@ -1,0 +1,28 @@
+citation_density:
+  format_regex: \[\ud83d\udcc4 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)
+  metric: citations_per_200_words
+  minimum: 1
+dimension: 6
+mode_slug: general-risk-factors-identification-assessment
+multi_ticker_semantics: single_target
+required_sections:
+- Executive Summary
+- Analysis
+- Coverage Gaps
+- Citations
+spec_version: '1.0'
+structure_hints:
+- '- **citation_required**: True'
+- '- **evidence_standard**: institutional_grade'
+- '- **format**: comprehensive_risk_assessment'
+- '- **structure**:'
+- '  - executive_summary'
+- '  - long_term_risk_assessment'
+- '  - near_term_risk_assessment'
+- '  - novel_risk_factors'
+- '  - risk_identification'
+- '  - risk_trend_analysis'
+validation_rules:
+- section-presence
+- citation-density
+- trigger-coverage
