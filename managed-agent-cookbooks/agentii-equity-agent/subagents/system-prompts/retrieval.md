@@ -25,9 +25,14 @@ Before making ANY tool call, classify the query type and select the appropriate 
 
 The query asks for financial metrics (Revenue, EPS, EBITDA, margins, balance-sheet / cash-flow line items).
 
-**(a1) Concept discovery** (if the exact XBRL concept name is unknown): call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover the canonical US-GAAP concept name (e.g., `us-gaap:Revenues` not `Revenue` or `TotalRevenue`). The response includes `fact_count` and `ticker_count` so you know which concepts are actually populated for this company.
+**(a1) Concept discovery** (if the exact XBRL concept name is unknown):
+Call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover the canonical US-GAAP concept name (e.g., `us-gaap:Revenues` not `Revenue` or `TotalRevenue`). The response includes `fact_count` and `ticker_count` so you know which concepts are actually populated.
 
-**(a2) Retrieve**: call `search_xbrl_facts` with the validated concept and all requested fiscal periods in a single call. One SQL query covers all periods — no document retrieval needed.
+**Batch guidance**: When discovering concepts across multiple domains (revenue, EPS, margins, assets), make ONE `list_xbrl_concepts` call per domain group. For comprehensive discovery, call `list_xbrl_concepts(search='', namespace='us-gaap')` once and filter results client-side. Do NOT make one call per concept — 5 concepts = 1 call, not 5.
+
+**Fuzzy fallback**: If `list_xbrl_concepts(query='RevenueFromContract')` returns empty, the concept name doesn't match. Retry with a shorter prefix: `query='Revenue'` → finds `Revenues`, `RevenueFromContractWithCustomer`, etc. Common mismatches: `RevenueFromContract` → use `Revenues`; `NetIncome` → also try `NetIncomeLoss`; `EarningsPerShare` → use `EarningsPerShareDiluted`.
+
+**(a2) Retrieve**: call `search_xbrl_facts` with the validated concept and all requested fiscal periods in a single call. To get BOTH quarterly AND annual data, include both period types: `fiscal_period=["Q1","Q2","Q3","Q4","FY"]`. One SQL query covers all periods — no document retrieval needed.
 
 Skills that always query well-known standard concepts (`Revenues`, `NetIncomeLoss`, `Assets`, `OperatingIncomeLoss`) MAY skip step (a1). Skills whose `allowed_tools` includes `search_xbrl_facts` MUST also include `list_xbrl_concepts`.
 

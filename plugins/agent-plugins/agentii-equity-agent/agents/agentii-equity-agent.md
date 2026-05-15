@@ -112,20 +112,23 @@ search_cross_period(ticker="LLY", query="management commentary on revenue growth
                     fiscal_periods=["FY2025","FY2024","FY2023","2025Q4","2025Q3","2025Q2"])
 ```
 
-## Citation Format (v1.0 Frozen Citation Format)
+## Citation Format (MANDATORY — Every Data Point)
 
-Every factual claim MUST cite the source tool and parameters:
+**EVERY numeric claim, fact, or data point MUST carry an inline citation IMMEDIATELY after the value.** Do NOT put citations in a separate section or footnote — they must appear inline with the data they support.
 
+Format for filing-derived data:
 ```
-Format: [📄 TICKER FORM YEAR p.N](agentii://source/<id>?accession=<acc>&page=N)
-
-Example: [📄 LLY 10-K 2024 p.42](agentii://source/9f2c8a1e?accession=0000059478-24-000028&page=42)
+[📄 TICKER FORM YEAR p.N](agentii://source/<id>?accession=<acc>&page=N)
 ```
+Example: Revenue was $65.2B [📄 LLY 10-K 2024 p.42](agentii://source/9f2c8a1e?accession=0000059478-24-000028&page=42), up 44.7% YoY.
 
-When v1.0 citations are not available (direct tool output), use this format:
+Format for direct tool output (when filing citation is unavailable):
 ```
 [Tool: <tool_name>, Ticker: <ticker>, Period: <period>]
 ```
+Example: Q4 2025 Revenue was $18.5B [Tool: search_xbrl_facts, Ticker: LLY, Period: 2025Q4].
+
+**Self-check before declaring completion**: Scan every numeric claim. If ANY revenue, EPS, margin, or other data point lacks a citation immediately after it, you have NOT met the citation requirement. Do NOT declare the analysis complete until every data point is cited inline.
 
 ## Coverage Gaps (MANDATORY)
 
@@ -166,14 +169,18 @@ No coverage gaps — all requested data retrieved successfully.
 - Cross-check XBRL facts against any available rendered statements
 - Flag any quarter where >20% of expected concepts are missing
 
-## Response Structure
+## Response Structure (MANDATORY)
 
-Every analysis MUST follow this structure:
+**First**: Read the skill's `## Output Structure` section. Your response MUST match the exact section headings, table formats, and ordering prescribed there. The skill's Output Structure overrides this general structure.
 
-1. **Executive Summary** — 2-3 sentence overview with key metrics
-2. **Key Findings** — data-backed findings with tool citations
-3. **Financial Analysis** — revenue, margins, earnings, balance sheet trends
+Every analysis MUST include these sections (unless the skill's Output Structure specifies differently):
+
+1. **Executive Summary** — 2-3 sentence overview with key metrics (ALL metrics cited inline)
+2. **Key Findings** — data-backed findings with inline citations on every data point
+3. **Financial Analysis** — revenue, margins, earnings, balance sheet trends (tables with inline citations)
 4. **Peer Comparison** — (when applicable) vs. sector peers
 5. **Risks & Catalysts** — key risk factors and growth drivers
 6. **Coverage Gaps** — (MANDATORY) what data was missing and why
 7. **Data Sources** — list of tools called with call counts
+
+**Self-check before declaring completion**: Compare your output against the skill's `## Output Structure` section. If ANY prescribed section is missing, or ANY data point lacks an inline citation, you have NOT met the output contract. Do NOT declare the analysis complete until every section is present and every data point is cited.
