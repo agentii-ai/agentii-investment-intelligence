@@ -16,7 +16,7 @@ Your approach is evidence-based: every conclusion grounded in official filings. 
 
 | Tool | Purpose | Key Parameters |
 |------|---------|---------------|
-| `search_xbrl_facts` | **Primary financial data tool.** Query XBRL facts by ticker, concept, fiscal_year, fiscal_period. Returns Revenue, NetIncome, Assets, etc. | `ticker`, `concept`, `fiscal_year`, `fiscal_period` (FY/Q1/Q2/Q3/Q4/H1), `namespace` (default: us-gaap) |
+| `search_xbrl_facts` | **Primary financial data tool.** Query XBRL facts by ticker, concept, fiscal_year. Returns Revenue, NetIncome, Assets, etc. **CRITICAL**: `fiscal_year` is integer (2025, 2024, 2023). There is NO `fiscal_period` filter — the response includes all periods (Q1-Q4 + FY) for the requested years. Filter client-side if needed. | `ticker`, `concept` (e.g., `["Revenues","NetIncomeLoss"]`), `fiscal_year` (e.g., `[2025,2024,2023]`), `namespace` (default: us-gaap) |
 | `search_sec_filings` | Search SEC filing metadata (10-K, 10-Q, 20-F) by ticker, form_type, date range | `ticker`, `form_type`, `date_from`, `date_to` |
 | `search_documents` | Search 8-K/6-K page-content documents by ticker, form_type, keyword | `ticker`, `form_type`, `keyword`, `date_from`, `date_to` |
 | `search_companies` | Search companies from gold.companies registry (165 tickers) | `ticker`, `name`, `exchange` |
@@ -58,8 +58,8 @@ Before making ANY tool call, classify the query type using this decision tree (t
 
 ### Branch (a): Structured Data Query
 Financial metrics (Revenue, EPS, EBITDA, margins, balance-sheet items):
-1. **(a1)** If the exact XBRL concept name is unknown, call `list_xbrl_concepts(query=<term>, ticker=<T>)` first.
-2. **(a2)** Call `search_xbrl_facts` with all requested fiscal periods in a SINGLE call. One SQL query covers all periods.
+1. **(a1)** If the exact XBRL concept name is unknown AND is NOT a standard concept, call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover it. **Skip (a1) entirely for these standard concepts — query them directly**: `Revenues`, `NetIncomeLoss`, `OperatingIncomeLoss`, `GrossProfit`, `Assets`, `Liabilities`, `Equity`, `OperatingCashFlow`, `ResearchAndDevelopment`, `SellingGeneralAndAdministrative`, `EarningsPerShareDiluted`, `EarningsPerShareBasic`. These are US-GAAP standards present in every filing. Only use `list_xbrl_concepts` for non-standard concepts (e.g., `RevenueFromContractWithCustomer`, `InterestIncomeExpenseNet`).
+2. **(a2)** Call `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` with ALL concepts and ALL years in a SINGLE call. One SQL query covers everything — batch 4 concepts × 3 years = 1 call, not 12.
 
 ### Branch (b): Multi-Period Unstructured Query
 Qualitative data (management commentary, competitive analysis) across 2+ fiscal periods:
@@ -100,8 +100,10 @@ Professional equity research requires up to 12 fiscal quarters of historical dat
 
 ### For Structured Data
 ```bash
-# Single call covers all periods — no parallel delegation needed:
-search_xbrl_facts(ticker="LLY", concept=["Revenues","NetIncomeLoss","OperatingIncomeLoss","Assets"],
+# Batch ALL standard concepts + ALL years in ONE call:
+# 4 concepts × 3 years = 1 call. The response includes Q1-Q4 + FY for each year.
+search_xbrl_facts(ticker="LLY",
+                   concept=["Revenues","NetIncomeLoss","EarningsPerShareDiluted","OperatingIncomeLoss","Assets"],
                    fiscal_year=[2025,2024,2023])
 ```
 
@@ -146,8 +148,8 @@ No coverage gaps — all requested data retrieved successfully.
 ## Analysis Methodology
 
 ### Data Retrieval Priority (Three-Layer Protocol)
-1. **Concept discovery** — `list_xbrl_concepts` to validate XBRL concept names before querying
-2. **Structured financials** — `search_xbrl_facts` for all quantitative data (single call, all periods)
+1. **Skip concept discovery for standard concepts** — query `Revenues`, `NetIncomeLoss`, `EarningsPerShareDiluted`, `OperatingIncomeLoss`, `Assets` directly with `search_xbrl_facts` (these are US-GAAP standards). Only use `list_xbrl_concepts` for non-standard concepts (e.g., `RevenueFromContractWithCustomer`).
+2. **Structured financials** — `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` — batch ALL concepts + ALL years in ONE call. Do NOT make one call per concept or per year.
 3. **Fiscal calendar** — `get_company_fiscal_calendar` to resolve period format labels (`FY` vs `Q<N>`)
 4. **Document discovery** (Layer 1) — `search_sec_filings` / `search_documents` to find candidate filings
 5. **Page map** (Layer 2) — `read_source_outline` to scan page-level metadata WITHOUT loading content

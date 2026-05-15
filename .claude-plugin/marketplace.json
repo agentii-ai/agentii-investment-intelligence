@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Agent-use-ready US equity + biotech investment-intelligence skills and plugins for Claude Code, Claude Cowork, OpenCode, OpenClaw, Codex, and Goose. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar, clinical trials, FDA approvals) with gold-label signal extraction and a four-verb MCP tool taxonomy.",
-    "version": "0.1.0",
+    "version": "2.0.5",
     "schema_version": "1.0"
   },
   "plugins": [
@@ -27,7 +27,7 @@
     {
       "name": "models-and-pitches",
       "source": "./plugins/vertical-plugins/models-and-pitches",
-      "description": "7 financial-modeling + presentation skills: DCF, comps, 3-statement, LBO, audit-xls, xlsx-author, and pitch-deck. 6 ported from anthropics/financial-services (Apache-2.0); pitch-deck is net-new. All Excel-producing skills follow the FR-044 4-step office protocol (spec → build → recalc → audit)."
+      "description": "7 financial-modeling + presentation skills: DCF, comps, 3-statement, LBO, audit-xls, xlsx-author, and pitch-deck. 6 ported from anthropics/financial-services (Apache-2.0); pitch-deck is net-new. All Excel-producing skills follow the FR-044 4-step office protocol (spec \u2192 build \u2192 recalc \u2192 audit)."
     },
     {
       "name": "agentii-equity-agent",

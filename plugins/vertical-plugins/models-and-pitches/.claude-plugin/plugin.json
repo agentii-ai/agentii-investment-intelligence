@@ -1,7 +1,7 @@
 {
   "name": "models-and-pitches",
-  "version": "0.1.0",
-  "description": "7 financial-modeling and presentation skills: DCF, comps analysis, 3-statement model, LBO, audit-xls, xlsx-author, and pitch-deck. 6 skills ported from anthropics/financial-services (Apache 2.0) with data-source blocks rewritten to agentii.ai's data API; pitch-deck is net-new composite authoring. All Excel-producing skills follow the FR-044 4-step office protocol (spec → build → recalc → audit) with hard-gate refusal on any hardcoded projection/margin/discount/PV/sensitivity cell.",
+  "version": "2.0.5",
+  "description": "7 financial-modeling and presentation skills: DCF, comps analysis, 3-statement model, LBO, audit-xls, xlsx-author, and pitch-deck. 6 skills ported from anthropics/financial-services (Apache 2.0) with data-source blocks rewritten to agentii.ai's data API; pitch-deck is net-new composite authoring. All Excel-producing skills follow the FR-044 4-step office protocol (spec \u2192 build \u2192 recalc \u2192 audit) with hard-gate refusal on any hardcoded projection/margin/discount/PV/sensitivity cell.",
   "author": {
     "name": "agentii-ai",
     "url": "https://agentii.ai"
@@ -15,5 +15,6 @@
     "pitch-deck",
     "xlsx-author",
     "agentii"
-  ]
+  ],
+  "agentii_api_version": "2.0.1"
 }

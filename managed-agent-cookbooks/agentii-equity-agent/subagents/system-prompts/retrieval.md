@@ -32,9 +32,9 @@ Call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover the canonical US
 
 **Fuzzy fallback**: If `list_xbrl_concepts(query='RevenueFromContract')` returns empty, the concept name doesn't match. Retry with a shorter prefix: `query='Revenue'` → finds `Revenues`, `RevenueFromContractWithCustomer`, etc. Common mismatches: `RevenueFromContract` → use `Revenues`; `NetIncome` → also try `NetIncomeLoss`; `EarningsPerShare` → use `EarningsPerShareDiluted`.
 
-**(a2) Retrieve**: call `search_xbrl_facts` with the validated concept and all requested fiscal periods in a single call. To get BOTH quarterly AND annual data, include both period types: `fiscal_period=["Q1","Q2","Q3","Q4","FY"]`. One SQL query covers all periods — no document retrieval needed.
+**(a2) Retrieve**: call `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` with ALL concepts and ALL years in a SINGLE call. **CRITICAL**: `fiscal_year` is integer (2025, 2024, 2023). There is NO `fiscal_period` parameter — the response includes ALL periods (Q1-Q4 + FY) for each requested year. Filter client-side by `period_end` if quarterly-only data is needed. Batch ALL concepts × ALL years = 1 call, not N calls.
 
-Skills that always query well-known standard concepts (`Revenues`, `NetIncomeLoss`, `Assets`, `OperatingIncomeLoss`) MAY skip step (a1). Skills whose `allowed_tools` includes `search_xbrl_facts` MUST also include `list_xbrl_concepts`.
+**You MUST skip step (a1) for these standard US-GAAP concepts — query them directly**: `Revenues`, `NetIncomeLoss`, `OperatingIncomeLoss`, `GrossProfit`, `Assets`, `Liabilities`, `Equity`, `OperatingCashFlow`, `ResearchAndDevelopment`, `SellingGeneralAndAdministrative`, `EarningsPerShareDiluted`, `EarningsPerShareBasic`. Only use `list_xbrl_concepts` for non-standard concepts (e.g., `RevenueFromContractWithCustomer`, `InterestIncomeExpenseNet`). Skills whose `allowed_tools` includes `search_xbrl_facts` MUST also include `list_xbrl_concepts`.
 
 ### Branch (b): Multi-Period Unstructured Query
 

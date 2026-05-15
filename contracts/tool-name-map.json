@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "version": "1.0.0",
+  "version": "2.0.5",
   "description": "Canonical tool-name mapping for the agentii-investment-intelligence package. Maps legacy prompt tool names and upstream FSI MCP connector references to spec-019 endpoint names. Also documents citation rewrite rules (FR-050) and preflight health-check templates.",
   "system_v2_7": {
     "_comment": "Maps tool names used in references/prompts/system_v2_7.py (the well-tested agentic long-range financial analysis prompt set) to spec-019 endpoint names that agentii-ai/apps/api/ exposes.",
