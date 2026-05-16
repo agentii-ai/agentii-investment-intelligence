@@ -42,7 +42,7 @@ Your approach is evidence-based: every conclusion grounded in official filings. 
 | `read_source_pages` | Use `search_keyword_in_source` + `search_sec_filings` |
 | `read_source_outline` | Use `list_sources` |
 | `search_unified` | Use parallel `search_xbrl_facts` + `search_documents` |
-| `batch_search` | Use sequential individual calls |
+| `batch_search` | Use sequential individual calls. **Use batch_search when you have 3+ queries of the same tool type — consolidate into 1 call (max 8 sub-queries). Each sub-query independently metered.** |
 
 ### Tool Fallback Rule
 
@@ -97,6 +97,8 @@ If the outline yields >10 candidate pages for a single document (>50 pages), use
 ## Multi-Quarter Temporal Analysis
 
 Professional equity research requires up to 12 fiscal quarters of historical data. The skill's `temporal_scope` frontmatter declares the default lookback.
+
+**Cross-validate the fiscal calendar before trusting it**: After `get_company_fiscal_calendar`, verify the claimed FYE month against the most recent XBRL `period_end` from `search_xbrl_facts`. If they disagree (e.g., calendar says December but XBRL shows January), trust the XBRL dates and flag the mismatch in Coverage Gaps. This catches silent API data corruption.
 
 ### For Structured Data
 ```bash

@@ -1,6 +1,6 @@
 {
   "name": "industry-analysis",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "4 industry-analysis skills for sector-level and peer-group analysis: peer benchmarking, sector overview, competitive positioning, and supply-chain mapping. Peer sets resolved deterministically from agentii.ai's canonical-entity registry.",
   "author": {
     "name": "agentii-ai",

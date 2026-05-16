@@ -1,23 +1,25 @@
 ---
 name: earnings-preview-deck
-description: >-
-  Generate a 4-6 slide earnings preview presentation with consensus estimates, historical surprises, forward catalysts, and peer comparison — fully automated from agentii data-plane tools.
+description: Generate a 4-6 slide earnings preview presentation with consensus estimates,
+  historical surprises, forward catalysts, and peer comparison — fully automated from
+  agentii data-plane tools.
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 4
   max_quarters: 8
-  description: "Trailing 4 quarters for current estimates and YoY comparisons"
+  description: Trailing 4 quarters for current estimates and YoY comparisons
 allowed_tools:
-  - search_earnings_calendar
-  - search_xbrl_facts
-  - list_xbrl_concepts
-  - get_company_profile
-  - search_companies
-  - pptx.build
-  - pptx.edit
-  - pptx.refresh
+- search_earnings_calendar
+- search_xbrl_facts
+- list_xbrl_concepts
+- get_company_profile
+- search_companies
+- pptx.build
+- pptx.edit
+- pptx.refresh
 parameter_free: false
 retrieval_scope: structured_only
+min_tool_diversity: 5
 ---
 
 ## Preflight
@@ -108,6 +110,21 @@ See frontmatter `allowed_tools` — 8 tools declared. All office tools (`pptx.bu
 2. **estimates slide**: includes consensus, high, and low estimates. *If failed*: If missing: flag in Coverage Gaps.
 3. **source footers**: every slide has source_footer with standard agentii citation. *If failed*: If any missing: refuse delivery.
 4. **peer comparison**: has >= 3 peers. *If failed*: If < 3: flag in Coverage Gaps.
+## Tool Fallbacks
+
+| Tool | Failure Mode | Fallback Action | Coverage Annotation |
+|------|-------------|-----------------|---------------------|
+| `read_source_pages` | SQL error / PROXY_ERROR | Use `search_keyword_in_source(document_id, keyword)` if document_id known; otherwise `search_documents` with same query | "source file unavailable; used keyword search instead" |
+| `read_source_outline` | PROXY_ERROR / 404 | Use `list_sources` for document-level metadata | "page map unavailable; used document listing instead" |
+| `list_xbrl_concepts` | Timeout / 503 | Use direct `search_xbrl_facts` with standard US-GAAP concepts (Revenues, NetIncomeLoss, EarningsPerShareDiluted, OperatingIncomeLoss, Assets) | "concept discovery skipped due to timeout; using standard US-GAAP concepts" |
+| `get_company_fiscal_calendar` | Cross-validation failed | Use XBRL-derived period grid from `search_xbrl_facts` `period_end` dates | "fiscal calendar mismatch; using XBRL-derived period grid" |
+| `search_unified` | Intermittent error | Use parallel `search_documents` + `search_xbrl_facts` with the same query | "unified search unavailable; used parallel document + XBRL search" |
+| `batch_search` | PROXY_ERROR | Use sequential individual calls (one per sub-query) | "batch search unavailable; used sequential calls" |
+
+Tool errors are retried ONCE with the fallback action before escalating to the retrieval gaps failure policy. If both Layer 2 and Layer 3 tools are unavailable, enter document access degradation mode (structured data + metadata only, flag output as degraded).
+
+11. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
+
 ## Output Structure
 
 1. **Slide 1 — Title**: Company name, ticker, "Earnings Preview — Q<N> FY<YYYY>", report date

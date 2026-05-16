@@ -23,6 +23,7 @@ allowed_tools:
 - xlsx.recalc
 - xlsx.evaluate
 - xlsx.audit
+min_tool_diversity: 5
 ---
 
 ## Preflight
@@ -100,6 +101,21 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 2. **terminal growth rate**: < risk-free rate proxy (current 10Y UST). *If failed*: If terminal_g ≥ rf: flag in assumptions section, note conservatism violation.
 3. **WACC components**: WACC = (E/V × Ke) + (D/V × Kd × (1-T)) with all components cited to source data. *If failed*: If components uncited: refuse delivery, list missing citations.
 4. **hardcoded_count**: == 0 for all cells tagged projection|margin|discount_factor|pv|sensitivity per xlsx_audit output. *If failed*: If hardcoded_count > 0: per the hardcode gate, refuse delivery. Bounce back to analytical-subagent ONCE with audit report.
+
+5. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
+
+## Tool Fallbacks
+
+| Tool | Failure Mode | Fallback Action | Coverage Annotation |
+|------|-------------|-----------------|---------------------|
+| `read_source_pages` | SQL error / PROXY_ERROR | Use `search_keyword_in_source(document_id, keyword)` if document_id known; otherwise `search_documents` with same query | "source file unavailable; used keyword search instead" |
+| `read_source_outline` | PROXY_ERROR / 404 | Use `list_sources` for document-level metadata | "page map unavailable; used document listing instead" |
+| `list_xbrl_concepts` | Timeout / 503 | Use direct `search_xbrl_facts` with standard US-GAAP concepts (Revenues, NetIncomeLoss, EarningsPerShareDiluted, OperatingIncomeLoss, Assets) | "concept discovery skipped due to timeout; using standard US-GAAP concepts" |
+| `get_company_fiscal_calendar` | Cross-validation failed | Use XBRL-derived period grid from `search_xbrl_facts` `period_end` dates | "fiscal calendar mismatch; using XBRL-derived period grid" |
+| `search_unified` | Intermittent error | Use parallel `search_documents` + `search_xbrl_facts` with the same query | "unified search unavailable; used parallel document + XBRL search" |
+| `batch_search` | PROXY_ERROR | Use sequential individual calls (one per sub-query) | "batch search unavailable; used sequential calls" |
+
+Tool errors are retried ONCE with the fallback action before escalating to the retrieval gaps failure policy. If both Layer 2 and Layer 3 tools are unavailable, enter document access degradation mode (structured data + metadata only, flag output as degraded).
 
 ## Output Structure
 
