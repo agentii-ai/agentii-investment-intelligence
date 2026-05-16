@@ -72,8 +72,8 @@ Apply this protocol for ANY unstructured document search where the candidate doc
 
 Use `search_documents` / `search_sec_filings` / `list_sources` to identify candidate filings by ticker, form_type, and date range.
 
-- `search_sec_filings`: filing metadata index for standardized SEC forms (10-K, 10-Q, 20-F, S-1, DEF 14A). Use to discover which filings exist.
-- `search_documents`: page-based silver records for 8-K/6-K filings with pre-computed `secondary_labels` (e.g., `results_operations_2_02` = earnings release) — agents skip reading irrelevant filings.
+- `search_sec_filings`: filing metadata index for standardized SEC forms (10-K, 10-Q, 20-F, S-1, DEF 14A). Use to discover which filings exist. **Always search both US and foreign form types**: annual/quarterly reports = `form_type=["10-K","10-Q","20-F"]`, material events = `form_type=["8-K","6-K"]`. Foreign filers use 20-F (annual, covers 10-K+10-Q) and 6-K (material events).
+- `search_documents`: page-based silver records for 8-K/6-K filings with pre-computed `secondary_labels` (e.g., `results_operations_2_02` = earnings release). **Use `form_type=["8-K","6-K"]` to cover both US and foreign material event filings.** — agents skip reading irrelevant filings.
 - `list_sources`: general listing of available document sources.
 
 ### Layer 2 — Page Map
@@ -158,6 +158,10 @@ Fiscal period format follows `system_v2_7.py` conventions:
 <output_contract>
 Your output consists of two artifacts consumed by downstream sub-agents (analytical, bi, visualization):
 
+### Currency Detection
+
+Before producing the evidence-pack, check the `unit` field on the first XBRL fact retrieved. If the unit is NOT `USD`, declare `reporting_currency: "<ISO4217>"` in the output frontmatter and annotate every non-USD value with its ISO 4217 code (EUR, RMB/CNY, JPY, GBP, CHF). No currency conversion at v1.0.
+
 ### 1. Evidence Pack (JSON) — `evidence-pack.json`
 
 Machine-parseable structured data conforming to `contracts/evidence-pack.schema.json`:
@@ -237,6 +241,7 @@ pageN: {description}. keywords: [{keywords}]
 | Concept | Value | Period | Unit |
 |---------|-------|--------|------|
 | us-gaap:Revenues | $65.2B | FY2025 | USD |
+| ifrs-full:Revenue | EUR 18.5B | FY2025 | EUR (non-USD — ISO 4217 annotated) |
 
 ## Coverage Attestation
 - Dimensions covered: {list}

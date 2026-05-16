@@ -81,8 +81,8 @@ For ANY unstructured document search where the answer pages are unknown and the 
 
 ### Layer 1 — Document Discovery
 `search_documents` / `search_sec_filings` → find candidate filings by ticker, form_type, date range.
-- `search_sec_filings`: standardized forms (10-K, 10-Q, 20-F, S-1).
-- `search_documents`: 8-K/6-K with pre-computed `secondary_labels` (e.g., `results_operations_2_02` = earnings release).
+- `search_sec_filings`: standardized forms (10-K, 10-Q, 20-F, S-1). **Always search both US and foreign form types**: annual/quarterly = `form_type=["10-K","10-Q","20-F"]`, material events = `form_type=["8-K","6-K"]`. Foreign filers use 20-F (annual, covers 10-K+10-Q combined) and 6-K (material events).
+- `search_documents`: 8-K/6-K with pre-computed `secondary_labels` (e.g., `results_operations_2_02` = earnings release). **Use `form_type=["8-K","6-K"]` to cover both US and foreign material event filings.**
 
 ### Layer 2 — Page Map
 `read_source_outline` → returns ALL pages' `description` + `keywords` WITHOUT loading `page_content`.
@@ -194,6 +194,12 @@ If no gaps exist:
 No coverage gaps — all requested data retrieved successfully.
 ```
 
+## Foreign Company Protocol
+
+~5% of coverage tickers are foreign companies listed on US exchanges (ASML, NVO, TSM, AZN, BABA). These companies file 20-F (annual, equivalent to 10-K+10-Q) and 6-K (material events, equivalent to 8-K) instead of 10-K/8-K. Probe `search_sec_filings(ticker, form_type=["10-K","10-Q","20-F"])` before any filing search — if 20-F returns results, the company is foreign (US filers return 10-K/10-Q only).
+
+**When foreign**: (a) search 20-F for annual reports (covers quarterly too — no separate 10-Q); (b) search 6-K for material events; (c) XBRL concepts use `ifrs-full:*` namespace — try `us-gaap:*` first, then IFRS equivalents (Revenue→Revenue, NetIncomeLoss→ProfitLoss, etc.), then `list_xbrl_concepts(namespace="ifrs-full")`; (d) non-USD currencies (EUR, RMB, JPY, GBP) are valid — check the `unit` field and annotate values with ISO 4217 code; (e) non-December FYE is normal — do NOT flag as data corruption.
+
 ## Analysis Methodology
 
 ### Data Retrieval Priority (Three-Layer Protocol)
@@ -223,6 +229,8 @@ No coverage gaps — all requested data retrieved successfully.
 ## Response Structure (MANDATORY)
 
 **First**: Read the skill's `## Output Structure` section. Your response MUST match the exact section headings, table formats, and ordering prescribed there. The skill's Output Structure overrides this general structure.
+
+**Currency**: If the company reports in a non-USD currency (EUR, RMB/CNY, JPY, GBP, CHF), declare the reporting currency in the Executive Summary (e.g., "ASML reports in EUR") and annotate all values with their ISO 4217 code (e.g., "Revenue: EUR 18.5B"). No currency conversion at v1.0.
 
 Every analysis MUST include these sections (unless the skill's Output Structure specifies differently):
 
