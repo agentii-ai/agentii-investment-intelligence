@@ -100,6 +100,53 @@ Professional equity research requires up to 12 fiscal quarters of historical dat
 
 **Cross-validate the fiscal calendar before trusting it**: After `get_company_fiscal_calendar`, verify the claimed FYE month against the most recent XBRL `period_end` from `search_xbrl_facts`. If they disagree (e.g., calendar says December but XBRL shows January), trust the XBRL dates and flag the mismatch in Coverage Gaps. This catches silent API data corruption.
 
+## Foreign Companies — 20-F / 6-K & Currency Handling
+
+### Form-Type Equivalences
+
+~5% of US-public-equity tickers are foreign companies listed on US exchanges (e.g., ASML, NVS). Their SEC filings use different form types from domestic US companies:
+
+| US Company (domestic) | Foreign Company (non-US) | Purpose |
+|-----------------------|--------------------------|---------|
+| **10-K** | **20-F** | Annual report — audited financials, MD&A, risk factors |
+| **10-Q** | *(20-F covers annual only; foreign companies file 6-K for material events)* | Quarterly report — foreign companies do NOT file quarterly 10-Q equivalents |
+| **8-K** | **6-K** | Current report — material events, earnings releases, press releases |
+| — | **40-F** | Canadian companies only — annual report variant |
+
+**CRITICAL routing rules for foreign companies:**
+- Use `search_sec_filings` with `form_type=20-F` to discover annual filings for foreign companies (NOT 10-K).
+- Use `search_sec_filings` with `form_type=6-K` to discover current reports for foreign companies (NOT 8-K).
+- Use `search_xbrl_facts` with `namespace=ifrs-full` (IFRS) instead of `us-gaap` for many foreign companies — ASML reports under IFRS.
+- Foreign companies do NOT file 10-Q equivalents. Their quarterly financial data comes from XBRL facts in the 20-F (which typically includes quarterly segment data) or from 6-K earnings releases.
+- 20-F filings are in `gold.xbrl_filings` / `gold.xbrl_facts` (XBRL extraction — same tables as 10-K). 6-K filings are in `pipeline.src_documents` with page-level silver data (same tables as 8-K).
+
+### Currency Detection and Handling
+
+Foreign companies report financials in their local currency, NOT USD:
+
+| Ticker | Country | Typical Reporting Currency |
+|--------|---------|---------------------------|
+| ASML | Netherlands | **EUR** (€) — 99.4% of XBRL facts |
+| NVS | Switzerland | CHF or USD |
+| TSM | Taiwan | TWD |
+| TM | Japan | JPY (¥) |
+| BABA | China | RMB (¥) / CNY |
+
+**When analyzing a foreign company, ALWAYS perform these currency steps:**
+
+1. **Detect the reporting currency**: After `search_xbrl_facts`, inspect the `currency` and `unit` fields in the response. The dominant currency tells you the reporting currency.
+2. **Flag non-USD values explicitly**: In your analysis, always state the original currency. Example: "Revenue: €27.6B (EUR, NOT USD)" — never report a foreign-currency value without the currency label.
+3. **DO NOT silently convert**: You do NOT have an exchange-rate API. Never invent a conversion. If you must compare with US peers, state "ASML's €27.6B revenue at ~1.08 EUR/USD ≈ $29.8B (approximate, using [date] rate — verify with live FX data)."
+4. **Check for USD supplementary data**: Some foreign companies report select metrics in USD in addition to their local currency. Check if `search_xbrl_facts` returns both `iso4217:EUR` and `iso4217:USD` units for the same concept — prefer the USD values for peer comparison if available.
+5. **Currency affects all valuation multiples**: P/E, EV/EBITDA, and other multiples must be computed in the SAME currency for comparability. If computing comps across US (USD) and foreign (EUR) companies, flag the currency mismatch explicitly.
+
+### Foreign Company Detection
+
+Before deep analysis of any ticker:
+- Call `get_company_profile` and check the response for clues the company is foreign: exchange listing (NYSE/Nasdaq but non-US HQ), the `sector_id` alone won't signal this.
+- Check `list_coverage` — if the ticker has 20-F filings in `sec_filings` but no 10-K, it's a foreign company.
+- If `search_sec_filings?ticker=X&form_type=20-F` returns results, the company is a foreign filer.
+
 ### For Structured Data
 ```bash
 # Batch ALL standard concepts + ALL years in ONE call:
