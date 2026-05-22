@@ -1,8 +1,18 @@
 # agentii-investment-intelligence
 
-**Institutional-grade equity research skills for AI agents.** 25 Claude-type skills, 24 slash commands, and a managed-agent cookbook that produce citation-backed financial analysis, Excel models, and PowerPoint presentations — all powered by agentii.ai's agent-use-ready SEC filing data plane.
+<!-- Demo GIF — FR-001: under 30 seconds, embedded at top -->
+<p align="center">
+  <img src="./demo.gif" alt="Claude Code using agentii.ai to search LLY's latest 10-K filing and receiving real SEC filing data" width="720">
+</p>
 
-[![Apache 2.0 License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+**The financial data layer for AI agents.** Open source alternative to FactSet/Daloopa for AI agents — agent-use-ready SEC filings + XBRL financials via 24+ MCP tools. 25 Claude-type skills, 24 slash commands, and a managed-agent cookbook that produce citation-backed financial analysis, Excel models, and PowerPoint presentations.
+
+<!-- Badges — FR-003 -->
+<p align="center">
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache 2.0"></a>
+  <a href="https://github.com/agentii-ai/agentii-investment-intelligence/releases"><img src="https://img.shields.io/github/v/release/agentii-ai/agentii-investment-intelligence" alt="Latest Release"></a>
+  <a href="https://github.com/agentii-ai/agentii-investment-intelligence/discussions"><img src="https://img.shields.io/github/discussions/agentii-ai/agentii-investment-intelligence" alt="GitHub Discussions"></a>
+</p>
 
 > **Design pattern**: This repository mirrors the architecture of [`anthropics/financial-services`](https://github.com/anthropics/financial-services) — marketplace plugin system, vertical skill decomposition, agent-plugin bundling, and managed-agent cookbook deployment. The key difference: instead of pointing skills at 11 external data providers (FactSet, S&P Global, Daloopa, …), all skills point at a single `agentii` MCP server backed by agentii.ai's own data plane. agentii.ai becomes the data provider — analogous to FactSet, Daloopa, or S&P Global — delivering SEC EDGAR filings, XBRL financials, earnings calendars, and company profiles as agent-use-ready data for US-public-equity investment intelligence.
 
@@ -16,20 +26,74 @@
 - **[Managed Agent Cookbook](#managed-agent-cookbook)** — headless / server-side / Claude-for-M365 deployment via the Claude Managed Agents API. 4 capability-isolated subagents (retrieval → analytical → bi → visualization).
 - **[Commands](#slash-commands)** — 24 slash commands (`/agentii:dcf`, `/agentii:earnings-sentiment`, `/agentii:peer-bench`, …) with mode-addressability (`--mode=<slug>`, `--peers=<T1>,<T2>`).
 
-## Get an API Key
+## Quick Install
 
-All data-plane tools authenticate with a single `AGENTII_API_KEY` issued by **[agentii.ai](https://agentii.ai)**.
+### Path A — Global MCP (Recommended)
 
-1. Visit [agentii.ai](https://agentii.ai) and create an account
-2. Navigate to **API Keys** in the dashboard
-3. Generate a key — 7-day free trial with 1,000 credits, no credit card required
-4. Set the environment variable:
+One command. Tools load on **every** Claude Code session, from **any** directory. No per-project setup needed.
 
 ```bash
-export AGENTII_API_KEY=agnt-...
+export AGENTII_API_KEY=sk_live_YOUR_KEY_HERE
+claude mcp add-json --scope global agentii \
+  '{"type":"http","url":"https://mcp.agentii.ai/mcp","headers":{"Authorization":"Bearer ${AGENTII_API_KEY}"}}'
 ```
 
-The key authenticates both the `agentii` data-plane MCP (SEC filings, XBRL, earnings, companies) and the `agentii-office` MCP (Excel/PPT generation). Skills probe both MCP health endpoints at startup and surface actionable errors if the key is missing or expired.
+Writes to `~/.claude.json`. Restart Claude Code — 20 tools auto-discover. See [docs/install/global-mcp-setup.md](./docs/install/global-mcp-setup.md) for full details.
+
+### Path B — Per-Project `.mcp.json` (CI/CD, containers)
+
+Copy this `.mcp.json` into your project root:
+
+```json
+{
+  "mcpServers": {
+    "agentii": {
+      "type": "http",
+      "url": "https://mcp.agentii.ai/mcp",
+      "headers": { "Authorization": "Bearer ${AGENTII_API_KEY}" }
+    }
+  }
+}
+```
+
+> **Setup**: Generate your `AGENTII_API_KEY` at [agentii.ai/api-keys](https://agentii.ai/api-keys) — 7-day trial, 2,000 credits, no credit card required. Then `export AGENTII_API_KEY=sk_live_...` before starting Claude Code. Claude Code expands `${AGENTII_API_KEY}` from your environment at startup.
+
+## Docker Quickstart — FR-005
+
+A single command gives your agent 24+ financial data tools on any machine with Docker:
+
+```bash
+docker-compose up
+```
+
+This starts the agentii MCP server locally, pre-configured with 200 US stocks' SEC filing data. Your agent auto-discovers tools on restart. Time to first API call: under 5 minutes.
+
+## Pricing — FR-007
+
+| Plan | Monthly | Annual (20% off) | Credits/mo | Overage |
+|------|---------|-------------------|------------|---------|
+| **Starter** | $19.90/mo | ~$15.92/mo | 2,000 | $5/1,000 credits |
+| **Pro** | $39.90/mo | ~$31.92/mo | 10,000 | $5/1,000 credits |
+| **Enterprise** | Custom | Custom | 500,000+ | Custom |
+
+**Free trial**: 7 days, 2,000 credits. No credit card required. Early adopter pricing locks in — your rate stays the same even as coverage expands from 200 to 1,000 stocks.
+
+[View full pricing →](https://agentii.ai/pricing)
+
+## Coverage — FR-006
+
+200 US stocks at launch, growing to 600–1,000. Full SEC filing history (10-K, 10-Q, 8-K, 20-F, 6-K) with page-level provenance via citation watermarks (`agentii://source/...`). Data freshness tiers: ≤6h (fresh), ≤48h (stale), >48h (missing).
+
+| Sector | Count | Example Tickers |
+|--------|-------|-----------------|
+| Technology | ~50 | NVDA, AMD, AVGO, INTC, MSFT, AAPL |
+| Healthcare / Biotech | ~40 | LLY, ABBV, JNJ, PFE, MRK, BMY |
+| Financials | ~30 | JPM, BAC, GS, MS, V, MA |
+| Consumer | ~25 | AMZN, WMT, COST, HD, NKE |
+| Energy / Industrials | ~30 | XOM, CVX, CAT, GE, BA |
+| Other Sectors | ~25 | SPY, QQQ, IWM |
+
+[Full coverage list →](https://agentii.ai/coverage) | [Request a ticker →](https://agentii.ai/request-data)
 
 ## Quick Install
 
@@ -263,6 +327,17 @@ For structured financial metrics (Revenue, EPS, margins), skills use `search_xbr
 - **Add firm context** — drop your sector taxonomy, terminology, and disclaimers into skill bodies
 - **Chain skills** — `dcf-model → pitch-deck → xlsx_convert(pdf)` for end-to-end institutional workflows
 - **Add your own** — copy the structure under `plugins/vertical-plugins/<vertical>/skills/` for workflows not yet covered
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| `/agentii:recent-quarter` shows "no command" | Claude Code v2.1.143 plugin bug ([GitHub #15178](https://github.com/anthropics/claude-code/issues/15178)) | `bash scripts/copy-skills-local.sh` — copies skills into `.claude/skills/agentii/`. Restart Claude Code. |
+| `tools/list` shows 0 tools | MCP server not configured | Run the global setup command in [Quick Install](#quick-install) |
+| `${AGENTII_API_KEY}` not expanded | Env var set after Claude Code started | `export AGENTII_API_KEY=sk_live_...` before launching `claude` |
+| `✘ not authenticated` | Key expired or invalid | Check key at [agentii.ai/api-keys](https://agentii.ai/api-keys) |
+| `API_KEY_REQUIRED` | Key not sent with request | Verify `Authorization: Bearer` header in `.mcp.json` or `~/.claude.json` |
+| `AGENTII_CREDITS_EXHAUSTED` | Trial credits used up | Regenerate key or upgrade plan at [agentii.ai](https://agentii.ai) |
 
 ## Contributing
 

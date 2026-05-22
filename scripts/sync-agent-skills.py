@@ -21,7 +21,11 @@ AGENTS = ROOT / "plugins" / "agent-plugins"
 VERTICALS = ROOT / "plugins" / "vertical-plugins"
 
 src_by_name: dict[str, Path] = {}
-for sk in VERTICALS.glob("*/skills/*"):
+# Support both old (skills/<name>/) and new (skills/agentii/<name>/) directory formats
+for sk in list(VERTICALS.glob("*/skills/agentii/*")) + list(VERTICALS.glob("*/skills/*")):
+    # Skip the 'agentii' parent directory itself (it's not a skill)
+    if sk.name == 'agentii':
+        continue
     if sk.is_dir():
         src_by_name[sk.name] = sk
 

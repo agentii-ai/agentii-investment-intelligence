@@ -4,7 +4,8 @@
   "mcpServers": {
     "agentii": {
       "type": "http",
-      "url": "https://mcp.agentii.ai/mcp"
+      "url": "https://mcp.agentii.ai/mcp",
+      "headers": { "Authorization": "Bearer ${AGENTII_API_KEY}" }
     },
     "agentii-office": {
       "type": "http",
