@@ -128,22 +128,107 @@ Where:
 
 The skill's `## Output Structure` section MUST specify the affix template and the section ordering of the deliverable. Citation density: ≥1 citation per 200 words, format `{ticker} {citation_id} page<N>` (FR-078a).
 
+### Multi-Ticker Output Convention (FR-093)
+
+Skills producing output covering multiple tickers MUST use shared directories:
+
+- **`_cross/{descriptive-slug}_{YYYY-MM-DD_HHMM}_{skill}_{affix}.md`** — for peer-comparison and cross-company analyses (e.g., `_cross/LLY-vs-peers_2026-06-03_comps_peer-comparison.md`).
+- **`_sector/{sector_name}/{YYYY-MM-DD_HHMM}_{skill}_{affix}.md`** — for pure sector/thematic analyses with no primary ticker (e.g., `_sector/pharma/2026-06-03_sector-overview.md`). Sector names are lowercase-hyphenated.
+
+YAML frontmatter uses `tickers: [LLY, NVO, PFE]` (plural array) for multi-ticker files vs `ticker: LLY` (singular) for single-ticker. Exactly one of `ticker` or `tickers` MUST be present — never both. Skills producing multi-ticker output: `comps-analysis`, `competitive-landscape`, `sector-overview`, and any skill invoked with `--peers=<T1>,<T2>`.
+
+## agentii.md Append Protocol (spec 023 Phase 20 T293 — FR-087)
+
+As the FINAL mandatory action after writing the output file, every skill MUST append a structured YAML frontmatter block to `agentii.md` at the workspace root:
+
+```yaml
+---
+ticker: LLY
+date: 2026-06-03
+skill: recent-quarter
+output_file: LLY/2026-06-03_1430_recent-quarter_consolidated-p-and-l.md
+key_conclusions: Q1 2026 revenue $18.5B (+12% QoQ), EPS $2.34 beat consensus by 4%.
+---
+```
+
+- If `agentii.md` does not exist, create it with a `# Project Memory Index` heading.
+- Entries are APPEND-ONLY — never modify or delete existing entries.
+- Multi-ticker outputs use `tickers: [LLY, NVO]` instead of `ticker: LLY`.
+- The agent auto-reads `agentii.md` on session start for memory discovery (FR-087).
+
+## Two-Tier Output Model (spec 023 Phase 20 T296 — FR-091)
+
+Skills MUST follow a two-tier output model:
+
+**Tier 1 — Raw Analysis**: Per-skill output files in `{ticker}/` (or `_cross/`, `_sector/`) per FR-079. Detailed, citation-dense, full methodology. These are the evidence.
+
+**Tier 2 — Curated Snapshots**: After completing 2+ skills on the same ticker in a single session, the agent MUST synthesize a snapshot at `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md`. The snapshot:
+- Distills conclusions across all skills run in the session.
+- Flags changes from the prior snapshot (if one exists) with a "## Changes from Prior Snapshot" section.
+- References the prior snapshot's path for audit trail continuity.
+- Updates `agentii.md` with the new `snapshot_ref` field.
+
+Snapshots are cumulative — each references the prior one, forming an audit trail of evolving investment beliefs.
+
+## FACT/DEDUCTED/VIEW Classification Taxonomy (spec 023 Phase 20 T297 — FR-092)
+
+Every claim in a Tier 2 snapshot MUST be classified into exactly one of three categories:
+
+| Badge | Meaning | Example |
+|-------|---------|---------|
+| `**[FACT]**` | Verifiable from SEC filings | "Q1 2026 revenue was $18.5B (10-Q, page12)" |
+| `**[DEDUCTED]**` | Direct logical/mathematical deduction from facts | "QoQ revenue growth = +12% ($16.5B → $18.5B)" |
+| `**[VIEW]**` | Subjective assessment, opinion, synthesis | "GLP-1 pipeline undervalued relative to $100B TAM" |
+
+The inline badge format is `**[FACT]**`, `**[DEDUCTED]**`, `**[VIEW]**` placed at the beginning of each claim. Every snapshot MUST include a summary table:
+
+```markdown
+| Category | Count | % |
+|----------|-------|---|
+| [FACT] | 12 | 52% |
+| [DEDUCTED] | 8 | 35% |
+| [VIEW] | 3 | 13% |
+| **Total** | **23** | 100% |
+```
+
+## Workspace style.md Override Check (spec 023 Phase 20 T307 — FR-094)
+
+During FR-075 pre-flight, the agent MUST check for `./style.md` in the workspace root. If found, parse override fields and apply them:
+
+| Override | Effect |
+|----------|--------|
+| `default_lookback_quarters: 12` | Override skill's temporal scope default |
+| `reporting_currency: EUR` | Prefer EUR over USD for non-US companies |
+| `sector_focus: pharma` | Limit analysis to specified sectors |
+| `output_verbosity: comprehensive` | concise / standard / comprehensive |
+| `peer_universe: [NVO, PFE, MRK]` | Default peer list for comps analysis |
+
+Precedence: workspace `style.md` > package `style.md` > skill defaults.
+
 ## Citation Link Format (spec 023 Phase 19 T287 — FR-081)
 
-When citing specific pages from SEC filings, skills MUST generate clickable citation links in the format:
+When citing specific pages from SEC filings, skills MUST generate clickable citation links. The preferred format is the path-based short URL:
 
+```
+[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})
+```
+
+**Example**: `[📄 LLY 8-K p.19](https://agentii.ai/v/LLY/sec129/19)`
+
+**URL format specification**:
+- `{ticker}` (required) — uppercase issuer ticker, position 1 in path, e.g., `LLY`
+- `{citation_id}` (required) — filing citation ID, position 2 in path, e.g., `sec129`
+- `{N}` (optional) — bare page number, position 3 in path, e.g., `19`; auto-normalized to `page19` by the server. When omitted (e.g., `/v/LLY/sec129`), the viewer scrolls to the document top.
+
+**Legacy query-param format** (backward compatible, still accepted):
 ```
 [📄 {ticker} {form_type} p.{page_no}](https://www.agentii.ai/view?ticker={ticker}&citation_id={citation_id}&page_no={page_no})
 ```
+Short query param aliases (`t=`, `c=`, `p=`) are also accepted: `agentii.ai/view?t=LLY&c=sec129&p=19`
 
-**Example**: `[📄 LLY 8-K p.19](https://www.agentii.ai/view?ticker=LLY&citation_id=sec129&page_no=page19)`
+**Token efficiency**: The path-based format uses ~7 tokens vs ~18 for the legacy query-param format (~61% savings). For a 50-citation report, this saves ~550 tokens.
 
-**URL format specification**:
-- `ticker` (required) — uppercase issuer ticker, e.g., `LLY`
-- `citation_id` (required) — filing citation ID, e.g., `sec129`
-- `page_no` (optional) — page number in `page<N>` format, e.g., `page19`; when omitted, the portal `/view` page scrolls to the document top
-
-**Portal behavior**: The `www.agentii.ai/view` page (spec 019 Phase D1) resolves the document via `pipeline.src_documents JOIN pipeline.sec_filings`, fetches the `combined.htm` from R2 cloud storage (bronze disk fallback), finds the `<!-- PAGE_MARKER:{citation_id}_{page_no}_START -->` marker, and scrolls the browser to that page position. Unauthenticated users are redirected to `/signin`.
+**Portal behavior**: The `agentii.ai/v/{ticker}/{citation_id}/{N}` route (spec 019 Phase D) issues a redirect to `api.agentii.ai/v1/view_document/{ticker}/{citation_id}?page_no=page{N}`, which resolves the document via `pipeline.src_documents JOIN pipeline.sec_filings`, fetches the `combined.htm` from R2 cloud storage (bronze disk fallback), finds the `<!-- PAGE_MARKER:{citation_id}_{page_no}_START -->` marker, injects a sidebar with page navigation, and scrolls the browser to that page position. The view_document endpoint is public (no auth required).
 
 **Link rendering**: In iTerm2 and macOS Terminal, URLs are highlighted and Cmd+Click opens them in the default browser. All citation links in output files (FR-079) and evidence-pack entries (FR-046b) MUST use this format. The citation density requirement (≥1 citation per 200 words) applies to these links — each distinct page reference counts as one citation.
 
