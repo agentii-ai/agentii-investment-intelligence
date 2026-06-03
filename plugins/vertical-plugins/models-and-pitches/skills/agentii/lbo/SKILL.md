@@ -89,8 +89,9 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 1. **sources vs uses**: sources = uses within 0.1% tolerance. *If failed*: If unbalanced: refuse delivery.
 2. **sponsor IRR**: >= 20% at exit. *If failed*: If IRR < 20%: flag in assumptions.
 3. **debt schedule**: mandatory repayments present for each tranche. *If failed*: If missing: refuse delivery.
+4. **calculation arc cross-validation (FR-086)**: cross-statement balancing verified against `gold.xbrl_calculations` weights — the LBO model's financial projections MUST align with the filer's reported accounting relationships. Call `get_statement_structure/{ticker}?statement_type=balance_sheet&include_calculations=true`. Flag discrepancies ≥1% of parent concept value. *If failed*: If material discrepancy (≥1%): flag in audit findings.
 
-4. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
+5. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
 
 ## Tool Fallbacks
 

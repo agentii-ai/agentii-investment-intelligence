@@ -38,6 +38,22 @@ min_tool_diversity: 3
 
 This skill follows the agentii retrieval protocol. Retrieval scope: **simple_lookup**. Minimum tool diversity: 3 distinct tools.
 
+**Calculation arc audit pattern (FR-086 — 2026-06-03)**: When auditing a financial model workbook, this skill MUST cross-validate workbook computed totals against the XBRL calculation linkbase. The audit pattern:
+
+1. **Retrieve calculation tree**: call `get_calculation_tree/{ticker}?statement_type=<income_statement|balance_sheet|cash_flow>` to get the expected parent-child formula relationships from `gold.xbrl_calculations` (756K rows). Each edge carries a `weight` (+1.0 for additive, -1.0 for subtractive).
+2. **Reconstruct expected totals**: for each parent concept, compute `expected_value = Σ(child_value × weight)` per the XBRL calculation linkbase.
+3. **Compare workbook vs expected**: for each parent-child relationship in the workbook, compare the workbook's computed total against the XBRL-expected total. Flag discrepancies ≥1% of the parent concept value as audit findings.
+4. **Cross-validate with `validate_calculation/{ticker}`**: the endpoint performs automated calculation validation against `gold.xbrl_calculations` — use it as a second pass to catch discrepancies the workbook audit may have missed.
+
+Discrepancies are categorized: (a) **material** (≥5% of parent value) — refuse delivery; (b) **minor** (1-5%) — flag in audit findings with `severity: warning`; (c) **negligible** (<1%) — note in audit trail but do not block delivery.
+
+## Validation Gates
+
+1. **calculation arc cross-validation (FR-086)**: workbook computed totals verified against `gold.xbrl_calculations` weights. Compare `get_calculation_tree/{ticker}` expected values against workbook formulas. Flag discrepancies ≥1% of parent concept value. *If failed*: If material discrepancy (≥5%): refuse delivery. If minor (1-5%): flag in audit findings with `severity: warning`.
+2. **hardcoded cell detection**: zero hardcoded values in cells tagged as formulas. Use `xlsx_audit` hardcoded-count output. *If failed*: If hardcoded_count > 0: refuse delivery with audit report listing each hardcoded cell location.
+3. **cross-sheet reference integrity**: all cross-sheet references resolve to valid cell ranges. *If failed*: If broken references found: refuse delivery with broken reference map.
+4. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (3). *If failed*: flag as depth-insufficient in Coverage Gaps.
+
 ## Output Structure
 
 1. Executive Summary

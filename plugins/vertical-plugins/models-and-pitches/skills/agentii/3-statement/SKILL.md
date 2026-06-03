@@ -54,7 +54,7 @@ This skill performs unstructured document search at scale across SEC filings (10
 ### Retrieval Strategy
 
 Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts.
+- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts. **Before querying XBRL facts, optionally call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<YYYY>` to retrieve the exact line-item hierarchy from `gold.xbrl_presentation` (3.8M rows) — prevents concept-name hallucination and ensures accurate IS/BS/CF line-item ordering per FR-085.**
 - Branch (b) for multi-period unstructured queries via `search_cross_period`.
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
@@ -89,8 +89,9 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 1. **balance sheet balance**: Assets = Liabilities + Equity within 1% tolerance. *If failed*: If unbalanced > 1%: refuse delivery, report imbalance amount.
 2. **cash flow tie-out**: CF ending cash = BS cash for current period. *If failed*: If mismatched: refuse delivery, report discrepancy.
 3. **forecast years**: exactly 5 historical + 5 forecast years. *If failed*: If < 5+5: flag in Coverage Gaps, proceed with available data.
+4. **calculation arc cross-validation (FR-086)**: cross-statement balancing verified against `gold.xbrl_calculations` weights — each parent concept's value equals the weighted sum of its children per the XBRL calculation linkbase (e.g., `Assets = +1.0 × CurrentAssets + 1.0 × NoncurrentAssets`, `NetIncomeLoss = +1.0 × Revenues - 1.0 × OperatingExpenses + ...`). Call `get_statement_structure/{ticker}?statement_type=<type>&include_calculations=true` to retrieve the weighted parent-child relationships. Flag discrepancies ≥1% of parent concept value as audit findings. *If failed*: If any material discrepancy (≥1% of parent value): flag in audit findings, refuse delivery for discrepancies ≥5%.
 
-4. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
+5. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
 
 ## Tool Fallbacks
 
