@@ -8,6 +8,9 @@ temporal_scope:
 allowed_tools:
   - search_companies
   - get_company_financials
+  - get_calculation_tree
+  - validate_calculation
+  - list_sources
 retrieval_scope: simple_lookup
 min_tool_diversity: 3
 ---

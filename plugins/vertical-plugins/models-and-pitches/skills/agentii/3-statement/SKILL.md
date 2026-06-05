@@ -11,6 +11,7 @@ allowed_tools:
   - get_company_financials
   - get_company_profile
   - search_earnings_calendar
+  - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -77,6 +78,7 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
    - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
    - Layer 3: `read_source_pages` to deep-read only selected pages.
 4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
+5. **xlsx-financials output (FR-088)**: invoke `xlsx-financials` as sub-skill to produce formatted `.xlsx` workbook from `get_statement` data for IS, BS, and CF statements. Output: `{ticker}/{YYYY-MM-DD_HHMM}_statement-{type}.xlsx` with calculation arc cross-validation per FR-086.
 
 ## Deliverable Chain
 
@@ -108,7 +110,16 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
+1. **Executive Summary** — key model outputs (revenue CAGR, terminal EBITDA margin, ending cash balance), model integrity check results
+2. **Historical Income Statement** (3-5 years) — revenue, COGS, gross profit, operating expenses, operating income, net income, diluted EPS with YoY growth rates
+3. **Historical Balance Sheet** (3-5 years) — current assets, non-current assets, current liabilities, non-current liabilities, equity with period-over-period changes
+4. **Historical Cash Flow** (3-5 years) — operating CF, investing CF, financing CF, net change in cash, ending cash balance
+5. **Key Assumptions** — revenue growth rate, margin assumptions (gross/operating/net), working capital ratios (DSO, DIO, DPO), capex % of revenue, tax rate, dividend payout ratio
+6. **Projected Income Statement** (5 forecast years) — same line items as historical with assumption-driven formulas
+7. **Projected Balance Sheet** (5 forecast years) — same line items as historical; BS must balance within 1% per Validation Gate 1
+8. **Projected Cash Flow** (5 forecast years) — same line items as historical; CF ending cash must tie to BS cash per Validation Gate 2
+9. **Cross-Statement Validation** — balance check (A = L + E), cash tie-out, calculation arc cross-validation (FR-086), inter-statement consistency
+10. **Coverage Gaps & Citations** — data not retrievable + full citation index in `{ticker} {citation_id} page<N>` format
 
 ## Error Handling
 

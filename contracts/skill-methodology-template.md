@@ -222,7 +222,7 @@ When citing specific pages from SEC filings, skills MUST generate clickable cita
 
 **Legacy query-param format** (backward compatible, still accepted):
 ```
-[📄 {ticker} {form_type} p.{page_no}](https://www.agentii.ai/view?ticker={ticker}&citation_id={citation_id}&page_no={page_no})
+[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})
 ```
 Short query param aliases (`t=`, `c=`, `p=`) are also accepted: `agentii.ai/view?t=LLY&c=sec129&p=19`
 

@@ -11,6 +11,7 @@ allowed_tools:
   - get_company_financials
   - search_earnings_calendar
   - get_company_profile
+  - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -77,6 +78,7 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
    - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
    - Layer 3: `read_source_pages` to deep-read only selected pages.
 4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
+5. **xlsx-financials output (FR-088)**: invoke `xlsx-financials` as sub-skill to produce formatted `.xlsx` comps table workbook. For multi-ticker comps, output to `_cross/{slug}_{date}_statement-income.xlsx` per FR-093. For single-ticker, output to `{ticker}/{date}_{time}_statement-income.xlsx`.
 
 ## Deliverable Chain
 
@@ -107,7 +109,14 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
+1. **Executive Summary** — target company's relative valuation conclusion (premium/discount/fair vs. peers), key multiple that drives the spread
+2. **Peer Selection Rationale** — 4-8 peers (Validation Gate 1), sector/industry alignment, size proximity (market cap, revenue scale), business model comparability
+3. **Company Profiles** — one paragraph per peer: ticker, market cap, revenue, EBITDA, key business segments, 1-sentence differentiation from target
+4. **Trading Multiples Table** — P/E (LTM + NTM), EV/EBITDA (LTM + NTM), EV/Revenue, P/B, PEG ratio for each peer (Validation Gate 2: EV/EBITDA + P/E at minimum)
+5. **Valuation Summary** — mean, median, high, low for each multiple (Validation Gate 3: statistics table mandatory). Implied valuation range for target
+6. **Relative Value Assessment** — target vs. peer median: premium/discount analysis, justified premium factors (growth, margins, moat), unjustified discount factors (overhang, complexity)
+7. **Cross-Company Comparability Notes** — concept availability verified per FR-085 (`get_statement_structure` for each peer), accounting differences flagged, fiscal-year misalignment noted
+8. **Coverage Gaps & Citations** — data not retrievable + full citation index in `{ticker} {citation_id} page<N>` format
 
 ## Error Handling
 

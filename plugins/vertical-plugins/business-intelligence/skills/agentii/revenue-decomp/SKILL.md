@@ -11,6 +11,7 @@ allowed_tools:
   - get_company_financials
   - search_documents
   - get_company_profile
+  - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 6
 ---

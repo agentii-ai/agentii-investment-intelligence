@@ -120,7 +120,7 @@ Use direct `read_source_outline` (Layer 2) → `read_source_pages` (Layer 3). No
 
 The query asks for company name, sector classification, earnings date, or other single-field metadata.
 
-Use `get_company_profile` / `search_earnings_calendar` / `get_entity_knowledge`. Zero document retrieval.
+Use `get_company_profile` / `search_earnings_calendar`. Zero document retrieval.
 </retrieval_strategy>
 
 ---

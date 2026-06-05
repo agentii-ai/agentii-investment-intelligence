@@ -11,6 +11,7 @@ allowed_tools:
   - get_company_financials
   - get_company_profile
   - search_earnings_calendar
+  - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -77,6 +78,7 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
    - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
    - Layer 3: `read_source_pages` to deep-read only selected pages.
 4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
+5. **xlsx-financials output (FR-088)**: invoke `xlsx-financials` as sub-skill to produce formatted `.xlsx` workbook from `get_statement` data for income statement (FCF projection baseline). Output: `{ticker}/{YYYY-MM-DD_HHMM}_statement-income.xlsx` with calculation arc cross-validation per FR-086.
 
 ## Deliverable Chain
 
@@ -109,7 +111,16 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
+1. **Executive Summary** — intrinsic value per share, upside/downside vs. current price, key value drivers, WACC used
+2. **Key Assumptions** — risk-free rate, equity risk premium, beta, cost of equity (Ke), cost of debt (Kd), target capital structure, WACC, terminal growth rate, projection period (≥5 years per Validation Gate 1)
+3. **Unlevered Free Cash Flow Projection** — EBIT → NOPAT → D&A add-back → Capex → Working Capital Changes → UFCF for each projection year with YoY growth rates
+4. **Terminal Value** — Gordon Growth Model: TV = UFCF(n+1) / (WACC - g). Terminal growth rate must be < risk-free rate (Validation Gate 2)
+5. **Enterprise Value** — PV of projected UFCFs + PV of Terminal Value. Mid-year convention applied where appropriate
+6. **Equity Value Bridge** — Enterprise Value - Net Debt + Cash - Minority Interest → Equity Value
+7. **Per-Share Value** — Equity Value / Fully Diluted Shares Outstanding → intrinsic value per share
+8. **Sensitivity Analysis** — 2-way data table: WACC (rows) × Terminal Growth Rate (columns) → per-share value matrix
+9. **Calculation Arc Cross-Validation (FR-086)** — income statement structure verified against `gold.xbrl_calculations` weights; FCF drivers aligned with historical margins from XBRL
+10. **Coverage Gaps & Citations** — data not retrievable + full citation index in `{ticker} {citation_id} page<N>` format
 
 ## Error Handling
 

@@ -14,6 +14,8 @@ allowed_tools:
   - search_earnings_calendar
   - get_company_financials
   - get_company_profile
+  - list_xbrl_concepts
+  - search_keyword_in_source
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 8
 ---
@@ -25,6 +27,8 @@ min_tool_diversity: 8
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
 **Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
+
+**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 ## Triggers
 
@@ -376,7 +380,9 @@ Where `affix` is a short descriptive slug (e.g., `guidance-vs-estimates`, `analy
 
 The path is RELATIVE to the agent's invocation cwd. Skills MUST NOT write under absolute paths.
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://www.agentii.ai/view?ticker={ticker}&citation_id={citation_id}&page_no={page<N>})`. Example: `[📄 LLY 8-K p.5](https://www.agentii.ai/view?ticker=LLY&citation_id=sec179&page_no=page5)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 8-K p.5](https://agentii.ai/v/LLY/sec179/5)`.
+
+**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
 
 ## Error Handling
 

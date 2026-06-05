@@ -176,24 +176,26 @@ search_cross_period(ticker="LLY", query="management commentary on revenue growth
                     fiscal_periods=["FY2025","FY2024","FY2023","2025Q4","2025Q3","2025Q2"])
 ```
 
-## Citation Link Format (FR-081 — 2026-06-03 — spec 023 Phase 19 T288)
+## Citation Link Format (FR-081 — updated 2026-06-04: path-based for 61% token efficiency)
 
-When citing specific pages from SEC filings, generate clickable links that users can Cmd+Click in their terminal to open the original filing on `www.agentii.ai/view`:
+When citing specific pages from SEC filings, generate clickable path-based links. Position conveys meaning — no query params needed:
 
-**Canonical URL format**: `https://www.agentii.ai/view?ticker={ticker}&citation_id={citation_id}&page_no={page_no}`
+**Canonical URL format**: `https://agentii.ai/v/{ticker}/{citation_id}/{N}`
 
-**Markdown syntax**: `[📄 {ticker} {form_type} p.{page_no}](https://www.agentii.ai/view?ticker={ticker}&citation_id={citation_id}&page_no={page_no})`
+**Markdown syntax**: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`
 
 **Examples**:
-- `[📄 LLY 8-K p.19](https://www.agentii.ai/view?ticker=LLY&citation_id=sec129&page_no=page19)`
-- `[📄 NVDA 10-K p.42](https://www.agentii.ai/view?ticker=NVDA&citation_id=sec188&page_no=page42)`
-- `[📄 ABBV 10-Q p.12](https://www.agentii.ai/view?ticker=ABBV&citation_id=sec232&page_no=page12)`
+- `[📄 LLY 8-K p.19](https://agentii.ai/v/LLY/sec129/19)`
+- `[📄 NVDA 10-K p.42](https://agentii.ai/v/NVDA/sec173/42)`
+- `[📄 ABBV 10-Q p.12](https://agentii.ai/v/ABBV/sec232/12)`
 
-**Portal behavior**: The `/view` page authenticates the user (Supabase Auth — redirects to `/signin` if unauthenticated), resolves the document via `src_documents JOIN sec_filings` on `(filing_date, ticker)`, fetches the `combined.htm` from R2 cloud storage (bronze disk fallback), finds the `<!-- PAGE_MARKER:{citation_id}_{page_no}_START -->` marker in the HTML, and scrolls the browser to that page position.
+**Positional semantics**: Position 1 = ticker (uppercase), Position 2 = citation_id (secN/refN prefix), Position 3 = bare page number (auto-normalized to page{N}). ~7 tokens per citation vs ~18 for query params (61% reduction, ~550 tokens saved per 50-citation report).
 
-**When `page_no` is omitted**: The view defaults to the document top. Useful when citing an entire filing rather than a specific page.
+**Portal behavior**: The `/v/{ticker}/{citation_id}/{N}` route (deployed 2026-06-04) redirects to the API viewer which authenticates the user (Supabase Auth — redirects to `/signin` if unauthenticated), resolves the document via `src_documents JOIN sec_filings` on `(filing_date, ticker)`, fetches the `combined.htm` from R2 cloud storage (bronze disk fallback), finds the `<!-- PAGE_MARKER:{citation_id}_page{N}_START -->` marker, and scrolls the browser to that page position.
 
-**Terminal rendering**: iTerm2 and macOS Terminal highlight URLs automatically — the user Cmd+Clicks to open in their default browser. This works across Claude Code, Codex, OpenClaw, and other CLI agents.
+**When page number is omitted**: The view defaults to the document top (`https://agentii.ai/v/LLY/sec175`).
+
+**Backward compatibility**: The legacy `/view?ticker=...&citation_id=...&page_no=...` format still works. Both URL formats resolve to the same API endpoint.
 
 **Scope**: This format applies to ALL skill output files (FR-079), evidence-pack entries (FR-046b), and any LLM-visible prose that references SEC filing pages. The citation density requirement (≥1 citation per 200 words) applies to these links.
 
@@ -277,3 +279,93 @@ Every analysis MUST include these sections (unless the skill's Output Structure 
 7. **Data Sources** — list of tools called with call counts
 
 **Self-check before declaring completion**: Compare your output against the skill's `## Output Structure` section. If ANY prescribed section is missing, or ANY data point lacks an inline citation, you have NOT met the output contract. Do NOT declare the analysis complete until every section is present and every data point is cited.
+
+## Workspace Memory & Output (FR-087, FR-090–FR-092, FR-095 — Phase 20)
+
+### Two-Tier Output Model
+
+Every skill run produces two tiers of output:
+
+**Tier 1 — Raw Analysis**: Write the detailed, citation-dense analysis file per the skill's `## Output File` section (FR-079). YAML frontmatter (FR-090) is MANDATORY at the top of every output file.
+
+**Tier 2 — Curated Snapshot** (FR-091): After completing 2+ skills on the same ticker in a single session, synthesize a snapshot at `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md`. The snapshot distills conclusions across all skills run, flags changes from the prior snapshot, and uses the classification taxonomy below.
+
+### YAML Frontmatter (FR-090)
+
+Every output file MUST start with a YAML frontmatter block:
+
+```yaml
+---
+ticker: LLY
+date: 2026-06-03
+skill: recent-quarter
+affix: consolidated-p-and-l
+key_metrics:
+  revenue: "$18.5B"
+  eps: "$2.34"
+conclusions: >-
+  Key findings summary.
+facts_count: 12
+deducted_count: 8
+views_count: 3
+citation_count: 23
+---
+```
+
+For multi-ticker analyses, use `tickers: [LLY, NVO, PFE]` instead of `ticker: LLY`. See `contracts/output-frontmatter-schema.md` for the full specification.
+
+### agentii.md Append Protocol (FR-087)
+
+After writing EVERY output file, append a YAML block to `agentii.md` at the workspace root:
+
+```yaml
+---
+ticker: LLY
+date: 2026-06-03
+skill: recent-quarter
+output_file: LLY/2026-06-03_1430_recent-quarter_consolidated-p-and-l.md
+key_conclusions: Q1 2026 revenue $18.5B (+12% QoQ), EPS $2.34 beat consensus by 4%.
+---
+```
+
+Rules:
+- Create `agentii.md` with `# Project Memory Index` heading if it doesn't exist.
+- APPEND only — never modify or delete existing entries.
+- On session start, read `agentii.md` to auto-discover all prior analyses.
+
+### Snapshot Synthesis Trigger (FR-091)
+
+After 2+ skills complete on the same ticker in one session:
+1. Create `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md`.
+2. Distill conclusions across all skills run.
+3. Add "## Changes from Prior Snapshot" section (if prior snapshot exists).
+4. Reference the prior snapshot path for audit trail continuity.
+5. Update `agentii.md` with the `snapshot_ref` field.
+
+### FACT/DEDUCTED/VIEW Classification (FR-092)
+
+Every claim in a Tier 2 snapshot MUST carry exactly one badge prefix:
+
+- `**[FACT]**` — verifiable from SEC filings. Example: "Q1 2026 revenue was $18.5B (10-Q, page12)"
+- `**[DEDUCTED]**` — direct mathematical deduction from facts. Example: "QoQ growth = +12% ($16.5B → $18.5B)"
+- `**[VIEW]**` — subjective assessment or opinion. Example: "GLP-1 pipeline undervalued vs $100B TAM"
+
+Include a summary table at the top of every snapshot:
+```markdown
+| Category | Count | % |
+|----------|-------|---|
+| [FACT] | 12 | 52% |
+| [DEDUCTED] | 8 | 35% |
+| [VIEW] | 3 | 13% |
+```
+
+### Multi-Ticker Output (FR-093)
+
+For analyses covering multiple tickers:
+- Use `_cross/{slug}_{date}_{skill}_{affix}.md` for peer comparisons.
+- Use `_sector/{sector}/{date}_{skill}_{affix}.md` for sector-level analyses.
+- Frontmatter uses `tickers: [LLY, NVO]` (plural array).
+
+### Session Archival (FR-095)
+
+Sessions are stored in `sessions/{YYYY-MM-DD}/` as archival JSONL transcripts. They are NOT auto-loaded (50K+ tokens). Consult `sessions/INDEX.md` on startup to know what history exists. Use the `read_session` tool to access full transcripts when investigating past decisions.

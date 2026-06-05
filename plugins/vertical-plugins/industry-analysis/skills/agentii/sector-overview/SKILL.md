@@ -13,6 +13,10 @@ allowed_tools:
   - get_company_financials
   - list_coverage
   - search_unified
+  - read_source_outline
+  - list_xbrl_concepts
+  - read_source_pages
+  - search_keyword_in_source
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 6
 ---
