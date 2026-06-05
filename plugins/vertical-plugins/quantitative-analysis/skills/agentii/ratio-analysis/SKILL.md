@@ -6,13 +6,14 @@ temporal_scope:
   max_quarters: 12
   description: "Trailing 4 quarters for current ratios, up to 12 for trend analysis"
 allowed_tools:
+  - get_financial_ratios
   - search_xbrl_facts
   - search_companies
   - get_realtime_quote
   - search_earnings_calendar
   - get_company_financials
 retrieval_scope: structured_only
-min_tool_diversity: 5
+min_tool_diversity: 6
 ---
 
 # Financial Ratio Analysis
