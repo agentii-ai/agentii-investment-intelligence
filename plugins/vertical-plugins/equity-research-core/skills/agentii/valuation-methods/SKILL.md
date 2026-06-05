@@ -80,7 +80,7 @@ See frontmatter `allowed_tools` — 8 tools declared for this dimension.
 
 ### Protocol
 
-This skill delivers analyst-grade output via 3 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+This skill delivers analyst-grade output via 3 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter. **Sub-skill integrations**: for growth-adjusted valuation, invoke `peg-valuation` as sub-skill (FR-099). For probability-weighted analysis, use `--mode=scenario` which constructs Bear/Base/Bull cases across all modes (FR-104).
 
 ### Mode: analyst-valuation-methods-comparison
 

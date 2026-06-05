@@ -205,6 +205,14 @@ During FR-075 pre-flight, the agent MUST check for `./style.md` in the workspace
 
 Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
+## Scenario Analysis Cross-Cutting Mode (spec 023 Phase 21 T324 — FR-104)
+
+Scenario Analysis is a cross-cutting mode (`--mode=scenario`) available to ALL valuation skills. NOT a standalone skill — it wraps existing valuation outputs.
+
+**Framework**: (1) identify 2-4 key value drivers from prior analyses (YAML frontmatter per FR-090) and MD&A narrative. (2) Construct Bear/Base/Bull scenarios with probabilities summing to 100%. (3) Run underlying valuation for each scenario. (4) Compute probability-weighted expected value: Σ(Scenario_Value × Probability). (5) Rank key drivers by value impact. (6) Assign conviction: High (narrow spread), Medium, Low (wide spread).
+
+**Skill entry**: every valuation skill's `## Protocol` section MUST include: `**Scenario mode (--mode=scenario)**: constructs Bear/Base/Bull probability-weighted valuation. See contracts/skill-methodology-template.md for the framework.`
+
 ## Citation Link Format (spec 023 Phase 19 T287 — FR-081)
 
 When citing specific pages from SEC filings, skills MUST generate clickable citation links. The preferred format is the path-based short URL:
