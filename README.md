@@ -179,14 +179,14 @@ Data freshness: XBRL facts updated daily via Dagster pipeline. SEC filings index
                     ┌─────▼──────┐                  ┌─────▼──────┐
                     │  Neon      │                  │  Redis     │
                     │  PostgreSQL│                  │  (Upstash) │
-                    │  4.17M     │                  │  agent     │
+                    │  4.17M     │                  │  calls     │
                     │  XBRL facts│                  │  tracing   │
                     └────────────┘                  └────────────┘
 ```
 
-**Data plane**: Neon PostgreSQL (product data — XBRL facts, companies, filings, entity aliases). **Tracing plane**: Redis Upstash (hot, 7d TTL) + Supabase PostgreSQL (cold, long-term audit) — every API call carries `X-Agentii-Trace` header for agent call lineage reconstruction. **Office plane**: `mcp.agentii.ai/office` for Excel/PPT generation.
+**Data plane**: Neon PostgreSQL (product data — XBRL facts, companies, filings, entity aliases). **Tracing plane**: Redis Upstash (hot, 7d TTL) + Supabase PostgreSQL (cold, long-term audit).  **Office plane**: `mcp.agentii.ai/office` for Excel/PPT generation.
 
-See [`contracts/`](./contracts/) for the full API and MCP tool specifications. See [`docs/architecture/`](./docs/architecture/) for trace tree reconstruction and system design.
+See [`contracts/`](./contracts/) for the full API and MCP tool specifications. See [`docs/architecture/`](./docs/architecture/) for system design.
 
 ---
 
@@ -222,7 +222,7 @@ cp -r plugins/vertical-plugins/equity-research-core ~/.config/goose/skills/
 openclaw add ./plugins/vertical-plugins/equity-research-core
 ```
 
-All agents benefit from `ai-agents.txt` at the repo root, which documents the `X-Agentii-Trace` protocol for call lineage tracking. See [`ai-agents.txt`](./ai-agents.txt) and [`contracts/x-agentii-trace-header.md`](./contracts/x-agentii-trace-header.md).
+All agents benefit from `ai-agents.txt` at the repo root. See [`ai-agents.txt`](./ai-agents.txt).
 
 ---
 
@@ -258,7 +258,6 @@ Everything is markdown, YAML, and Python. Fork, edit, PR.
 - **Edit skills** in `plugins/vertical-plugins/`, then run `python3 scripts/sync-agent-skills.py`
 - **Run `python3 scripts/check.py`** before pushing — validates all manifests, frontmatter, and cross-file consistency
 - Skills follow the open Agent Skills standard, supported by Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork
-- New skills must include `X-Agentii-Trace` in `## Preflight` per [`contracts/x-agentii-trace-header.md`](./contracts/x-agentii-trace-header.md)
 
 ---
 

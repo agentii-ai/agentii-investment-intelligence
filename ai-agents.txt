@@ -2,26 +2,6 @@
 
 This file documents protocols that third-party MCP clients and AI agents MUST follow when interacting with the agentii MCP server at `https://mcp.agentii.ai/mcp`.
 
-## Agent Call Tracing (FR-106)
-
-Every MCP tool call MUST include the `X-Agentii-Trace` HTTP header.
-
-**Format**:
-```
-X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}
-```
-
-**Fields**:
-- `agent` (required): Your kebab-case skill name (e.g., `ratio-analysis`, `dcf-model`, `retrieval-subagent`).
-- `parent` (optional): Your parent agent's name. Omit if you are a root agent.
-- `instance` (optional): A unique label when you are one of multiple parallel agents of the same type (e.g., `ratio-analysis-3`).
-
-**Server-injected fields**: The MCP server automatically adds `run_id`, `depth`, and `user_id` — you do NOT need to declare these.
-
-**run_id delivery**: The first tool you call returns a `_run_id` in its result. This run_id spans your entire conversation.
-
-**Protocol**: See `contracts/x-agentii-trace-header.md` and `contracts/x-agentii-trace-delivery.md` for the full specification.
-
 ## Authentication
 
 All calls require an `AGENTII_API_KEY` via `Authorization: Bearer ${AGENTII_API_KEY}` or `X-API-Key: ${AGENTII_API_KEY}` header.
