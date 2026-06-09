@@ -205,6 +205,18 @@ During FR-075 pre-flight, the agent MUST check for `./style.md` in the workspace
 
 Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
+## Agent Call Tracing (spec 023 Phase 22 T337 — FR-106, FR-106a, FR-106d)
+
+Every skill's `## Preflight` section MUST include the agent call tracing instruction. The first tool call returns a `_run_id` in its result (per `contracts/x-agentii-trace-delivery.md`). All subsequent calls propagate the `X-Agentii-Trace` HTTP header.
+
+**Preflight block**:
+
+```
+**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+```
+
+**CI validation**: `scripts/check.py` Check 18 verifies every committed SKILL.md `## Preflight` section contains `X-Agentii-Trace` or `_run_id` keyword.
+
 ## Scenario Analysis Cross-Cutting Mode (spec 023 Phase 21 T324 — FR-104)
 
 Scenario Analysis is a cross-cutting mode (`--mode=scenario`) available to ALL valuation skills. NOT a standalone skill — it wraps existing valuation outputs.

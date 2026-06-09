@@ -369,3 +369,31 @@ For analyses covering multiple tickers:
 ### Session Archival (FR-095)
 
 Sessions are stored in `sessions/{YYYY-MM-DD}/` as archival JSONL transcripts. They are NOT auto-loaded (50K+ tokens). Consult `sessions/INDEX.md` on startup to know what history exists. Use the `read_session` tool to access full transcripts when investigating past decisions.
+
+### Agent Call Tracing (FR-106, FR-106a, FR-106d — Phase 22)
+
+Every MCP tool call you make is traced via the `X-Agentii-Trace` HTTP header to enable workflow reconstruction, credit attribution, and debugging.
+
+**How it works:**
+
+1. **First tool call**: The first tool you call returns a `_run_id` in its result (e.g., `"_run_id": "run-42"`). This is your run identifier — it spans your entire conversation.
+
+2. **All subsequent calls**: Include `X-Agentii-Trace` header with your agent identity:
+   ```
+   X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}
+   ```
+   The MCP server auto-injects `run_id`, `depth`, and `user_id` — you only declare `agent`, `parent`, and `instance`.
+
+3. **When spawning parallel sub-agents**: Assign each a unique `instance` label (e.g., `equity-research-1`, `equity-research-2`). This enables the trace system to distinguish parallel siblings of the same agent type.
+
+4. **New conversation = new run_id**: Each Claude Code session gets a fresh `run_id`.
+
+**Fields you declare:**
+
+| Field | When | Example |
+|-------|------|---------|
+| `agent` | Always | `ratio-analysis`, `dcf-model`, `retrieval-subagent` |
+| `parent` | When spawned by another agent | `equity-research` |
+| `instance` | When running in parallel with same-type agents | `ratio-analysis-3` |
+
+See `contracts/x-agentii-trace-header.md` for the full contract.

@@ -28,6 +28,8 @@ Peter Lynch PEG (Price/Earnings to Growth) methodology. PEG = P/E Ratio ÷ Earni
 
 **`get_realtime_quote` availability (FR-105)**: If `get_realtime_quote` is not yet deployed, prompt user for current stock price. PE numerator from `search_earnings_calendar` (NTM consensus EPS × current price = PE) as fallback.
 
+
+**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - PEG valuation for {ticker}

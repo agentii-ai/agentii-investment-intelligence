@@ -25,22 +25,26 @@ agentic-search mechanisms FR-056, FR-058, FR-060, FR-064):
       contracts/mcp-canonical.json (FR-010, Round 4 Q15).
   14. Every command .md file in plugins/**/commands/ ends with the canonical
       MODE_SYNTAX.md footer link (FR-052b, Round 4 Q12).
-  15–18. (Reserved for FR-044 protocol, pre-publish gate, essentials.yaml, fingerprint drift)
-  19. Every SKILL.md has temporal_scope frontmatter block with valid
+  15–17. (Reserved for FR-044 protocol, pre-publish gate, essentials.yaml)
+  18. Every SKILL.md ## Preflight section contains X-Agentii-Trace or
+      _run_id instruction (FR-106g(c) / Phase 22 agent call tracing).
+  19. Contracts x-agentii-trace-header.md and x-agentii-trace-delivery.md
+      exist; mcp-canonical.json includes _trace_note (FR-106g(c) / Phase 22).
+  20. Every SKILL.md has temporal_scope frontmatter block with valid
       default_quarters (1-20), max_quarters (>= default_quarters, <= 20),
       description (FR-058 / Phase 10 agentic search).
-  20. Every SKILL.md has allowed_tools list with valid canonical tool names,
+  21. Every SKILL.md has allowed_tools list with valid canonical tool names,
       office-plane tools only in models-and-pitches, structured_only skills
       exclude document tools (FR-060 / Phase 10).
-  21. Every SKILL.md has three-layer protocol in ## Methodology OR
+  22. Every SKILL.md has three-layer protocol in ## Methodology OR
       valid retrieval_scope opt-out in frontmatter (FR-056 / Phase 10).
-  22. Every SKILL.md ## Methodology has all 5 required subsections
+  23. Every SKILL.md ## Methodology has all 5 required subsections
       (FR-064 / Phase 10).
-  23. Every models-and-pitches skill has references/{formula-sheet,
+  24. Every models-and-pitches skill has references/{formula-sheet,
       validation-checklist, institutional-defaults}.md (FR-068 / Phase 11).
-  24. Every models-and-pitches SKILL.md has ## Deliverable Chain with
+  25. Every models-and-pitches SKILL.md has ## Deliverable Chain with
       Inputs→Build→Validate→Output→Next flow (FR-066 / Phase 11).
-  25. Every models-and-pitches SKILL.md has ## Validation Gates with
+  26. Every models-and-pitches SKILL.md has ## Validation Gates with
       3–5 concrete assertions (FR-067 / Phase 11).
 
 Exit 0 if clean, 1 otherwise. Requires: pyyaml, jsonschema.
@@ -309,10 +313,43 @@ for cmd in PLUGINS.glob("**/commands/*.md"):
             f"`../../../docs/commands/MODE_SYNTAX.md`)"
         )
 
-# --- Check 15-18: reserved for Phase 4 (FR-044 protocol), Phase 9 (pre-publish gate),
-#     Phase 3 essentials.yaml presence, and .upstream-pin.yaml fingerprint drift.
+# --- Check 15-17: reserved for Phase 4 (FR-044 protocol), Phase 9 (pre-publish gate),
+#     Phase 3 essentials.yaml presence.
 
-# --- Check 19: temporal_scope frontmatter field (FR-058) --------------------
+# --- Check 18: SKILL.md Preflight has agent call tracing instruction (FR-106g(c), Phase 22) ---
+for sk in SKILL_FILES:
+    checked += 1
+    text = sk.read_text()
+    preflight_match = re.search(r'## Preflight\n(.*?)(?=\n## )', text, re.DOTALL)
+    if preflight_match:
+        preflight = preflight_match.group(1)
+        if 'X-Agentii-Trace' not in preflight and '_run_id' not in preflight:
+            err(f"agent tracing: {rel(sk)}: ## Preflight missing X-Agentii-Trace or _run_id instruction (FR-106g(c))")
+    else:
+        err(f"agent tracing: {rel(sk)}: ## Preflight section not found")
+
+# --- Check 19: X-Agentii-Trace contract files exist + mcp-canonical.json _trace_note (FR-106g(c), Phase 22) ---
+for contract_file in [
+    CONTRACTS / "x-agentii-trace-header.md",
+    CONTRACTS / "x-agentii-trace-delivery.md",
+]:
+    checked += 1
+    if not contract_file.exists():
+        err(f"agent tracing: {rel(contract_file)}: contract file missing (FR-106g(c))")
+
+checked += 1
+canonical_mcp = CONTRACTS / "mcp-canonical.json"
+if canonical_mcp.exists():
+    try:
+        mcp_data = json.loads(canonical_mcp.read_text())
+        if "_trace_note" not in mcp_data:
+            err(f"agent tracing: {rel(canonical_mcp)}: missing _trace_note field (FR-106g(c))")
+    except json.JSONDecodeError:
+        err(f"agent tracing: {rel(canonical_mcp)}: invalid JSON")
+else:
+    err(f"agent tracing: {rel(canonical_mcp)}: file missing")
+
+# --- Check 20: temporal_scope frontmatter field (FR-058) --------------------
 for sk in SKILL_FILES:
     try:
         _, fm_text, _ = sk.read_text().split("---", 2)
@@ -345,7 +382,7 @@ for sk in SKILL_FILES:
             f"(FR-058 — human-readable rationale required)"
         )
 
-# --- Check 20: allowed_tools frontmatter field (FR-060) ---------------------
+# --- Check 21: allowed_tools frontmatter field (FR-060) ---------------------
 # Gather canonical MCP tool names from tool-name-map.json
 CANONICAL_TOOLS: set[str] = set()
 OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "xlsx.convert", "pptx.build", "pptx.refresh", "pptx.edit", "xlsx.edit"}
@@ -423,7 +460,7 @@ for sk in SKILL_FILES:
                     f"declared by retrieval_scope: structured_only skill (FR-060)"
                 )
 
-# --- Check 21: three-layer protocol presence OR retrieval_scope opt-out (FR-056) ---
+# --- Check 22: three-layer protocol presence OR retrieval_scope opt-out (FR-056) ---
 for sk in SKILL_FILES:
     try:
         _, fm_text, _ = sk.read_text().split("---", 2)
@@ -447,7 +484,7 @@ for sk in SKILL_FILES:
             f"Layer 1→2→2.5→3 OR declare retrieval_scope)"
         )
 
-# --- Check 22: methodology template subsection conformance (FR-064) ----------
+# --- Check 23: methodology template subsection conformance (FR-064) ----------
 METHODOLOGY_SUBS = [
     "### Retrieval Scope",
     "### Retrieval Strategy",
@@ -470,7 +507,7 @@ for sk in SKILL_FILES:
                 f"under ## Methodology (FR-064 — skill-methodology-template.md)"
             )
 
-# --- Check 23: models-and-pitches references/ directory (FR-068) -------------
+# --- Check 24: models-and-pitches references/ directory (FR-068) -------------
 MODELS_DIR = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills"
 REQUIRED_REFS = {"formula-sheet.md", "validation-checklist.md", "institutional-defaults.md"}
 for sk_dir in sorted(MODELS_DIR.iterdir()) if MODELS_DIR.is_dir() else []:
