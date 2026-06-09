@@ -2,20 +2,20 @@
 name: earnings-sentiment
 description: Earnings sentiment analysis, analyst estimates vs guidance, earnings surprise history, consensus sentiment, earnings revision trends, analyst rating changes, earnings beat miss track record, guidance accuracy, whisper numbers, pre-announcement sentiment
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 8
-  description: "Typical lookback: 4 quarters, max: 8"
+ default_quarters: 4
+ max_quarters: 8
+ description: "Typical lookback: 4 quarters, max: 8"
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - search_documents
-  - read_source_outline
-  - read_source_pages
-  - search_earnings_calendar
-  - get_company_financials
-  - get_company_profile
-  - list_xbrl_concepts
-  - search_keyword_in_source
+ - search_companies
+ - search_xbrl_facts
+ - search_documents
+ - read_source_outline
+ - read_source_pages
+ - search_earnings_calendar
+ - get_company_financials
+ - get_company_profile
+ - list_xbrl_concepts
+ - search_keyword_in_source
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 8
 ---
@@ -26,9 +26,9 @@ min_tool_diversity: 8
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 ## Triggers
 
@@ -62,13 +62,13 @@ This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filin
 
 ### Retrieval Strategy
 
-Follow the retrieval strategy decision tree in `retrieval.md`. This skill was upgraded from `structured_only` to `unstructured_document_search` scope per FR-084 (2026-06-03) to pull 8-K earnings press releases, MD&A guidance, and Item 1A risk factors alongside XBRL EPS data. This skill uses:
+Follow the retrieval strategy decision tree in `retrieval.md`. This skill was upgraded from `structured_only` to `unstructured_document_search` scope (2026-06-03) to pull 8-K earnings press releases, MD&A guidance, and Item 1A risk factors alongside XBRL EPS data. This skill uses:
 - Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts.
 - Branch (b) for multi-period unstructured queries spanning 8-K earnings press releases (management tone, sentiment language, guidance language), MD&A guidance discussion (forward-looking sentiment, confidence signals), and Item 1A risk factors (uncertainty context, cautionary language).
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
 
-**Layer 1 `secondary_label` allowlist (FR-078c)**: prefer `?secondary_labels=financial_results_2_02,regulation_fd_disclosure_7_01` to capture earnings-related 8-Ks AND Reg-FD guidance disclosures before Layer 2. For uncertainty context, also query `?secondary_label=other_events_8_01` for material-event 8-Ks that may signal sentiment shifts.
+**Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=financial_results_2_02,regulation_fd_disclosure_7_01` to capture earnings-related 8-Ks AND Reg-FD guidance disclosures before Layer 2. For uncertainty context, also query `?secondary_label=other_events_8_01` for material-event 8-Ks that may signal sentiment shifts.
 
 ### Temporal Scope
 
@@ -80,7 +80,7 @@ See frontmatter `allowed_tools` — 8 tools declared for this dimension.
 
 ### Protocol
 
-This skill delivers analyst-grade output via 6 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+This skill delivers analyst-grade output via 6 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
 
 ### Mode: analyst-sentiment-assessment-current-quarter
 
@@ -97,9 +97,9 @@ This skill delivers analyst-grade output via 6 addressable mode(s); invoke with 
 - `read_source_pages`
 - `search_keyword_in_source`
 
-  - consistency_checks
-  - evidence_requirements
-  - sentiment_classification
+ - consistency_checks
+ - evidence_requirements
+ - sentiment_classification
 - **structure**: ## Current-Quarter Analyst Sentiment Assessment
 
 **Assessment Date**: {Current date}
@@ -267,9 +267,9 @@ Calculate and present variance (delta) between analyst expectations and official
 
 **Variance Analysis**:
 - {Metric with largest positive variance}: Analysts {X}% above guidance
-  - Potential drivers: {Brief explanation} _(cite source filing in standard agentii citation format at runtime)_
+ - Potential drivers: {Brief explanation} _(cite source filing in standard agentii citation format at runtime)_
 - {Metric with negative variance if any}: Analysts {X}% below guidance
-  - Potential concerns: {Brief explanation} _(cite source filing in standard agentii citation format at runtime)_
+ - Potential concerns: {Brief explanation} _(cite source filing in standard agentii citation format at runtime)_
 
 **Overall Assessment**:
 {2-3 sentences summarizing whether analysts are generally above, in-line, or below guidance,
@@ -281,10 +281,10 @@ and potential implications for upcoming earnings}
 - {Context for variances from preview reports}
 
 - **variance_interpretation**:
-  - in_line
-  - material_variance
-  - negative_variance
-  - positive_variance
+ - in_line
+ - material_variance
+ - negative_variance
+ - positive_variance
 
 ### Mode: full-year-estimates-vs-guidance
 
@@ -319,14 +319,14 @@ Calculate variance to assess if analysts are above, in-line, or below guidance.
 ### Metrics Above Guidance
 {For each metric with +variance > 5%}:
 - **{Metric}**: Analysts {X}% above guidance
-  - Analyst rationale: {Key drivers from preview reports} _(cite source filing in standard agentii citation format at runtime)_
-  - Implied upside: <XXM> or <X.XX> per share
+ - Analyst rationale: {Key drivers from preview reports} _(cite source filing in standard agentii citation format at runtime)_
+ - Implied upside: <XXM> or <X.XX> per share
 
 ### Metrics Below Guidance
 {For each metric with -variance > 5%}:
 - **{Metric}**: Analysts {X}% below guidance
-  - Analyst concerns: {Key reasons from preview reports} _(cite source filing in standard agentii citation format at runtime)_
-  - Potential downside: <XXM> or <X.XX> per share
+ - Analyst concerns: {Key reasons from preview reports} _(cite source filing in standard agentii citation format at runtime)_
+ - Potential downside: <XXM> or <X.XX> per share
 
 ### Metrics In-Line (±2%)
 {List metrics with minimal variance}
@@ -342,9 +342,9 @@ for potential guidance revisions in upcoming earnings.}
 - **Key Drivers of Variance**: {Top 2-3 factors explaining estimate vs. guidance delta}
 
 - **variance_significance**:
-  - in_line
-  - material
-  - moderate
+ - in_line
+ - material
+ - moderate
 
 <!-- END port-dimension-prompts methodology + modes -->
 
@@ -363,11 +363,11 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output File
 
-Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_earnings-sentiment_analyst-sentiment.md` per FR-079.
+Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_earnings-sentiment_analyst-sentiment.md` .
 
 ## Output Structure
 
-The final deliverable MUST be written as a markdown file to the workspace using the convention (FR-079):
+The final deliverable MUST be written as a markdown file to the workspace using the convention :
 
 ```
 {ticker}/{YYYY-MM-DD_HHMM}_earnings-sentiment_{affix}.md
@@ -380,9 +380,9 @@ Where `affix` is a short descriptive slug (e.g., `guidance-vs-estimates`, `analy
 
 The path is RELATIVE to the agent's invocation cwd. Skills MUST NOT write under absolute paths.
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 8-K p.5](https://agentii.ai/v/LLY/sec179/5)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 8-K p.5](https://agentii.ai/v/LLY/sec179/5)`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
 
 ## Error Handling
 

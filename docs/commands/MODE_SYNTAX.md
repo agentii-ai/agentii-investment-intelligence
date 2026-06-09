@@ -1,6 +1,6 @@
 # Slash-command Mode & Peer Syntax (v1.0 frozen)
 
-Canonical reference for invoking `agentii-investment-intelligence` slash commands across Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork. Frozen at v1.0 per spec 023 the mode-addressability syntax + Round 4 Q12.
+Canonical reference for invoking `agentii-investment-intelligence` slash commands across Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork. Frozen at v1.0 per the mode-addressability syntax + Round 4 Q12.
 
 ## Invocation Forms
 
@@ -43,17 +43,17 @@ Basket-positional invocation `/agentii:<command> LLY,NVO,PFE` is parseable today
 ### equity-research-core (`/agentii:dcf` is in `models-and-pitches`; `/agentii:competitive` lives here)
 
 ```
-/agentii:competitive LLY                         # essentials_modes default
-/agentii:competitive LLY --mode=peer-overview    # single mode
-/agentii:competitive LLY --modes=peer-overview,market-share  # multi-mode
-/agentii:competitive LLY --mode=all              # full dimension
-/agentii:competitive LLY --peers=NVO,PFE,MRK     # explicit peer set
+/agentii:competitive LLY # essentials_modes default
+/agentii:competitive LLY --mode=peer-overview # single mode
+/agentii:competitive LLY --modes=peer-overview,market-share # multi-mode
+/agentii:competitive LLY --mode=all # full dimension
+/agentii:competitive LLY --peers=NVO,PFE,MRK # explicit peer set
 ```
 
 ### business-intelligence
 
 ```
-/agentii:business-model AAPL                     # essentials default
+/agentii:business-model AAPL # essentials default
 /agentii:revenue-decomp AAPL --mode=segment-by-product
 /agentii:operational-kpi AAPL --modes=ndr,gross-margin,cac-payback
 ```
@@ -61,18 +61,18 @@ Basket-positional invocation `/agentii:<command> LLY,NVO,PFE` is parseable today
 ### industry-analysis
 
 ```
-/agentii:peer-bench LLY --peers=NVO,PFE,MRK,ABBV  # required_peers; --peers= mandatory
-/agentii:competitive-positioning LLY              # auto-resolved peers
+/agentii:peer-bench LLY --peers=NVO,PFE,MRK,ABBV # required_peers; --peers= mandatory
+/agentii:competitive-positioning LLY # auto-resolved peers
 /agentii:supply-chain TSLA --mode=tier-1-suppliers
 ```
 
 ### models-and-pitches
 
 ```
-/agentii:dcf LLY                                  # 5-year DCF, default assumptions
-/agentii:dcf LLY --mode=10-year-extended          # 10-year DCF per spec 023 the models-and-pitches vertical optimization
-/agentii:comps LLY --peers=NVO,PFE,MRK            # comps-analysis: required_peers
-/agentii:pitch-deck LLY --mode=ic-memo            # specific deliverable kind
+/agentii:dcf LLY # 5-year DCF, default assumptions
+/agentii:dcf LLY --mode=10-year-extended # 10-year DCF per the models-and-pitches vertical optimization
+/agentii:comps LLY --peers=NVO,PFE,MRK # comps-analysis: required_peers
+/agentii:pitch-deck LLY --mode=ic-memo # specific deliverable kind
 ```
 
 ## Cross-host Compatibility

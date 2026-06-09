@@ -1,13 +1,13 @@
 ---
 name: earnings-preview-deck
 description: Generate a 4-6 slide earnings preview presentation with consensus estimates,
-  historical surprises, forward catalysts, and peer comparison — fully automated from
-  agentii data-plane tools.
+ historical surprises, forward catalysts, and peer comparison — fully automated from
+ agentii data-plane tools.
 multi_ticker_semantics: single_target
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 8
-  description: Trailing 4 quarters for current estimates and YoY comparisons
+ default_quarters: 4
+ max_quarters: 8
+ description: Trailing 4 quarters for current estimates and YoY comparisons
 allowed_tools:
 - search_earnings_calendar
 - search_xbrl_facts
@@ -31,22 +31,22 @@ curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/offic
 
 # Tier 2: Python+LibreOffice local fallback
 if [ "$OFFICE_BACKEND" = "unreachable" ]; then
-  python3 -c "import openpyxl; import pptx" 2>/dev/null && OFFICE_BACKEND="python" || echo "DEPS_MISSING"
+ python3 -c "import openpyxl; import pptx" 2>/dev/null && OFFICE_BACKEND="python" || echo "DEPS_MISSING"
 fi
 
 # Tier 3: OfficeCLI single-binary fallback
 if [ "$OFFICE_BACKEND" = "unreachable" ]; then
-  officecli --version 2>/dev/null && OFFICE_BACKEND="officecli" || echo "OFFICECLI_MISSING"
+ officecli --version 2>/dev/null && OFFICE_BACKEND="officecli" || echo "OFFICECLI_MISSING"
 fi
 
 if [ "$OFFICE_BACKEND" = "unreachable" ]; then
-  echo "AGENTII_OFFICE_UNREACHABLE: No office backend available."
-  echo "Options: (a) set AGENTII_API_KEY, (b) pip install openpyxl python-pptx, (c) install OfficeCLI"
+ echo "AGENTII_OFFICE_UNREACHABLE: No office backend available."
+ echo "Options: (a) set AGENTII_API_KEY, (b) pip install openpyxl python-pptx, (c) install OfficeCLI"
 fi
 ```
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - generate earnings preview deck

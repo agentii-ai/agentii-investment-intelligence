@@ -1,6 +1,6 @@
 # Cross-references: agentii dims ↔ financial-services skills
 
-Per spec 023 T060b (Round 3 cross-reference exercise). Each `equity-research-core` dimension is informally analogous to a task-shaped skill in `anthropics/financial-services/plugins/vertical-plugins/equity-research/skills/`. The analogs are **inspirational only — NOT a port path**. The agentii dimensions are designed for analytical *breadth* (8 dimensions × 4–9 sub-prompt modes each = 48 modes); the upstream financial-services skills are designed for analytical *workflows* (earnings-preview → morning-note → catalyst-calendar).
+Per (Round 3 cross-reference exercise). Each `equity-research-core` dimension is informally analogous to a task-shaped skill in `anthropics/financial-services/plugins/vertical-plugins/equity-research/skills/`. The analogs are **inspirational only — NOT a port path**. The agentii dimensions are designed for analytical *breadth* (8 dimensions × 4–9 sub-prompt modes each = 48 modes); the upstream financial-services skills are designed for analytical *workflows* (earnings-preview → morning-note → catalyst-calendar).
 
 Every dimension SKILL.md surfaces its analog reference in an `<!-- analog: <skill-name> -->` HTML comment immediately below the frontmatter for auditability.
 
@@ -19,7 +19,7 @@ Every dimension SKILL.md surfaces its analog reference in an `<!-- analog: <skil
 
 ## Why these are inspirational and NOT port paths
 
-1. **Tool surface differs**: financial-services skills reference Daloopa / FactSet / S&P Global MCP connectors. agentii skills reference the spec-019 `mcp.agentii.ai` data plane backed by Neon-hosted `gold.*` schemas. The data-source blocks in `plugins/vertical-plugins/*/data-source-blocks/` are NEW — no upstream analog.
+1. **Tool surface differs**: financial-services skills reference Daloopa / FactSet / S&P Global MCP connectors. agentii skills reference the `mcp.agentii.ai` data plane backed by Neon-hosted `gold.*` schemas. The data-source blocks in `plugins/vertical-plugins/*/data-source-blocks/` are NEW — no upstream analog.
 
 2. **Decomposition philosophy differs**: financial-services models analytical *workflows* (sequence of tasks). agentii models analytical *dimensions* (each dimension is independently addressable; sub-prompts within a dimension share methodology + data context).
 
@@ -31,7 +31,7 @@ Every dimension SKILL.md surfaces its analog reference in an `<!-- analog: <skil
 
 ## What WAS ported from financial-services
 
-The `models-and-pitches` vertical (DCF / comps / 3-statement / LBO / audit-xls / xlsx-author / pitch-deck — 7 skills) is a true port from `financial-services/plugins/vertical-plugins/financial-modeling/skills/`. Those skills retain their upstream commit SHA in `.upstream-pin.yaml` and pass through `scripts/sync-from-upstream.py` with `tool-name-map.json` rewrites and data-source-block overrides. See Phase 4 tasks.
+The `models-and-pitches` vertical (DCF / comps / 3-statement / LBO / audit-xls / xlsx-author / pitch-deck — 7 skills) is a true port from `financial-services/plugins/vertical-plugins/financial-modeling/skills/`. Those skills retain their upstream commit SHA in `.upstream-pin.yaml` and pass through `scripts/sync-from-upstream.py` with `tool-name-map.json` rewrites and data-source-block overrides. See tasks.
 
 ## Audit guidance
 

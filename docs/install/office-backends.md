@@ -81,7 +81,7 @@ Verify your chosen backend works before invoking skills:
 # Python backend
 python3 -c "
 import openpyxl
-wb = openpyxl.Workbook()
+wb = openpyxl.Workbook
 ws = wb.active
 ws['A1'] = 'Hello from agentii'
 wb.save('/tmp/agentii-test.xlsx')

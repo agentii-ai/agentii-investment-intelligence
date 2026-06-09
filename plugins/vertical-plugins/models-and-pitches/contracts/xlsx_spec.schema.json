@@ -1,169 +1,169 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agentii.ai/schemas/v1/xlsx_spec.schema.json",
-  "title": "xlsx_spec (v1.0 frozen)",
-  "description": "Canonical workbook specification produced by analytical-subagent and consumed by agentii-office.xlsx_build / xlsx_recalc / xlsx_audit. Frozen at v1.0 per spec 023 FR-042. The deployment-binding-independent handshake between skill methodology and office-plane execution.",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["spec_version", "model_kind", "sheets", "named_ranges", "formula_cells", "input_cells"],
-  "properties": {
-    "spec_version": {
-      "type": "string",
-      "const": "1.0"
-    },
-    "model_kind": {
-      "type": "string",
-      "enum": ["dcf", "comps", "3-statement", "lbo", "audit-target", "custom"]
-    },
-    "title": { "type": "string" },
-    "primary_ticker": { "type": "string", "pattern": "^[A-Z0-9.-]{1,10}$" },
-    "as_of_date": { "type": "string", "format": "date" },
-    "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "default": "USD" },
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://agentii.ai/schemas/v1/xlsx_spec.schema.json",
+ "title": "xlsx_spec (v1.0 frozen)",
+ "description": "Canonical workbook specification produced by analytical-subagent and consumed by agentii-office.xlsx_build / xlsx_recalc / xlsx_audit. Frozen at v1.0 per. The deployment-binding-independent handshake between skill methodology and office-plane execution.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["spec_version", "model_kind", "sheets", "named_ranges", "formula_cells", "input_cells"],
+ "properties": {
+ "spec_version": {
+ "type": "string",
+ "const": "1.0"
+ },
+ "model_kind": {
+ "type": "string",
+ "enum": ["dcf", "comps", "3-statement", "lbo", "audit-target", "custom"]
+ },
+ "title": { "type": "string" },
+ "primary_ticker": { "type": "string", "pattern": "^[A-Z0-9.-]{1,10}$" },
+ "as_of_date": { "type": "string", "format": "date" },
+ "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "default": "USD" },
 
-    "sheets": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["name"],
-        "properties": {
-          "name": { "type": "string", "minLength": 1, "maxLength": 31, "description": "Excel sheet-name limit." },
-          "description": { "type": "string" },
-          "tab_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
-          "default_column_width": { "type": "number" },
-          "frozen_panes": {
-            "type": "object",
-            "properties": {
-              "row": { "type": "integer", "minimum": 0 },
-              "col": { "type": "integer", "minimum": 0 }
-            }
-          }
-        }
-      }
-    },
+ "sheets": {
+ "type": "array",
+ "minItems": 1,
+ "items": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["name"],
+ "properties": {
+ "name": { "type": "string", "minLength": 1, "maxLength": 31, "description": "Excel sheet-name limit." },
+ "description": { "type": "string" },
+ "tab_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+ "default_column_width": { "type": "number" },
+ "frozen_panes": {
+ "type": "object",
+ "properties": {
+ "row": { "type": "integer", "minimum": 0 },
+ "col": { "type": "integer", "minimum": 0 }
+ }
+ }
+ }
+ }
+ },
 
-    "named_ranges": {
-      "type": "object",
-      "description": "Map of name -> A1-style cell or range reference. Per FR-042 named-range hygiene, every projection/sensitivity formula MUST reference a named range, NOT a raw cell.",
-      "patternProperties": {
-        "^[A-Za-z_][A-Za-z0-9_]*$": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9_]+![A-Z]+\\d+(:[A-Z]+\\d+)?$",
-          "description": "Format: SheetName!A1 or SheetName!A1:B10"
-        }
-      },
-      "additionalProperties": false
-    },
+ "named_ranges": {
+ "type": "object",
+ "description": "Map of name -> A1-style cell or range reference. Per named-range hygiene, every projection/sensitivity formula MUST reference a named range, NOT a raw cell.",
+ "patternProperties": {
+ "^[A-Za-z_][A-Za-z0-9_]*$": {
+ "type": "string",
+ "pattern": "^[A-Za-z0-9_]+![A-Z]+\\d+(:[A-Z]+\\d+)?$",
+ "description": "Format: SheetName!A1 or SheetName!A1:B10"
+ }
+ },
+ "additionalProperties": false
+ },
 
-    "input_cells": {
-      "type": "array",
-      "description": "Assumption cells the user MAY override. Each MUST have a label, default_value, and stable cell_ref. Conventionally placed on an 'Inputs' sheet with yellow fill.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["cell_ref", "label", "default_value"],
-        "properties": {
-          "cell_ref": { "type": "string", "pattern": "^[A-Za-z0-9_]+![A-Z]+\\d+$" },
-          "label": { "type": "string" },
-          "default_value": { "type": ["number", "string", "boolean", "null"] },
-          "unit": { "type": "string", "enum": ["usd_millions", "usd_thousands", "percentage", "ratio", "count", "years", "multiple", "absolute"] },
-          "format": { "type": "string", "description": "Excel number format string, e.g. '#,##0.0%' or '$#,##0_);[Red]($#,##0)'" },
-          "data_validation": {
-            "type": "object",
-            "properties": {
-              "type": { "type": "string", "enum": ["decimal", "whole", "list", "date"] },
-              "min": { "type": "number" },
-              "max": { "type": "number" },
-              "list": { "type": "array", "items": { "type": "string" } }
-            }
-          }
-        }
-      }
-    },
+ "input_cells": {
+ "type": "array",
+ "description": "Assumption cells the user MAY override. Each MUST have a label, default_value, and stable cell_ref. Conventionally placed on an 'Inputs' sheet with yellow fill.",
+ "items": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["cell_ref", "label", "default_value"],
+ "properties": {
+ "cell_ref": { "type": "string", "pattern": "^[A-Za-z0-9_]+![A-Z]+\\d+$" },
+ "label": { "type": "string" },
+ "default_value": { "type": ["number", "string", "boolean", "null"] },
+ "unit": { "type": "string", "enum": ["usd_millions", "usd_thousands", "percentage", "ratio", "count", "years", "multiple", "absolute"] },
+ "format": { "type": "string", "description": "Excel number format string, e.g. '#,##0.0%' or '$#,##0_);[Red]($#,##0)'" },
+ "data_validation": {
+ "type": "object",
+ "properties": {
+ "type": { "type": "string", "enum": ["decimal", "whole", "list", "date"] },
+ "min": { "type": "number" },
+ "max": { "type": "number" },
+ "list": { "type": "array", "items": { "type": "string" } }
+ }
+ }
+ }
+ }
+ },
 
-    "formula_cells": {
-      "type": "array",
-      "description": "Calculated cells. Per FR-042 'no hardcoded projection values' rule + sharp-edges.yaml 'hardcoded-dcf-projection', EVERY projection cell in a DCF / 3-statement model MUST appear here as a formula referencing input_cells / named_ranges. xlsx_audit enforces this — any projection cell containing a literal number raises AGENTII_AUDIT_HARDCODE_FAIL.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["cell_ref", "formula", "category"],
-        "properties": {
-          "cell_ref": { "type": "string", "pattern": "^[A-Za-z0-9_]+![A-Z]+\\d+$" },
-          "formula": { "type": "string", "minLength": 1, "description": "Excel formula starting with =, e.g. '=Inputs!revenue * (1 + Inputs!growth_y1)'" },
-          "category": {
-            "type": "string",
-            "enum": ["projection", "margin", "discount_factor", "pv", "sensitivity", "growth_rate", "wacc", "terminal_value", "label", "subtotal", "ratio", "comp_multiple"]
-          },
-          "description": { "type": "string" },
-          "format": { "type": "string" }
-        }
-      }
-    },
+ "formula_cells": {
+ "type": "array",
+ "description": "Calculated cells. Per 'no hardcoded projection values' rule + sharp-edges.yaml 'hardcoded-dcf-projection', EVERY projection cell in a DCF / 3-statement model MUST appear here as a formula referencing input_cells / named_ranges. xlsx_audit enforces this — any projection cell containing a literal number raises AGENTII_AUDIT_HARDCODE_FAIL.",
+ "items": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["cell_ref", "formula", "category"],
+ "properties": {
+ "cell_ref": { "type": "string", "pattern": "^[A-Za-z0-9_]+![A-Z]+\\d+$" },
+ "formula": { "type": "string", "minLength": 1, "description": "Excel formula starting with =, e.g. '=Inputs!revenue * (1 + Inputs!growth_y1)'" },
+ "category": {
+ "type": "string",
+ "enum": ["projection", "margin", "discount_factor", "pv", "sensitivity", "growth_rate", "wacc", "terminal_value", "label", "subtotal", "ratio", "comp_multiple"]
+ },
+ "description": { "type": "string" },
+ "format": { "type": "string" }
+ }
+ }
+ },
 
-    "sensitivity_tables": {
-      "type": "array",
-      "description": "Excel data-table sensitivities. Each describes a two-variable sensitivity grid.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["sheet", "anchor_cell", "row_input", "column_input", "target_formula"],
-        "properties": {
-          "sheet": { "type": "string" },
-          "anchor_cell": { "type": "string", "pattern": "^[A-Z]+\\d+$" },
-          "row_input": { "type": "string", "description": "Named range OR cell ref driving row-axis variation, e.g. 'wacc'." },
-          "column_input": { "type": "string", "description": "Named range OR cell ref driving column-axis variation, e.g. 'terminal_growth'." },
-          "row_values": { "type": "array", "items": { "type": "number" }, "minItems": 2 },
-          "column_values": { "type": "array", "items": { "type": "number" }, "minItems": 2 },
-          "target_formula": { "type": "string", "description": "Formula computing the sensitivity output, e.g. equity value per share." }
-        }
-      }
-    },
+ "sensitivity_tables": {
+ "type": "array",
+ "description": "Excel data-table sensitivities. Each describes a two-variable sensitivity grid.",
+ "items": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["sheet", "anchor_cell", "row_input", "column_input", "target_formula"],
+ "properties": {
+ "sheet": { "type": "string" },
+ "anchor_cell": { "type": "string", "pattern": "^[A-Z]+\\d+$" },
+ "row_input": { "type": "string", "description": "Named range OR cell ref driving row-axis variation, e.g. 'wacc'." },
+ "column_input": { "type": "string", "description": "Named range OR cell ref driving column-axis variation, e.g. 'terminal_growth'." },
+ "row_values": { "type": "array", "items": { "type": "number" }, "minItems": 2 },
+ "column_values": { "type": "array", "items": { "type": "number" }, "minItems": 2 },
+ "target_formula": { "type": "string", "description": "Formula computing the sensitivity output, e.g. equity value per share." }
+ }
+ }
+ },
 
-    "cell_comments": {
-      "type": "object",
-      "description": "Map cell_ref -> comment_text. Comment text MUST be FR-050 citation format for every quantitative source.",
-      "patternProperties": {
-        "^[A-Za-z0-9_]+![A-Z]+\\d+$": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false
-    },
+ "cell_comments": {
+ "type": "object",
+ "description": "Map cell_ref -> comment_text. Comment text MUST be citation format for every quantitative source.",
+ "patternProperties": {
+ "^[A-Za-z0-9_]+![A-Z]+\\d+$": {
+ "type": "string",
+ "minLength": 1
+ }
+ },
+ "additionalProperties": false
+ },
 
-    "formatting": {
-      "type": "object",
-      "description": "Cross-sheet formatting conventions.",
-      "additionalProperties": false,
-      "properties": {
-        "header_fill": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "default": "#1F2937" },
-        "input_fill": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "default": "#FEF3C7", "description": "Yellow — conventionally marks input cells." },
-        "formula_font_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "default": "#1F2937" },
-        "negative_format": { "type": "string", "enum": ["parentheses_red", "minus_sign"], "default": "parentheses_red" }
-      }
-    },
+ "formatting": {
+ "type": "object",
+ "description": "Cross-sheet formatting conventions.",
+ "additionalProperties": false,
+ "properties": {
+ "header_fill": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "default": "#1F2937" },
+ "input_fill": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "default": "#FEF3C7", "description": "Yellow — conventionally marks input cells." },
+ "formula_font_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "default": "#1F2937" },
+ "negative_format": { "type": "string", "enum": ["parentheses_red", "minus_sign"], "default": "parentheses_red" }
+ }
+ },
 
-    "audit_attestation": {
-      "type": "object",
-      "description": "Populated by xlsx_audit. Echoed back by visualization-subagent in its handoff payload.",
-      "properties": {
-        "passed": { "type": "boolean" },
-        "hardcoded_violations": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["cell_ref", "value", "category"],
-            "properties": {
-              "cell_ref": { "type": "string" },
-              "value": { "type": ["number", "string"] },
-              "category": { "type": "string" }
-            }
-          }
-        },
-        "named_range_coverage_pct": { "type": "number", "minimum": 0, "maximum": 100 }
-      }
-    }
-  }
+ "audit_attestation": {
+ "type": "object",
+ "description": "Populated by xlsx_audit. Echoed back by visualization-subagent in its handoff payload.",
+ "properties": {
+ "passed": { "type": "boolean" },
+ "hardcoded_violations": {
+ "type": "array",
+ "items": {
+ "type": "object",
+ "required": ["cell_ref", "value", "category"],
+ "properties": {
+ "cell_ref": { "type": "string" },
+ "value": { "type": ["number", "string"] },
+ "category": { "type": "string" }
+ }
+ }
+ },
+ "named_range_coverage_pct": { "type": "number", "minimum": 0, "maximum": 100 }
+ }
+ }
+ }
 }

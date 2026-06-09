@@ -1,4 +1,4 @@
-# xlsx-read Tool Contract (FR-089)
+# xlsx-read Tool Contract
 
 `xlsx-read` is a shared MCP/API tool that reads `.xlsx` files from the workspace and returns structured JSON. It is symmetric to `xlsx-author` (output) and enables skills to consume existing analyst workbooks as data sources.
 
@@ -16,41 +16,41 @@ xlsx-read(path: string) → XlsxReadResult
 
 ```json
 {
-  "path": "assumptions.xlsx",
-  "sheets": [
-    {
-      "name": "Inputs",
-      "rows": 45,
-      "columns": 12,
-      "tables": [
-        {
-          "range": "B5:D20",
-          "headers": ["Metric", "Value", "Source"],
-          "row_count": 15,
-          "column_types": ["string", "number", "string"]
-        }
-      ]
-    }
-  ],
-  "formulas": [
-    {
-      "sheet": "DCF",
-      "cell": "C10",
-      "formula": "=Inputs!B5*(1+Inputs!B6)^C9",
-      "precedents": ["Inputs!B5", "Inputs!B6", "DCF!C9"],
-      "dependents": ["DCF!C15", "DCF!C20"]
-    }
-  ],
-  "named_ranges": {
-    "WACC": "Inputs!B8",
-    "TerminalGrowth": "Inputs!B9",
-    "ProjectionYears": "Inputs!B10"
-  },
-  "file_metadata": {
-    "created": "2026-05-15T10:30:00Z",
-    "modified": "2026-06-01T14:22:00Z",
-    "author": "Analyst Name"
-  }
+ "path": "assumptions.xlsx",
+ "sheets": [
+ {
+ "name": "Inputs",
+ "rows": 45,
+ "columns": 12,
+ "tables": [
+ {
+ "range": "B5:D20",
+ "headers": ["Metric", "Value", "Source"],
+ "row_count": 15,
+ "column_types": ["string", "number", "string"]
+ }
+ ]
+ }
+ ],
+ "formulas": [
+ {
+ "sheet": "DCF",
+ "cell": "C10",
+ "formula": "=Inputs!B5*(1+Inputs!B6)^C9",
+ "precedents": ["Inputs!B5", "Inputs!B6", "DCF!C9"],
+ "dependents": ["DCF!C15", "DCF!C20"]
+ }
+ ],
+ "named_ranges": {
+ "WACC": "Inputs!B8",
+ "TerminalGrowth": "Inputs!B9",
+ "ProjectionYears": "Inputs!B10"
+ },
+ "file_metadata": {
+ "created": "2026-05-15T10:30:00Z",
+ "modified": "2026-06-01T14:22:00Z",
+ "author": "Analyst Name"
+ }
 }
 ```
 
@@ -77,7 +77,7 @@ The tool operates on workspace-relative paths only. Absolute filesystem paths ar
 | `dcf-model` | Read analyst's existing WACC/growth assumptions, compare against XBRL-derived values |
 | `comps-analysis` | Read peer universe list from analyst's tracking workbook |
 | `3-statement-model` | Read historical data from analyst's existing model for projection baseline |
-| `audit-xls` | Read workbook for formula auditing and calculation arc cross-validation (FR-086) |
+| `audit-xls` | Read workbook for formula auditing and calculation arc cross-validation  |
 
 ## Integration Pattern
 
@@ -93,6 +93,6 @@ Skills add `xlsx-read` to their `allowed_tools` frontmatter and use it in their 
 
 ## Cross-Reference
 
-- **FR-088**: xlsx-financials skill (Excel output)
-- **FR-086**: Calculation arc cross-validation
-- **FR-089**: This contract
+- ****: xlsx-financials skill (Excel output)
+- ****: Calculation arc cross-validation
+- ****: This contract

@@ -2,16 +2,16 @@
 name: dcf
 description: DCF valuation model, discounted cash flow, intrinsic value, WACC calculation, terminal value, free cash flow projection, equity value per share, DCF sensitivity analysis, unlevered free cash flow, present value calculation, build a DCF
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 12
-  description: "Typical lookback: 4 quarters, max: 12"
+ default_quarters: 4
+ max_quarters: 12
+ description: "Typical lookback: 4 quarters, max: 12"
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - get_company_financials
-  - get_company_profile
-  - search_earnings_calendar
-  - list_xbrl_concepts
+ - search_companies
+ - search_xbrl_facts
+ - get_company_financials
+ - get_company_profile
+ - search_earnings_calendar
+ - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -21,7 +21,7 @@ min_tool_diversity: 5
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - analyze dcf model
@@ -45,9 +45,6 @@ min_tool_diversity: 5
 | include_peers | false | Whether to surface a peer comparison block |
 
 
-
-
-
 ## Methodology
 
 ### Retrieval Scope
@@ -57,7 +54,7 @@ This skill performs unstructured document search at scale across SEC filings (10
 ### Retrieval Strategy
 
 Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts. **Before querying XBRL facts, optionally call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<YYYY>` to retrieve the exact line-item hierarchy from `gold.xbrl_presentation` (3.8M rows) — prevents concept-name hallucination and ensures accurate income statement structure for FCF projection per FR-085.**
+- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts. **Before querying XBRL facts, optionally call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<YYYY>` to retrieve the exact line-item hierarchy from `gold.xbrl_presentation` (3.8M rows) — prevents concept-name hallucination and ensures accurate income statement structure for FCF projection .**
 - Branch (b) for multi-period unstructured queries via `search_cross_period`.
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
@@ -75,12 +72,12 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 1. Pre-retrieval: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format.
 2. Concept discovery: call `list_xbrl_concepts(query=<term>, ticker=<T>)` for unfamiliar XBRL concepts.
 3. Retrieval: follow the three-layer protocol —
-   - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
-   - Layer 2: `read_source_outline` to scan page-level metadata.
-   - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
-   - Layer 3: `read_source_pages` to deep-read only selected pages.
+ - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
+ - Layer 2: `read_source_outline` to scan page-level metadata.
+ - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
+ - Layer 3: `read_source_pages` to deep-read only selected pages.
 4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
-5. **xlsx-financials output (FR-088)**: invoke `xlsx-financials` as sub-skill to produce formatted `.xlsx` workbook from `get_statement` data for income statement (FCF projection baseline). Output: `{ticker}/{YYYY-MM-DD_HHMM}_statement-income.xlsx` with calculation arc cross-validation per FR-086.
+5. **xlsx-financials output**: invoke `xlsx-financials` as sub-skill to produce formatted `.xlsx` workbook from `get_statement` data for income statement (FCF projection baseline). Output: `{ticker}/{YYYY-MM-DD_HHMM}_statement-income.xlsx` with calculation arc cross-validation .
 
 ## Deliverable Chain
 
@@ -92,9 +89,9 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 
 1. **projection horizon**: ≥ 5 years (10 years for secular-trends analysis). *If failed*: If < 5 years: refuse delivery, report actual horizon.
 2. **terminal growth rate**: < risk-free rate proxy (current 10Y UST). *If failed*: If terminal_g ≥ rf: flag in assumptions section, note conservatism violation.
-3. **WACC components**: WACC = (E/V × Ke) + (D/V × Kd × (1-T)) with all components cited to source data. *If failed*: If components uncited: refuse delivery, list missing citations.
+3. **WACC components**: WACC = (E/V × Ke) + (D/V × Kd × (1-T) with all components cited to source data. *If failed*: If components uncited: refuse delivery, list missing citations.
 4. **hardcoded_count**: == 0 for all cells tagged projection|margin|discount_factor|pv|sensitivity per xlsx_audit output. *If failed*: If hardcoded_count > 0: per the hardcode gate, refuse delivery. Bounce back to analytical-subagent ONCE with audit report.
-5. **calculation arc cross-validation (FR-086)**: cross-statement balancing verified against `gold.xbrl_calculations` weights — the DCF free-cash-flow projection and income statement structure MUST align with the filer's reported concept hierarchy. Call `get_statement_structure/{ticker}?statement_type=income_statement&include_calculations=true`. Flag discrepancies ≥1% as audit findings. *If failed*: If material discrepancy (≥1%): flag in audit findings, refuse delivery for discrepancies ≥5%.
+5. **calculation arc cross-validation **: cross-statement balancing verified against `gold.xbrl_calculations` weights — the DCF free-cash-flow projection and income statement structure MUST align with the filer's reported concept hierarchy. Call `get_statement_structure/{ticker}?statement_type=income_statement&include_calculations=true`. Flag discrepancies ≥1% as audit findings. *If failed*: If material discrepancy (≥1%): flag in audit findings, refuse delivery for discrepancies ≥5%.
 
 6. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
 
@@ -121,7 +118,7 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 6. **Equity Value Bridge** — Enterprise Value - Net Debt + Cash - Minority Interest → Equity Value
 7. **Per-Share Value** — Equity Value / Fully Diluted Shares Outstanding → intrinsic value per share
 8. **Sensitivity Analysis** — 2-way data table: WACC (rows) × Terminal Growth Rate (columns) → per-share value matrix
-9. **Calculation Arc Cross-Validation (FR-086)** — income statement structure verified against `gold.xbrl_calculations` weights; FCF drivers aligned with historical margins from XBRL
+9. **Calculation Arc Cross-Validation ** — income statement structure verified against `gold.xbrl_calculations` weights; FCF drivers aligned with historical margins from XBRL
 10. **Coverage Gaps & Citations** — data not retrievable + full citation index in `{ticker} {citation_id} page<N>` format
 
 ## Error Handling

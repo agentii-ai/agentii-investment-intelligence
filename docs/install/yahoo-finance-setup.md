@@ -1,6 +1,6 @@
 # Yahoo Finance Real-Time Price Data Setup
 
-For Tier 1 distributed real-time US stock price data (FR-097). This is the local/development path. For production centralized data, see the Alpaca Markets upgrade path below.
+For Tier 1 distributed real-time US stock price data . This is the local/development path. For production centralized data, see the Alpaca Markets upgrade path below.
 
 ## Overview
 
@@ -53,6 +53,6 @@ When available, `get_realtime_quote` automatically checks the centralized source
 
 ## Cross-Reference
 
-- **FR-097**: Two-tier real-time price data architecture
-- **FR-105**: get_realtime_quote MCP tool contract
+- ****: Two-tier real-time price data architecture
+- ****: get_realtime_quote MCP tool contract
 - **global-stock-data**: Reference implementation at `github.com/simonlin1212/global-stock-data`

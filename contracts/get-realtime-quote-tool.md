@@ -1,4 +1,4 @@
-# get_realtime_quote MCP Tool Contract (FR-105)
+# get_realtime_quote MCP Tool Contract
 
 `get_realtime_quote` provides last-day trading data for US equities via Yahoo Finance v8 API (Tier 1, zero-auth) with a future path to centralized Alpaca Markets data (Tier 2).
 
@@ -16,22 +16,22 @@ get_realtime_quote(ticker: str) → QuoteResult
 
 ```json
 {
-  "ticker": "LLY",
-  "last_close": 850.25,
-  "volume": 3200000,
-  "day_high": 855.50,
-  "day_low": 845.00,
-  "day_range": "845.00 - 855.50",
-  "ma_50": 820.30,
-  "ma_200": 780.15,
-  "market_cap": 810500000000,
-  "pe_ttm": 55.2,
-  "eps_ttm": 15.40,
-  "dividend_yield": 0.008,
-  "beta": 0.42,
-  "timestamp": "2026-06-05T16:00:00-04:00",
-  "source": "yahoo_finance",
-  "stale": false
+ "ticker": "LLY",
+ "last_close": 850.25,
+ "volume": 3200000,
+ "day_high": 855.50,
+ "day_low": 845.00,
+ "day_range": "845.00 - 855.50",
+ "ma_50": 820.30,
+ "ma_200": 780.15,
+ "market_cap": 810500000000,
+ "pe_ttm": 55.2,
+ "eps_ttm": 15.40,
+ "dividend_yield": 0.008,
+ "beta": 0.42,
+ "timestamp": "2026-06-05T16:00:00-04:00",
+ "source": "yahoo_finance",
+ "stale": false
 }
 ```
 
@@ -56,7 +56,7 @@ get_realtime_quote(ticker: str) → QuoteResult
 | `source` | string | — | Data source identifier |
 | `stale` | boolean | — | True if data is from cache (not live) |
 
-## Data Source Architecture (FR-097)
+## Data Source Architecture
 
 ### Tier 1 — Distributed (Current)
 - **Source**: Yahoo Finance v8 API
@@ -82,9 +82,9 @@ get_realtime_quote(ticker: str) → QuoteResult
 ```
 Error response:
 {
-  "error": "RATE_LIMITED",
-  "message": "Real-time quote temporarily unavailable. Retry in 60 seconds or upgrade to agentii.ai for centralized data access.",
-  "retry_after_seconds": 60
+ "error": "RATE_LIMITED",
+ "message": "Real-time quote temporarily unavailable. Retry in 60 seconds or upgrade to agentii.ai for centralized data access.",
+ "retry_after_seconds": 60
 }
 ```
 
@@ -109,8 +109,8 @@ Based on the global-stock-data pattern:
 
 ## Cross-Reference
 
-- **FR-097**: Two-tier real-time price data architecture
-- **FR-098**: Financial ratio analysis skill (consumer)
-- **FR-099**: PEG valuation skill (consumer)
-- **FR-105**: This contract
+- ****: Two-tier real-time price data architecture
+- ****: Financial ratio analysis skill (consumer)
+- ****: PEG valuation skill (consumer)
+- ****: This contract
 - **global-stock-data**: Reference implementation for Yahoo Finance v8 zero-auth pattern

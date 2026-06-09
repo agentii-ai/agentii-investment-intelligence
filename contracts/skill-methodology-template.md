@@ -1,12 +1,12 @@
 # Skill Methodology Template (v1.0)
 
-Canonical `## Methodology` subsection structure for every `SKILL.md` per spec 023 FR-064. All 5 subsections are required and CI-validated (scripts/check.py Check 22). Consumed by `scripts/port-dimension-prompts.py` for auto-generation.
+Canonical `## Methodology` subsection structure for every `SKILL.md` All 5 subsections are required and CI-validated (scripts/check.py Check 22). Consumed by `scripts/port-dimension-prompts.py` for auto-generation.
 
 ## Required Subsections
 
 ### 1. Retrieval Scope
 
-States which FR-056 branch applies:
+States which branch applies:
 
 - **Three-layer protocol applies** (default): this skill performs unstructured document search at scale (candidate document set > 1 filing or > 50 pages). Must encode Layer 1→2→2.5→3 in the Protocol subsection below.
 - **`retrieval_scope: structured_only`**: uses only `search_xbrl_facts` / `get_company_financials` / `search_earnings_calendar` — no unstructured document search.
@@ -15,7 +15,7 @@ States which FR-056 branch applies:
 
 ### 2. Retrieval Strategy
 
-References the retrieval strategy decision tree (FR-057) and declares which of the 4 branches this skill follows:
+References the retrieval strategy decision tree and declares which of the 4 branches this skill follows:
 
 1. **(a) Structured Data Query** — `search_xbrl_facts` with optional `list_xbrl_concepts` pre-condition for concept discovery.
 2. **(b) Multi-Period Unstructured Query** — `search_cross_period` with parallel `period-search-subagent` instances.
@@ -34,7 +34,7 @@ Restates the `temporal_scope` YAML frontmatter block:
 
 Restates the `allowed_tools` YAML frontmatter list with a one-line justification per tool:
 
-- Each tool name matches a canonical MCP surface entry (FR-011 + FR-041).
+- Each tool name matches a canonical MCP surface entry ( + ).
 - Office-plane tools (`xlsx.*`, `pptx.*`) only in `models-and-pitches` skills.
 - `retrieval_scope: structured_only` skills exclude document-retrieval tools.
 
@@ -45,16 +45,16 @@ Step-by-step numbered procedure (modeled on `himself65/finance-skills` pattern):
 1. **Pre-retrieval** (if multi-period): call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format labels.
 2. **Concept discovery** (if structured query with unfamiliar concept): call `list_xbrl_concepts(query=<term>, ticker=<T>)`.
 3. **Retrieval**: follow the three-layer protocol if applicable:
-   - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
-   - Layer 2: `read_source_outline` to scan page-level metadata and identify relevant pages.
-   - Layer 2.5 (optional): `search_keyword_in_source` to keyword-filter large documents.
-   - Layer 3: `read_source_pages` to deep-read only selected pages.
+ - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
+ - Layer 2: `read_source_outline` to scan page-level metadata and identify relevant pages.
+ - Layer 2.5 (optional): `search_keyword_in_source` to keyword-filter large documents.
+ - Layer 3: `read_source_pages` to deep-read only selected pages.
 4. **Multi-period** (if applicable): use `search_cross_period` with parallel `period-search-subagent` instances.
-5. **Evidence-pack handoff**: produce `evidence-pack.json` + `evidence-digest.md` per FR-046b.
+5. **Evidence-pack handoff**: produce `evidence-pack.json` + `evidence-digest.md`
 
-## Production Reality (spec 023 Phase 17 T269 — 2026-05-25)
+## Production Reality
 
-The Neon production database and `api.agentii.ai` REST/MCP surfaces are LIVE and AUTHORITATIVE as of 2026-05-25. Every skill MUST treat the following as ground truth and call the FR-075 pre-flight (`get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`) BEFORE any retrieval planning:
+The Neon production database and `api.agentii.ai` REST/MCP surfaces are LIVE and AUTHORITATIVE as of 2026-05-25. Every skill MUST treat the following as ground truth and call the pre-flight (`get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`) BEFORE any retrieval planning:
 
 - 4.17M `gold.xbrl_facts` (with `is_primary` partial index)
 - 11,575 `pipeline.src_documents` (100% non-null `description`, GIN-indexed `secondary_labels`)
@@ -64,7 +64,7 @@ The Neon production database and `api.agentii.ai` REST/MCP surfaces are LIVE and
 
 Do NOT plan for missing data outside this scope without first calling the pre-flight.
 
-## XBRL Retrieval (spec 023 Phase 17 T256 — supersedes FR-055n)
+## XBRL Retrieval
 
 `search_xbrl_facts` returns `source_authority` (integer 1–3: 3=10-K, 2=10-Q, 1=8-K) and `is_primary` (boolean) on every row.
 
@@ -73,7 +73,7 @@ Do NOT plan for missing data outside this scope without first calling the pre-fl
 - Skills MUST NOT re-implement client-side dedup logic — this is now an API-side concern.
 - The `?include_all_sources=true` flag is reserved for audit-xls and reconciliation workflows; do NOT pass it from analytical skills.
 
-## Layer 2 Page Discovery (spec 023 Phase 17 T262 — page-relevance scoring contract)
+## Layer 2 Page Discovery
 
 Skills performing unstructured document search at scale MUST follow the three-layer retrieval protocol per `retrieval.md`. The Layer 2 page-relevance scoring contract:
 
@@ -83,20 +83,20 @@ Skills performing unstructured document search at scale MUST follow the three-la
 - Use the `dense_keywords_only` opt-in format (`?format=dense_keywords_only`, ~30% smaller payload) for budget-constrained skills.
 - **Bare `page_no` integers are forbidden in any LLM-facing output** — always cite as `{ticker} {citation_id} page<N>`.
 
-## Page Labels JSONB Contract (spec 023 Phase 17 T266)
+## Page Labels JSONB Contract
 
 `pipeline.src_silver_pages.labels` is ONE JSONB column merging the LLM-extracted `general` label set AND every `labels_*` silver-layer folder set. Canonical shape:
 
 ```json
 {
-  "general": {
-    "description": "<~100-char LLM-generated page summary>",
-    "keywords": ["entity", "term", "..."],
-    "category": "<page category>"
-  },
-  "financial_results": { "...": "..." },
-  "guidance": { "...": "..." },
-  "...": "..."
+ "general": {
+ "description": "<~100-char LLM-generated page summary>",
+ "keywords": ["entity", "term", "..."],
+ "category": "<page category>"
+ },
+ "financial_results": { "...": "..." },
+ "guidance": { "...": "..." },
+ "...": "..."
 }
 ```
 
@@ -104,7 +104,7 @@ Skills performing unstructured document search at scale MUST follow the three-la
 - Secondary labels under other top-level keys are dimension-specific (e.g., a financial-results-focused skill may also read `labels->>'financial_results'->>'reported_period'`).
 - The `general` set is populated on 96%+ of 243K silver-pages rows; secondary `labels_*` sets appear in subsets per the dimension match.
 
-## Output File (spec 023 Phase 16 T246 — FR-079)
+## Output File
 
 Every skill MUST write its final deliverable to the user's workspace as a markdown file using the canonical naming convention:
 
@@ -126,9 +126,9 @@ Where:
 
 **Workspace path semantics**: the path is RELATIVE to the agent's invocation cwd, NOT to any plugin install directory. Skills MUST NOT write under absolute system paths.
 
-The skill's `## Output Structure` section MUST specify the affix template and the section ordering of the deliverable. Citation density: ≥1 citation per 200 words, format `{ticker} {citation_id} page<N>` (FR-078a).
+The skill's `## Output Structure` section MUST specify the affix template and the section ordering of the deliverable. Citation density: ≥1 citation per 200 words, format `{ticker} {citation_id} page<N>` .
 
-### Multi-Ticker Output Convention (FR-093)
+### Multi-Ticker Output Convention
 
 Skills producing output covering multiple tickers MUST use shared directories:
 
@@ -137,7 +137,7 @@ Skills producing output covering multiple tickers MUST use shared directories:
 
 YAML frontmatter uses `tickers: [LLY, NVO, PFE]` (plural array) for multi-ticker files vs `ticker: LLY` (singular) for single-ticker. Exactly one of `ticker` or `tickers` MUST be present — never both. Skills producing multi-ticker output: `comps-analysis`, `competitive-landscape`, `sector-overview`, and any skill invoked with `--peers=<T1>,<T2>`.
 
-## agentii.md Append Protocol (spec 023 Phase 20 T293 — FR-087)
+## agentii.md Append Protocol
 
 As the FINAL mandatory action after writing the output file, every skill MUST append a structured YAML frontmatter block to `agentii.md` at the workspace root:
 
@@ -154,13 +154,13 @@ key_conclusions: Q1 2026 revenue $18.5B (+12% QoQ), EPS $2.34 beat consensus by 
 - If `agentii.md` does not exist, create it with a `# Project Memory Index` heading.
 - Entries are APPEND-ONLY — never modify or delete existing entries.
 - Multi-ticker outputs use `tickers: [LLY, NVO]` instead of `ticker: LLY`.
-- The agent auto-reads `agentii.md` on session start for memory discovery (FR-087).
+- The agent auto-reads `agentii.md` on session start for memory discovery .
 
-## Two-Tier Output Model (spec 023 Phase 20 T296 — FR-091)
+## Two-Tier Output Model
 
 Skills MUST follow a two-tier output model:
 
-**Tier 1 — Raw Analysis**: Per-skill output files in `{ticker}/` (or `_cross/`, `_sector/`) per FR-079. Detailed, citation-dense, full methodology. These are the evidence.
+**Tier 1 — Raw Analysis**: Per-skill output files in `{ticker}/` (or `_cross/`, `_sector/`) Detailed, citation-dense, full methodology. These are the evidence.
 
 **Tier 2 — Curated Snapshots**: After completing 2+ skills on the same ticker in a single session, the agent MUST synthesize a snapshot at `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md`. The snapshot:
 - Distills conclusions across all skills run in the session.
@@ -170,7 +170,7 @@ Skills MUST follow a two-tier output model:
 
 Snapshots are cumulative — each references the prior one, forming an audit trail of evolving investment beliefs.
 
-## FACT/DEDUCTED/VIEW Classification Taxonomy (spec 023 Phase 20 T297 — FR-092)
+## FACT/DEDUCTED/VIEW Classification Taxonomy
 
 Every claim in a Tier 2 snapshot MUST be classified into exactly one of three categories:
 
@@ -191,9 +191,9 @@ The inline badge format is `**[FACT]**`, `**[DEDUCTED]**`, `**[VIEW]**` placed a
 | **Total** | **23** | 100% |
 ```
 
-## Workspace style.md Override Check (spec 023 Phase 20 T307 — FR-094)
+## Workspace style.md Override Check
 
-During FR-075 pre-flight, the agent MUST check for `./style.md` in the workspace root. If found, parse override fields and apply them:
+During pre-flight, the agent MUST check for `./style.md` in the workspace root. If found, parse override fields and apply them:
 
 | Override | Effect |
 |----------|--------|
@@ -205,27 +205,27 @@ During FR-075 pre-flight, the agent MUST check for `./style.md` in the workspace
 
 Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
-## Agent Call Tracing (spec 023 Phase 22 T337 — FR-106, FR-106a, FR-106d)
+## Agent Call Tracing
 
 Every skill's `## Preflight` section MUST include the agent call tracing instruction. The first tool call returns a `_run_id` in its result (per `contracts/x-agentii-trace-delivery.md`). All subsequent calls propagate the `X-Agentii-Trace` HTTP header.
 
 **Preflight block**:
 
 ```
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ```
 
 **CI validation**: `scripts/check.py` Check 18 verifies every committed SKILL.md `## Preflight` section contains `X-Agentii-Trace` or `_run_id` keyword.
 
-## Scenario Analysis Cross-Cutting Mode (spec 023 Phase 21 T324 — FR-104)
+## Scenario Analysis Cross-Cutting Mode
 
 Scenario Analysis is a cross-cutting mode (`--mode=scenario`) available to ALL valuation skills. NOT a standalone skill — it wraps existing valuation outputs.
 
-**Framework**: (1) identify 2-4 key value drivers from prior analyses (YAML frontmatter per FR-090) and MD&A narrative. (2) Construct Bear/Base/Bull scenarios with probabilities summing to 100%. (3) Run underlying valuation for each scenario. (4) Compute probability-weighted expected value: Σ(Scenario_Value × Probability). (5) Rank key drivers by value impact. (6) Assign conviction: High (narrow spread), Medium, Low (wide spread).
+**Framework**: (1) identify 2-4 key value drivers from prior analyses (YAML frontmatter per FR-106) and MD&A narrative. (2) Construct Bear/Base/Bull scenarios with probabilities summing to 100%. (3) Run underlying valuation for each scenario. (4) Compute probability-weighted expected value: Σ(Scenario_Value × Probability). (5) Rank key drivers by value impact. (6) Assign conviction: High (narrow spread), Medium, Low (wide spread).
 
 **Skill entry**: every valuation skill's `## Protocol` section MUST include: `**Scenario mode (--mode=scenario)**: constructs Bear/Base/Bull probability-weighted valuation. See contracts/skill-methodology-template.md for the framework.`
 
-## Citation Link Format (spec 023 Phase 19 T287 — FR-081)
+## Citation Link Format
 
 When citing specific pages from SEC filings, skills MUST generate clickable citation links. The preferred format is the path-based short URL:
 
@@ -248,15 +248,15 @@ Short query param aliases (`t=`, `c=`, `p=`) are also accepted: `agentii.ai/view
 
 **Token efficiency**: The path-based format uses ~7 tokens vs ~18 for the legacy query-param format (~61% savings). For a 50-citation report, this saves ~550 tokens.
 
-**Portal behavior**: The `agentii.ai/v/{ticker}/{citation_id}/{N}` route (spec 019 Phase D) issues a redirect to `api.agentii.ai/v1/view_document/{ticker}/{citation_id}?page_no=page{N}`, which resolves the document via `pipeline.src_documents JOIN pipeline.sec_filings`, fetches the `combined.htm` from R2 cloud storage (bronze disk fallback), finds the `<!-- PAGE_MARKER:{citation_id}_{page_no}_START -->` marker, injects a sidebar with page navigation, and scrolls the browser to that page position. The view_document endpoint is public (no auth required).
+**Portal behavior**: The `agentii.ai/v/{ticker}/{citation_id}/{N}` route ( Phase D) issues a redirect to `api.agentii.ai/v1/view_document/{ticker}/{citation_id}?page_no=page{N}`, which resolves the document via `pipeline.src_documents JOIN pipeline.sec_filings`, fetches the `combined.htm` from R2 cloud storage (bronze disk fallback), finds the `<!-- PAGE_MARKER:{citation_id}_{page_no}_START -->` marker, injects a sidebar with page navigation, and scrolls the browser to that page position. The view_document endpoint is public (no auth required).
 
-**Link rendering**: In iTerm2 and macOS Terminal, URLs are highlighted and Cmd+Click opens them in the default browser. All citation links in output files (FR-079) and evidence-pack entries (FR-046b) MUST use this format. The citation density requirement (≥1 citation per 200 words) applies to these links — each distinct page reference counts as one citation.
+**Link rendering**: In iTerm2 and macOS Terminal, URLs are highlighted and Cmd+Click opens them in the default browser. All citation links in output files and evidence-pack entries MUST use this format. The citation density requirement (≥1 citation per 200 words) applies to these links — each distinct page reference counts as one citation.
 
 ## CI Validation
 
 `scripts/check.py` Check 22 validates that every committed `SKILL.md` contains all 5 required subsections under `## Methodology` in order. Violations fail the build.
 
-Additional production-grounded checks (Phase 17):
-- Check 28 (FR-014c): no `skills/*/SKILL.md` outside `skills/agentii/` namespace.
-- Check 29 (FR-079, optional): every skill `## Output Structure` section MUST mention the `{ticker}/{YYYY-MM-DD_HHMM}_{skill_name}_{affix}.md` template path.
-- Check 30 (FR-078a, optional): no bare-integer `page_no` references in `## Methodology` examples — only `{ticker} {citation_id} page<N>` format.
+Additional production-grounded checks :
+- Check 28 : no `skills/*/SKILL.md` outside `skills/agentii/` namespace.
+- Check 29 (, optional): every skill `## Output Structure` section MUST mention the `{ticker}/{YYYY-MM-DD_HHMM}_{skill_name}_{affix}.md` template path.
+- Check 30 (, optional): no bare-integer `page_no` references in `## Methodology` examples — only `{ticker} {citation_id} page<N>` format.

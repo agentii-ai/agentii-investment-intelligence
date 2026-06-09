@@ -1,14 +1,14 @@
 ---
 name: supply-chain-map
 description: 'Supply-chain map: upstream suppliers, downstream customers, key dependencies,
-  and geopolitical-exposure analysis.'
+ and geopolitical-exposure analysis.'
 multi_ticker_semantics: single_target
 parameter_free: false
 temporal_scope:
-  default_quarters: 8
-  max_quarters: 12
-  description: 'Industry analysis: trailing 8 quarters for peer trajectory and competitive
-    dynamics'
+ default_quarters: 8
+ max_quarters: 12
+ description: 'Industry analysis: trailing 8 quarters for peer trajectory and competitive
+ dynamics'
 allowed_tools:
 - search_xbrl_facts
 - list_xbrl_concepts
@@ -29,7 +29,7 @@ min_tool_diversity: 6
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - analyze supply chain map
@@ -51,9 +51,6 @@ min_tool_diversity: 6
 |---|---|---|
 | lookback_years | 3 | Historical data window |
 | include_peers | false | Whether to surface a peer comparison block |
-
-
-
 
 
 ## Methodology
@@ -83,10 +80,10 @@ See frontmatter `allowed_tools` — 11 tools declared for this vertical.
 1. Pre-retrieval: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format.
 2. Concept discovery: call `list_xbrl_concepts(query=<term>, ticker=<T>)` for unfamiliar XBRL concepts.
 3. Retrieval: follow the three-layer protocol —
-   - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
-   - Layer 2: `read_source_outline` to scan page-level metadata.
-   - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
-   - Layer 3: `read_source_pages` to deep-read only selected pages.
+ - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
+ - Layer 2: `read_source_outline` to scan page-level metadata.
+ - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
+ - Layer 3: `read_source_pages` to deep-read only selected pages.
 4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
 
 ## Tool Fallbacks
@@ -104,7 +101,6 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output Structure
 
-*Prescribed deliverable format authored in Phase 3/4/5. Must include: section headings, expected content per section, citation density (≥1 per 200 words).*
 
 ## Error Handling
 

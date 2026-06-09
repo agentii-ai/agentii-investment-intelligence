@@ -1,4 +1,4 @@
-# X-Agentii-Trace run_id Delivery Contract (v1.0, per FR-106a(c))
+# X-Agentii-Trace run_id Delivery Contract (v1.0, per FR-106a(c)
 
 How the LLM agent learns its `run_id` — the fundamental constraint is that Claude Code does NOT inject MCP `serverInfo` or `tools/list` metadata into the LLM system prompt.
 
@@ -29,12 +29,12 @@ On the **first** `tools/call` after `initialize`, the MCP server injects `run_id
 
 ```json
 {
-  "content": [
-    {
-      "type": "text",
-      "text": "{\"_run_id\": \"run-42\", \"ticker\": \"LLY\", \"company_name\": \"Eli Lilly and Co\", ...}"
-    }
-  ]
+ "content": [
+ {
+ "type": "text",
+ "text": "{\"_run_id\": \"run-42\", \"ticker\": \"LLY\", \"company_name\": \"Eli Lilly and Co\", ...}"
+ }
+ ]
 }
 ```
 

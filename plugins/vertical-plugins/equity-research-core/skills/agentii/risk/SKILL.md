@@ -2,20 +2,20 @@
 name: risk
 description: Risk analysis, regulatory risk assessment, competitive risk, macro risk, technology risk, litigation risk, financial risk assessment, enterprise risk, operational risk, geopolitical risk exposure
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 10
-  description: "Typical lookback: 4 quarters, max: 10"
+ default_quarters: 4
+ max_quarters: 10
+ description: "Typical lookback: 4 quarters, max: 10"
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - search_documents
-  - search_sec_filings
-  - get_company_financials
-  - list_coverage
-  - read_source_outline
-  - list_xbrl_concepts
-  - read_source_pages
-  - search_keyword_in_source
+ - search_companies
+ - search_xbrl_facts
+ - search_documents
+ - search_sec_filings
+ - get_company_financials
+ - list_coverage
+ - read_source_outline
+ - list_xbrl_concepts
+ - read_source_pages
+ - search_keyword_in_source
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 8
 ---
@@ -26,12 +26,12 @@ min_tool_diversity: 8
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - analyze dim risk analysis
@@ -69,7 +69,7 @@ Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
 
-**Layer 1 `secondary_label` allowlist (FR-078c)**: prefer `?secondary_labels=other_events_8_01` to surface risk-event 8-Ks (litigation, regulatory action, cyber incidents) before Layer 2. Also score Layer 2 pages whose `labels.general.keywords` contain "risk factors" entity terms.
+**Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=other_events_8_01` to surface risk-event 8-Ks (litigation, regulatory action, cyber incidents) before Layer 2. Also score Layer 2 pages whose `labels.general.keywords` contain "risk factors" entity terms.
 
 ### Temporal Scope
 
@@ -81,7 +81,7 @@ See frontmatter `allowed_tools` — 8 tools declared for this dimension.
 
 ### Protocol
 
-This skill delivers analyst-grade output via 4 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+This skill delivers analyst-grade output via 4 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
 
 ### Mode: general-risk-factors-identification-assessment
 
@@ -95,12 +95,12 @@ Conduct comprehensive risk factor identification and assessment using official i
 disclosures to identify performance stagnation indicators and assess near-term and
 long-term impact across standardized risk categories.
 
-  - executive_summary
-  - long_term_risk_assessment
-  - near_term_risk_assessment
-  - novel_risk_factors
-  - risk_identification
-  - risk_trend_analysis
+ - executive_summary
+ - long_term_risk_assessment
+ - near_term_risk_assessment
+ - novel_risk_factors
+ - risk_identification
+ - risk_trend_analysis
 
 ### Mode: technology-disruption-risk-analysis
 
@@ -114,11 +114,11 @@ Assess technology disruption risk exposure by evaluating secular technology tren
 impacts and emerging technology effects on the company's competitive positioning,
 business model resilience, and long-term strategic viability.
 
-  - emerging_technology_analysis
-  - executive_summary
-  - risk_factors
-  - secular_trend_analysis
-  - strategic_response_assessment
+ - emerging_technology_analysis
+ - executive_summary
+ - risk_factors
+ - secular_trend_analysis
+ - strategic_response_assessment
 
 ### Mode: regulatory-compliance-risk-assessment
 
@@ -132,11 +132,11 @@ Assess regulatory and compliance risk exposure by evaluating recent regulatory
 developments and forward-looking policy risks that could materially impact
 operations, earnings outlook, or strategic initiatives.
 
-  - executive_summary
-  - forward_policy_risk_analysis
-  - recent_regulatory_developments
-  - regulatory_preparedness
-  - risk_mitigation
+ - executive_summary
+ - forward_policy_risk_analysis
+ - recent_regulatory_developments
+ - regulatory_preparedness
+ - risk_mitigation
 
 ### Mode: external-shock-macro-risk-evaluation
 
@@ -150,11 +150,11 @@ Assess external shock and macroeconomic risk exposure by evaluating recent
 macro, geopolitical, and environmental events and analyzing financial
 sensitivity to external volatility factors.
 
-  - executive_summary
-  - external_shock_analysis
-  - financial_sensitivity_analysis
-  - risk_management_assessment
-  - vulnerability_analysis
+ - executive_summary
+ - external_shock_analysis
+ - financial_sensitivity_analysis
+ - risk_management_assessment
+ - vulnerability_analysis
 
 <!-- END port-dimension-prompts methodology + modes -->
 
@@ -173,11 +173,11 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output File
 
-Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_risk_risk-assessment.md` per FR-079.
+Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_risk_risk-assessment.md` .
 
 ## Output Structure
 
-The final deliverable MUST be written as a markdown file to the workspace using the convention (FR-079):
+The final deliverable MUST be written as a markdown file to the workspace using the convention :
 
 ```
 {ticker}/{YYYY-MM-DD_HHMM}_risk_{affix}.md
@@ -190,9 +190,9 @@ Where `affix` is a short descriptive slug (e.g., `risk-matrix`, `regulatory-expo
 
 The path is RELATIVE to the agent's invocation cwd. Skills MUST NOT write under absolute paths.
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.30](https://agentii.ai/v/LLY/sec175/30)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.30](https://agentii.ai/v/LLY/sec175/30)`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
 
 ## Error Handling
 

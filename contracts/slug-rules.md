@@ -1,6 +1,6 @@
 # Slug Rules for `## Mode: <slug>` headings (v1.0 frozen)
 
-Deterministic slugification algorithm used by `scripts/port-dimension-prompts.py` to convert source sub-prompt YAML filenames (or `name:` fields) into mode slugs. Per spec 023 **FR-052b** + Round 4 Q12.
+Deterministic slugification algorithm used by `scripts/port-dimension-prompts.py` to convert source sub-prompt YAML filenames (or `name:` fields) into mode slugs. Per **** + Round 4 Q12.
 
 ## Algorithm
 
@@ -8,13 +8,13 @@ For each sub-prompt YAML at `references/prompts/<dim>/<filename>.yaml`:
 
 1. **If YAML declares a `name:` field at top-level OR under `metadata.description`**, use that as the semantic name; otherwise compute from filename.
 2. **From filename (fallback path)**:
-   - Strip `.yaml` extension.
-   - Strip `_optimized` suffix if present (the optimized version supersedes the bare version per T060).
-   - Strip leading `<dim>_` prefix (e.g., `1_1` → `1`, `2_1_3` → `1_3`).
+ - Strip `.yaml` extension.
+ - Strip `_optimized` suffix if present (the optimized version supersedes the bare version per FR-106).
+ - Strip leading `<dim>_` prefix (e.g., `1_1` → `1`, `2_1_3` → `1_3`).
 3. **Normalize** the chosen string:
-   - Lowercase all ASCII letters.
-   - Replace any run of `[^a-z0-9]+` with a single `-`.
-   - Strip leading and trailing `-`.
+ - Lowercase all ASCII letters.
+ - Replace any run of `[^a-z0-9]+` with a single `-`.
+ - Strip leading and trailing `-`.
 4. **Prepend dimension prefix** (optional, for human readability): the slug body is enough; the parent `## Mode:` heading provides dimension context.
 5. **Reserved keyword check**: if the resulting slug equals `all`, FAIL with `AGENTII_PORT_RESERVED_SLUG` (the `--mode=all` keyword cannot collide with a real mode slug).
 
@@ -45,13 +45,13 @@ When `<filename>.yaml` AND `<filename>_optimized.yaml` both exist (dim-4 has onl
 
 ## Validation
 
-`scripts/validate-mode-syntax.py` (FR-052b) re-runs this algorithm against every SKILL.md and verifies the emitted `## Mode:` headings match. Drift between this contract and the port script's behavior raises `AGENTII_PORT_SLUG_DRIFT` in CI.
+`scripts/validate-mode-syntax.py`  re-runs this algorithm against every SKILL.md and verifies the emitted `## Mode:` headings match. Drift between this contract and the port script's behavior raises `AGENTII_PORT_SLUG_DRIFT` in CI.
 
 ## Reserved slugs (v1.0)
 
 | Slug | Reason |
 |---|---|
-| `all` | `--mode=all` keyword (FR-052b) — runs every mode of the dimension |
+| `all` | `--mode=all` keyword  — runs every mode of the dimension |
 | `essentials` | implicit default when no `--mode=` flag is provided; resolves to skill's `essentials_modes` list |
 
 A real mode whose name slugifies to either reserved keyword MUST be renamed by the analyst before the port runs.

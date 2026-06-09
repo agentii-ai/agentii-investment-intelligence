@@ -2,18 +2,18 @@
 name: recent-quarter
 description: Recent quarter performance analysis, quarterly earnings review, last quarter results, quarterly financial performance, analyze recent quarter, Q4 earnings, quarterly revenue breakdown, EPS this quarter, margin analysis recent quarter, sequential growth, quarterly performance review
 temporal_scope:
-  default_quarters: 1
-  max_quarters: 4
-  description: "Recent quarter analysis focuses on the most recent quarter's P&L. Max 4 quarters for sequential trend."
+ default_quarters: 1
+ max_quarters: 4
+ description: "Recent quarter analysis focuses on the most recent quarter's P&L. Max 4 quarters for sequential trend."
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - get_company_financials
-  - get_company_profile
-  - search_earnings_calendar
-  - get_company_fiscal_calendar
-  - get_ticker_coverage
-  - list_xbrl_concepts
+ - search_companies
+ - search_xbrl_facts
+ - get_company_financials
+ - get_company_profile
+ - search_earnings_calendar
+ - get_company_fiscal_calendar
+ - get_ticker_coverage
+ - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -24,12 +24,12 @@ min_tool_diversity: 5
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - analyze recent quarter performance for {ticker}
@@ -54,13 +54,13 @@ min_tool_diversity: 5
 
 ### 1. Retrieval Scope
 
-This skill performs **structured data retrieval only** (XBRL facts + earnings calendar). No unstructured document search — business-model structural analysis is handled by `/agentii:business-model` (FR-080). This skill is TEMPORAL/QUANTITATIVE per FR-077.
+This skill performs **structured data retrieval only** (XBRL facts + earnings calendar). No unstructured document search — business-model structural analysis is handled by `/agentii:business-model` . This skill is TEMPORAL/QUANTITATIVE .
 
 ### 2. Retrieval Strategy
 
-1. **FR-075 Pre-flight (mandatory)**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`. Route based on coverage.
+1. ** Pre-flight (mandatory)**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`. Route based on coverage.
 2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","EarningsPerShareDiluted"], fiscal_year=[latest])` — returns `is_primary: true` rows by default.
-3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])` — returns EPS actual/estimate/surprise. Use `get_company_fiscal_calendar` for fiscal period orientation, NOT `search_earnings_calendar` (per FR-012a).
+3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])` — returns EPS actual/estimate/surprise. Use `get_company_fiscal_calendar` for fiscal period orientation, NOT `search_earnings_calendar` .
 4. **Consolidated P&L**: `get_company_financials/{ticker}` returns IS/BS/CF highlights with XBRL data.
 
 ### 3. Temporal Scope
@@ -69,11 +69,11 @@ Default: 1 fiscal quarter (max 4). This skill is a temporal snapshot of the most
 
 ### 4. Tool Allowlist
 
-See frontmatter `allowed_tools` — 7 tools declared for this dimension. This skill is `structured_only` per FR-077 (temporal/quantitative only). `search_xbrl_facts` is the primary data source for consolidated P&L metrics. `search_earnings_calendar` provides EPS actuals, estimates, and surprise data. `get_company_fiscal_calendar` resolves fiscal period orientation. Document search and structural analysis belong to `/agentii:business-model` (FR-080).
+See frontmatter `allowed_tools` — 7 tools declared for this dimension. This skill is `structured_only` (temporal/quantitative only). `search_xbrl_facts` is the primary data source for consolidated P&L metrics. `search_earnings_calendar` provides EPS actuals, estimates, and surprise data. `get_company_fiscal_calendar` resolves fiscal period orientation. Document search and structural analysis belong to `/agentii:business-model` .
 
 ### 5. Protocol
 
-1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` (FR-075).
+1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` .
 2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","EarningsPerShareDiluted"], fiscal_year=[latest])` — returns `is_primary: true` rows by default.
 3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])` for EPS actuals, estimates, and surprise percentages.
 4. **Financial highlights**: `get_company_financials/{ticker}` for IS/BS/CF summary data.
@@ -81,7 +81,7 @@ See frontmatter `allowed_tools` — 7 tools declared for this dimension. This sk
 
 ## Modes (5 — temporal / quantitative)
 
-**This skill is temporal/quantitative ONLY.** Structural analysis (business model classification, product-line decomposition, channel analysis) belongs to `/agentii:business-model` (FR-080). Modes below focus on quarterly P&L data, growth rates, margins, and earnings vs. consensus.
+**This skill is temporal/quantitative ONLY.** Structural analysis (business model classification, product-line decomposition, channel analysis) belongs to `/agentii:business-model` . Modes below focus on quarterly P&L data, growth rates, margins, and earnings vs. consensus.
 
 ### Mode: consolidated-p-and-l (essentials)
 
@@ -143,7 +143,7 @@ See frontmatter `allowed_tools` — 7 tools declared for this dimension. This sk
 
 ## Output File
 
-Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_recent-quarter_{affix}.md` per FR-079. Example affixes: `consolidated-p-and-l`, `margin-trends`, `earnings-vs-consensus`.
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_recent-quarter_{affix}.md` . Example affixes: `consolidated-p-and-l`, `margin-trends`, `earnings-vs-consensus`.
 
 ## Output Structure
 
@@ -155,9 +155,9 @@ Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_recent-quarter_{affix
 6. **Forward Outlook** (mode: forward-outlook) — guidance, consensus estimates, upcoming catalysts, earnings date
 7. **Coverage Gaps & Citations** — data not retrievable + citation index in `{ticker} {citation_id} page<N>` format
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-Q p.12](https://agentii.ai/v/LLY/sec178/12)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-Q p.12](https://agentii.ai/v/LLY/sec178/12)`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
 
 ## Error Handling
 

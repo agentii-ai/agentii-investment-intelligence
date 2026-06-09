@@ -1,4 +1,4 @@
-# Session Archival Format (FR-095)
+# Session Archival Format
 
 Session transcripts are stored as archival records in `sessions/{YYYY-MM-DD}/`. They contain the full agent conversation transcript and are accessed only via explicit `read_session` tool call. Sessions are NOT auto-loaded into agent context (transcripts can exceed 50K tokens).
 
@@ -6,13 +6,13 @@ Session transcripts are stored as archival records in `sessions/{YYYY-MM-DD}/`. 
 
 ```
 sessions/
-├── INDEX.md                           # Auto-loaded session index (~1KB)
+├── INDEX.md # Auto-loaded session index (~1KB)
 ├── 2026-06-03/
-│   ├── 0930_ses_a1b2c3d4.jsonl       # Morning LLY analysis session
-│   ├── 1430_ses_e5f6g7h8.jsonl       # Afternoon comps session
-│   └── 1700_ses_i9j0k1l2.jsonl       # End-of-day synthesis session
+│ ├── 0930_ses_a1b2c3d4.jsonl # Morning LLY analysis session
+│ ├── 1430_ses_e5f6g7h8.jsonl # Afternoon comps session
+│ └── 1700_ses_i9j0k1l2.jsonl # End-of-day synthesis session
 └── 2026-06-02/
-    └── 1100_ses_m3n4o5p6.jsonl
+ └── 1100_ses_m3n4o5p6.jsonl
 ```
 
 ## Session File Format
@@ -43,9 +43,9 @@ The INDEX.md file provides a lightweight catalog of all sessions. It IS auto-loa
 
 | Layer | File | Auto-Load? | Purpose |
 |-------|------|------------|---------|
-| Index | `agentii.md` | Yes (FR-087) | Project memory index — what analyses exist, key conclusions |
-| Snapshots | `snapshots/{ticker}/{date}_thesis.md` | Yes (FR-091) | Point-in-time investment thesis — auto-loaded for context restoration |
-| Session Index | `sessions/INDEX.md` | Yes (FR-095) | What sessions exist — lightweight catalog |
+| Index | `agentii.md` | Yes  | Project memory index — what analyses exist, key conclusions |
+| Snapshots | `snapshots/{ticker}/{date}_thesis.md` | Yes  | Point-in-time investment thesis — auto-loaded for context restoration |
+| Session Index | `sessions/INDEX.md` | Yes  | What sessions exist — lightweight catalog |
 | Raw Sessions | `sessions/{date}/{time}_{id}.jsonl` | No | Full transcripts — accessed via `read_session` tool on demand |
 
 ## read_session Tool
@@ -62,6 +62,6 @@ read_session(session_id: string, date?: string, range?: {start: int, end: int}) 
 
 ## Cross-Reference
 
-- **FR-087**: agentii.md memory index
-- **FR-091**: Two-tier output model with snapshots
-- **FR-095**: This contract
+- ****: agentii.md memory index
+- ****: Two-tier output model with snapshots
+- ****: This contract

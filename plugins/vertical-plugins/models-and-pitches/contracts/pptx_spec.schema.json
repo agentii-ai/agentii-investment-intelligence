@@ -1,155 +1,155 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agentii.ai/schemas/v1/pptx_spec.schema.json",
-  "title": "pptx_spec (v1.0 frozen)",
-  "description": "Canonical PowerPoint deck specification produced by analytical-subagent and consumed by agentii-office.pptx_build / pptx_refresh. Frozen at v1.0 per spec 023 FR-042.",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["spec_version", "slides", "slide_layouts"],
-  "properties": {
-    "spec_version": { "type": "string", "const": "1.0" },
-    "deck_kind": {
-      "type": "string",
-      "enum": ["ic-memo", "pitch-deck", "earnings-summary", "sector-overview", "custom"],
-      "description": "Drives default templates and section ordering."
-    },
-    "title": { "type": "string" },
-    "subtitle": { "type": "string" },
-    "primary_ticker": { "type": "string", "pattern": "^[A-Z0-9.-]{1,10}$" },
-    "as_of_date": { "type": "string", "format": "date" },
-    "author": { "type": "string", "default": "agentii.ai" },
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://agentii.ai/schemas/v1/pptx_spec.schema.json",
+ "title": "pptx_spec (v1.0 frozen)",
+ "description": "Canonical PowerPoint deck specification produced by analytical-subagent and consumed by agentii-office.pptx_build / pptx_refresh. Frozen at v1.0 per.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["spec_version", "slides", "slide_layouts"],
+ "properties": {
+ "spec_version": { "type": "string", "const": "1.0" },
+ "deck_kind": {
+ "type": "string",
+ "enum": ["ic-memo", "pitch-deck", "earnings-summary", "sector-overview", "custom"],
+ "description": "Drives default templates and section ordering."
+ },
+ "title": { "type": "string" },
+ "subtitle": { "type": "string" },
+ "primary_ticker": { "type": "string", "pattern": "^[A-Z0-9.-]{1,10}$" },
+ "as_of_date": { "type": "string", "format": "date" },
+ "author": { "type": "string", "default": "agentii.ai" },
 
-    "slide_layouts": {
-      "type": "object",
-      "description": "Named layouts referenced by slides[].layout_name. Conventional names: 'title', 'section-divider', 'two-column', 'chart-full', 'table-full', 'image-caption'.",
-      "patternProperties": {
-        "^[a-z][a-z0-9-]+$": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "master_template": { "type": "string" },
-            "background_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
+ "slide_layouts": {
+ "type": "object",
+ "description": "Named layouts referenced by slides[].layout_name. Conventional names: 'title', 'section-divider', 'two-column', 'chart-full', 'table-full', 'image-caption'.",
+ "patternProperties": {
+ "^[a-z][a-z0-9-]+$": {
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+ "master_template": { "type": "string" },
+ "background_color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+ }
+ }
+ },
+ "additionalProperties": false
+ },
 
-    "slides": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["layout_name", "title", "content_blocks"],
-        "properties": {
-          "slide_index": { "type": "integer", "minimum": 1 },
-          "layout_name": { "type": "string" },
-          "title": { "type": "string" },
-          "subtitle": { "type": "string" },
-          "content_blocks": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/ContentBlock" }
-          },
-          "footer_citation": {
-            "type": "string",
-            "pattern": "^\\[\ud83d\udcc4 [^\\]]+ p\\.\\d+\\]\\(agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+\\)$",
-            "description": "Per-slide footer citation. MUST match FR-050 canonical format."
-          },
-          "speaker_notes": { "type": "string", "maxLength": 5000 }
-        }
-      }
-    },
+ "slides": {
+ "type": "array",
+ "minItems": 1,
+ "items": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["layout_name", "title", "content_blocks"],
+ "properties": {
+ "slide_index": { "type": "integer", "minimum": 1 },
+ "layout_name": { "type": "string" },
+ "title": { "type": "string" },
+ "subtitle": { "type": "string" },
+ "content_blocks": {
+ "type": "array",
+ "items": { "$ref": "#/$defs/ContentBlock" }
+ },
+ "footer_citation": {
+ "type": "string",
+ "pattern": "^\\[\ud83d\udcc4 [^\\]]+ p\\.\\d+\\]\\(agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+\\)$",
+ "description": "Per-slide footer citation. MUST match canonical format."
+ },
+ "speaker_notes": { "type": "string", "maxLength": 5000 }
+ }
+ }
+ },
 
-    "source_footers": {
-      "type": "array",
-      "description": "Per-slide source citations. MUST follow FR-050 format. xlsx_audit/pptx_audit equivalent enforces presence on every data slide.",
-      "items": {
-        "type": "object",
-        "required": ["slide_index", "citation"],
-        "properties": {
-          "slide_index": { "type": "integer", "minimum": 1 },
-          "citation": {
-            "type": "string",
-            "pattern": "^\\[\ud83d\udcc4 [^\\]]+ p\\.\\d+\\]\\(agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+\\)$"
-          }
-        }
-      }
-    },
+ "source_footers": {
+ "type": "array",
+ "description": "Per-slide source citations. MUST follow format. xlsx_audit/pptx_audit equivalent enforces presence on every data slide.",
+ "items": {
+ "type": "object",
+ "required": ["slide_index", "citation"],
+ "properties": {
+ "slide_index": { "type": "integer", "minimum": 1 },
+ "citation": {
+ "type": "string",
+ "pattern": "^\\[\ud83d\udcc4 [^\\]]+ p\\.\\d+\\]\\(agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+\\)$"
+ }
+ }
+ }
+ },
 
-    "charts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["chart_id", "chart_type", "data_ref"],
-        "properties": {
-          "chart_id": { "type": "string" },
-          "chart_type": { "type": "string", "enum": ["bar", "stacked-bar", "line", "area", "waterfall", "scatter", "pie", "doughnut", "combo"] },
-          "data_ref": {
-            "type": "string",
-            "description": "Reference to xlsx_spec sheet+range OR inline table label, e.g. 'Outputs!A1:D10' or 'inline:revenue_waterfall'."
-          },
-          "title": { "type": "string" },
-          "x_axis_label": { "type": "string" },
-          "y_axis_label": { "type": "string" },
-          "color_palette": { "type": "array", "items": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" } },
-          "position": { "$ref": "#/$defs/Position" }
-        }
-      }
-    },
+ "charts": {
+ "type": "array",
+ "items": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["chart_id", "chart_type", "data_ref"],
+ "properties": {
+ "chart_id": { "type": "string" },
+ "chart_type": { "type": "string", "enum": ["bar", "stacked-bar", "line", "area", "waterfall", "scatter", "pie", "doughnut", "combo"] },
+ "data_ref": {
+ "type": "string",
+ "description": "Reference to xlsx_spec sheet+range OR inline table label, e.g. 'Outputs!A1:D10' or 'inline:revenue_waterfall'."
+ },
+ "title": { "type": "string" },
+ "x_axis_label": { "type": "string" },
+ "y_axis_label": { "type": "string" },
+ "color_palette": { "type": "array", "items": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" } },
+ "position": { "$ref": "#/$defs/Position" }
+ }
+ }
+ },
 
-    "tables": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["table_id", "columns", "rows"],
-        "properties": {
-          "table_id": { "type": "string" },
-          "columns": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
-          "rows": { "type": "array", "items": { "type": "array", "items": { "type": ["string", "number", "null"] } } },
-          "highlight_rows": { "type": "array", "items": { "type": "integer" } },
-          "totals_row_index": { "type": "integer" },
-          "position": { "$ref": "#/$defs/Position" }
-        }
-      }
-    }
-  },
+ "tables": {
+ "type": "array",
+ "items": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["table_id", "columns", "rows"],
+ "properties": {
+ "table_id": { "type": "string" },
+ "columns": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+ "rows": { "type": "array", "items": { "type": "array", "items": { "type": ["string", "number", "null"] } } },
+ "highlight_rows": { "type": "array", "items": { "type": "integer" } },
+ "totals_row_index": { "type": "integer" },
+ "position": { "$ref": "#/$defs/Position" }
+ }
+ }
+ }
+ },
 
-  "$defs": {
-    "ContentBlock": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["type"],
-      "properties": {
-        "type": { "type": "string", "enum": ["text", "bullet_list", "table", "chart", "image", "kpi_card"] },
-        "text": { "type": "string" },
-        "bullets": { "type": "array", "items": { "type": "string" } },
-        "table_ref": { "type": "string" },
-        "chart_ref": { "type": "string" },
-        "image_ref": { "type": "string", "description": "Path or presigned-URL." },
-        "kpi": {
-          "type": "object",
-          "properties": {
-            "label": { "type": "string" },
-            "value": { "type": "string" },
-            "delta": { "type": "string" },
-            "citation": { "type": "string" }
-          }
-        },
-        "position": { "$ref": "#/$defs/Position" }
-      }
-    },
-    "Position": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "x_in": { "type": "number" },
-        "y_in": { "type": "number" },
-        "width_in": { "type": "number" },
-        "height_in": { "type": "number" }
-      }
-    }
-  }
+ "$defs": {
+ "ContentBlock": {
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["type"],
+ "properties": {
+ "type": { "type": "string", "enum": ["text", "bullet_list", "table", "chart", "image", "kpi_card"] },
+ "text": { "type": "string" },
+ "bullets": { "type": "array", "items": { "type": "string" } },
+ "table_ref": { "type": "string" },
+ "chart_ref": { "type": "string" },
+ "image_ref": { "type": "string", "description": "Path or presigned-URL." },
+ "kpi": {
+ "type": "object",
+ "properties": {
+ "label": { "type": "string" },
+ "value": { "type": "string" },
+ "delta": { "type": "string" },
+ "citation": { "type": "string" }
+ }
+ },
+ "position": { "$ref": "#/$defs/Position" }
+ }
+ },
+ "Position": {
+ "type": "object",
+ "additionalProperties": false,
+ "properties": {
+ "x_in": { "type": "number" },
+ "y_in": { "type": "number" },
+ "width_in": { "type": "number" },
+ "height_in": { "type": "number" }
+ }
+ }
+ }
 }

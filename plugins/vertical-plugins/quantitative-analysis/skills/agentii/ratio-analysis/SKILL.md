@@ -2,16 +2,16 @@
 name: ratio-analysis
 description: Financial ratio analysis, profitability ratios ROE ROA ROIC, liquidity ratios current quick cash, leverage ratios debt-to-equity interest coverage, efficiency ratios asset turnover inventory turnover DSO, valuation ratios PE PB EV/EBITDA, cross-company ratio comparison, DuPont analysis
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 12
-  description: "Trailing 4 quarters for current ratios, up to 12 for trend analysis"
+ default_quarters: 4
+ max_quarters: 12
+ description: "Trailing 4 quarters for current ratios, up to 12 for trend analysis"
 allowed_tools:
-  - get_financial_ratios
-  - search_xbrl_facts
-  - search_companies
-  - get_realtime_quote
-  - search_earnings_calendar
-  - get_company_financials
+ - get_financial_ratios
+ - search_xbrl_facts
+ - search_companies
+ - get_realtime_quote
+ - search_earnings_calendar
+ - get_company_financials
 retrieval_scope: structured_only
 min_tool_diversity: 6
 ---
@@ -24,14 +24,14 @@ Quantitative skill computing 6 categories of financial ratios from XBRL financia
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides.
 
-**`get_realtime_quote` availability (FR-105)**: If `get_realtime_quote` is not yet deployed in the MCP surface, use `search_earnings_calendar` for PE/earnings data and flag valuation ratios as "current price unavailable — using latest reported data." Prompts user for current stock price as manual fallback.
+**`get_realtime_quote` availability **: If `get_realtime_quote` is not yet deployed in the MCP surface, use `search_earnings_calendar` for PE/earnings data and flag valuation ratios as "current price unavailable — using latest reported data." Prompts user for current stock price as manual fallback.
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - analyze financial ratios for {ticker}
@@ -75,13 +75,13 @@ See frontmatter `allowed_tools` — 5 tools declared for this vertical. `search_
 
 ### Protocol
 
-1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` (FR-075).
+1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` .
 2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","Assets","Liabilities","Equity","OperatingCashFlow","InventoryNet","ReceivablesNet","CurrentAssets","CurrentLiabilities","InterestExpense","LongTermDebt"], fiscal_year=[latest, latest-1, latest-2, latest-3])` — batch all concepts × 4 years.
 3. **Price data**: `get_realtime_quote(ticker)` for current stock price, market cap, PE (TTM).
 4. **Peer identification**: `search_companies(sector=<sector>)` to identify peer tickers for cross-company comparison.
 5. **Compute ratios** into 6 categories per the Ratio Definitions below.
 6. **Cross-company comparison**: for each peer, fetch key ratios and present comparison table with mean/median/high/low.
-7. **Output**: per FR-079 file convention with YAML frontmatter (FR-090).
+7. **Output**: per file convention with YAML frontmatter .
 
 ### Ratio Definitions
 
@@ -90,7 +90,7 @@ See frontmatter `allowed_tools` — 5 tools declared for this vertical. `search_
 |-------|---------|---------------|
 | ROE | Net Income / Avg Total Equity | >15% = strong; measures return to shareholders |
 | ROA | Net Income / Avg Total Assets | >5% = efficient; asset utilization |
-| ROIC | (EBIT × (1 - Tax Rate)) / (Total Debt + Equity - Cash) | > WACC = value-creating |
+| ROIC | (EBIT × (1 - Tax Rate) / (Total Debt + Equity - Cash) | > WACC = value-creating |
 | Gross Margin | Gross Profit / Revenue | Industry-dependent; higher = pricing power |
 | Operating Margin | Operating Income / Revenue | >15% = healthy operations |
 | Net Margin | Net Income / Revenue | >10% = strong bottom-line efficiency |
@@ -126,7 +126,7 @@ See frontmatter `allowed_tools` — 5 tools declared for this vertical. `search_
 | P/B | Price / Book Value Per Share | <1.0 = below book; financials focus |
 | EV/EBITDA | Enterprise Value / EBITDA | Capital-structure neutral |
 | P/S | Market Cap / Revenue | Growth check; <2.0 = reasonable |
-| PEG | P/E / Earnings Growth Rate | <1.0 = undervalued per Peter Lynch (FR-099) |
+| PEG | P/E / Earnings Growth Rate | <1.0 = undervalued per Peter Lynch |
 
 #### Growth
 | Ratio | Formula | Interpretation |
@@ -138,7 +138,7 @@ See frontmatter `allowed_tools` — 5 tools declared for this vertical. `search_
 
 ## Output File
 
-Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_ratio-analysis_{affix}.md` per FR-079. Example affixes: `profitability`, `liquidity-leverage`, `peer-comparison`.
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_ratio-analysis_{affix}.md` . Example affixes: `profitability`, `liquidity-leverage`, `peer-comparison`.
 
 ## Output Structure
 
@@ -152,9 +152,9 @@ Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_ratio-analysis_{affix
 8. **Cross-Company Comparison** — peer ratio comparison table with mean/median/high/low (optional: --peers flag)
 9. **Coverage Gaps & Citations** — data not retrievable + citation index in `{ticker} {citation_id} page<N>` format
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.42](https://agentii.ai/v/LLY/sec175/42)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.42](https://agentii.ai/v/LLY/sec175/42)`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root. See `contracts/agentii-md-schema.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root. See `contracts/agentii-md-schema.md`.
 
 ## Tool Fallbacks
 

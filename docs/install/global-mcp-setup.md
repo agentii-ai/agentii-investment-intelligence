@@ -22,7 +22,7 @@ export AGENTII_API_KEY=sk_live_YOUR_KEY_HERE
 
 # Register agentii globally
 claude mcp add-json --scope global agentii \
-  '{"type":"http","url":"https://mcp.agentii.ai/mcp","headers":{"Authorization":"Bearer ${AGENTII_API_KEY}"}}'
+ '{"type":"http","url":"https://mcp.agentii.ai/mcp","headers":{"Authorization":"Bearer ${AGENTII_API_KEY}"}}'
 ```
 
 This writes to `~/.claude.json` under the top-level `mcpServers` key. All Claude Code sessions automatically discover 20 agentii tools.
@@ -57,7 +57,7 @@ claude
 
 ## Plugin Bug Workaround (Claude Code v2.1.143)
 
-Claude Code v2.1.143 has a known bug ([GitHub issue #15178](https://github.com/anthropics/claude-code/issues/15178)) where `claude plugin install` does not inject skills/commands into the runtime. If `/agentii:recent-quarter` shows "no command" after installing the plugin marketplace:
+Claude Code v2.1.143 has a known bug ([GitHub issue #15178](https://github.com/anthropics/claude-code/issues/15178) where `claude plugin install` does not inject skills/commands into the runtime. If `/agentii:recent-quarter` shows "no command" after installing the plugin marketplace:
 
 ```bash
 # Copy skills into your project's .claude/ directory
@@ -80,13 +80,13 @@ If you prefer per-project configuration (e.g., for CI/CD or containerized enviro
 
 ```json
 {
-  "mcpServers": {
-    "agentii": {
-      "type": "http",
-      "url": "https://mcp.agentii.ai/mcp",
-      "headers": { "Authorization": "Bearer ${AGENTII_API_KEY}" }
-    }
-  }
+ "mcpServers": {
+ "agentii": {
+ "type": "http",
+ "url": "https://mcp.agentii.ai/mcp",
+ "headers": { "Authorization": "Bearer ${AGENTII_API_KEY}" }
+ }
+ }
 }
 ```
 

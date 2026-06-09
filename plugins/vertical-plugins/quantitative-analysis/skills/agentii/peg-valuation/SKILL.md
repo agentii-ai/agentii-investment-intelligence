@@ -2,14 +2,14 @@
 name: peg-valuation
 description: PEG valuation, Price Earnings to Growth ratio, Peter Lynch PEG methodology, growth-adjusted valuation, earnings growth rate, PE ratio valuation, PEG sector comparison, undervalued growth stocks, fair value PEG
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 12
-  description: "Trailing 4 quarters for current PE; up to 12 for historical CAGR"
+ default_quarters: 4
+ max_quarters: 12
+ description: "Trailing 4 quarters for current PE; up to 12 for historical CAGR"
 allowed_tools:
-  - search_xbrl_facts
-  - search_companies
-  - get_realtime_quote
-  - search_earnings_calendar
+ - search_xbrl_facts
+ - search_companies
+ - get_realtime_quote
+ - search_earnings_calendar
 retrieval_scope: structured_only
 min_tool_diversity: 4
 ---
@@ -22,14 +22,14 @@ Peter Lynch PEG (Price/Earnings to Growth) methodology. PEG = P/E Ratio ÷ Earni
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides.
 
-**`get_realtime_quote` availability (FR-105)**: If `get_realtime_quote` is not yet deployed, prompt user for current stock price. PE numerator from `search_earnings_calendar` (NTM consensus EPS × current price = PE) as fallback.
+**`get_realtime_quote` availability **: If `get_realtime_quote` is not yet deployed, prompt user for current stock price. PE numerator from `search_earnings_calendar` (NTM consensus EPS × current price = PE) as fallback.
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - PEG valuation for {ticker}
@@ -73,16 +73,16 @@ See frontmatter `allowed_tools` — 4 tools. `get_realtime_quote` for current pr
 
 ### Protocol
 
-1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` (FR-075).
+1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` .
 2. **Price data**: `get_realtime_quote(ticker)` → current stock price, PE (TTM), market cap, EPS (TTM).
 3. **Consensus estimates**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest+1])` → consensus EPS (current year, next year), long-term growth rate estimate.
 4. **Historical EPS (fallback)**: if consensus growth unavailable, `search_xbrl_facts(ticker, concept=["EarningsPerShareDiluted"], fiscal_year=[latest, latest-1, latest-2, latest-3, latest-4])` → compute 3yr and 5yr EPS CAGR.
 5. **Compute PEG**:
-   - PEG (LTM) = PE_TTM ÷ Consensus LTG (%)
-   - PEG (NTM) = PE_NTM ÷ Consensus LTG (%)
-   - PEG (Historical) = PE_TTM ÷ EPS CAGR_3yr (%)
+ - PEG (LTM) = PE_TTM ÷ Consensus LTG (%)
+ - PEG (NTM) = PE_NTM ÷ Consensus LTG (%)
+ - PEG (Historical) = PE_TTM ÷ EPS CAGR_3yr (%)
 6. **Peer PEG comparison**: `search_companies` for sector peers → get PE + growth for each → compute peer PEGs → mean/median/high/low comparison.
-7. **Output**: per FR-079 with YAML frontmatter (FR-090).
+7. **Output**: per with YAML frontmatter .
 
 ### PEG Interpretation (Peter Lynch Framework)
 
@@ -97,7 +97,7 @@ See frontmatter `allowed_tools` — 4 tools. `get_realtime_quote` for current pr
 
 ## Output File
 
-Write to `{ticker}/{YYYY-MM-DD_HHMM}_peg-valuation_growth-adjusted.md` per FR-079.
+Write to `{ticker}/{YYYY-MM-DD_HHMM}_peg-valuation_growth-adjusted.md` .
 
 ## Output Structure
 
@@ -109,9 +109,9 @@ Write to `{ticker}/{YYYY-MM-DD_HHMM}_peg-valuation_growth-adjusted.md` per FR-07
 6. **Limitations** — PEG not meaningful for cyclical, negative earnings, or zero-growth companies
 7. **Coverage Gaps & Citations** — data sources + citation index
 
-**Citation density**: ≥1 citation per 200 words. **Citation link format (FR-081)**: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`.
+**Citation density**: ≥1 citation per 200 words. **Citation link format **: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md`.
 
 ## Tool Fallbacks
 

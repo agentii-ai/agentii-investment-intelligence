@@ -2,21 +2,21 @@
 name: growth-strategy
 description: Growth strategy analysis, organic growth decomposition, inorganic growth, M&A strategy, pipeline analysis, revenue growth drivers, strategic initiatives, expansion strategy, growth trajectory, product pipeline growth
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 10
-  description: "Typical lookback: 4 quarters, max: 10"
+ default_quarters: 4
+ max_quarters: 10
+ description: "Typical lookback: 4 quarters, max: 10"
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - search_documents
-  - search_sec_filings
-  - get_company_financials
-  - get_company_profile
-  - list_coverage
-  - read_source_outline
-  - list_xbrl_concepts
-  - read_source_pages
-  - search_keyword_in_source
+ - search_companies
+ - search_xbrl_facts
+ - search_documents
+ - search_sec_filings
+ - get_company_financials
+ - get_company_profile
+ - list_coverage
+ - read_source_outline
+ - list_xbrl_concepts
+ - read_source_pages
+ - search_keyword_in_source
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 8
 ---
@@ -27,12 +27,12 @@ min_tool_diversity: 8
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - analyze dim growth strategy
@@ -70,7 +70,7 @@ Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
 
-**Layer 1 `secondary_label` allowlist (FR-078c)**: prefer `?secondary_labels=financial_results_2_02,material_definitive_agreement_1_01` to surface growth-investment-related 8-Ks (capex commitments, M&A, partnerships) before Layer 2.
+**Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=financial_results_2_02,material_definitive_agreement_1_01` to surface growth-investment-related 8-Ks (capex commitments, M&A, partnerships) before Layer 2.
 
 ### Temporal Scope
 
@@ -82,7 +82,7 @@ See frontmatter `allowed_tools` — 8 tools declared for this dimension.
 
 ### Protocol
 
-This skill delivers analyst-grade output via 5 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+This skill delivers analyst-grade output via 5 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
 
 ### Mode: growth-strategy-assessment
 
@@ -98,11 +98,11 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 - `read_source_outline`
 - `read_source_pages`
 
-  - citations
-  - clarity
-  - conciseness
-  - evidence_based
-  - recency
+ - citations
+ - clarity
+ - conciseness
+ - evidence_based
+ - recency
 - **structure**: ## Growth Strategy Assessment
 
 **Growth Strategy Classification**: [Organic / Inorganic / Mix]
@@ -140,10 +140,10 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 - `read_source_pages`
 - `search_keyword_in_source`
 
-  - citation_discipline
-  - evidence_requirements
-  - presence_determination
-  - temporal_accuracy
+ - citation_discipline
+ - evidence_requirements
+ - presence_determination
+ - temporal_accuracy
 - **structure**: ## Organic Growth Drivers Analysis
 
 **Analysis Period**: {Specify fiscal quarters analyzed, e.g., "2024 Q1-Q2"}
@@ -190,10 +190,10 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 - `list_sources`
 - `read_source_outline`
 
-  - citation_discipline
-  - evidence_requirements
-  - status_determination
-  - temporal_accuracy
+ - citation_discipline
+ - evidence_requirements
+ - status_determination
+ - temporal_accuracy
 - **structure**: ## Organic Growth Driver Execution Progress Assessment
 
 **Assessment Period**: {Most recent fiscal quarter, e.g., "2024 Q2"}
@@ -252,11 +252,11 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 - `read_source_outline`
 - `read_source_pages`
 
-  - chronological_accuracy
-  - citation_discipline
-  - impact_assessment_rigor
-  - presence_determination
-  - transaction_completeness
+ - chronological_accuracy
+ - citation_discipline
+ - impact_assessment_rigor
+ - presence_determination
+ - transaction_completeness
 - **structure**: ## Inorganic Growth Drivers Analysis
 
 **Analysis Period**: {Specify 5-year period, e.g., "FY19-FY23 plus 2024 YTD"}
@@ -291,8 +291,8 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 - **Financial Terms**: {Purchase price, structure, ownership %}
 - **Strategic Rationale**: {Why this transaction supports growth strategy}
 - **Impact Assessment**: Factor-in / On-going / Unclear
-  - {Explanation of impact assessment}
-  - {Revenue contribution, synergies, integration status}
+ - {Explanation of impact assessment}
+ - {Revenue contribution, synergies, integration status}
 - **Sources**: _(cite source filing in standard agentii citation format at runtime)_, _(cite source filing in standard agentii citation format at runtime)_
 
 #### Transaction 2: {Name}
@@ -319,10 +319,10 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 - `list_sources`
 - `read_source_outline`
 
-  - citation_discipline
-  - evidence_requirements
-  - status_determination
-  - temporal_accuracy
+ - citation_discipline
+ - evidence_requirements
+ - status_determination
+ - temporal_accuracy
 - **structure**: ## Inorganic Growth Driver Execution Progress Assessment
 
 **Assessment Period**: {Most recent fiscal quarter, e.g., "2024 Q2"}
@@ -413,11 +413,11 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output File
 
-Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_growth-strategy_growth-drivers.md` per FR-079.
+Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_growth-strategy_growth-drivers.md` .
 
 ## Output Structure
 
-The final deliverable MUST be written as a markdown file to the workspace using the convention (FR-079):
+The final deliverable MUST be written as a markdown file to the workspace using the convention :
 
 ```
 {ticker}/{YYYY-MM-DD_HHMM}_growth-strategy_{affix}.md
@@ -430,9 +430,9 @@ Where `affix` is a short descriptive slug (e.g., `strategy-decomposition`, `capi
 
 The path is RELATIVE to the agent's invocation cwd. Skills MUST NOT write under absolute paths.
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.45](https://agentii.ai/v/LLY/sec175/45)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.45](https://agentii.ai/v/LLY/sec175/45)`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
 
 ## Error Handling
 

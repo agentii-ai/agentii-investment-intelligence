@@ -81,12 +81,12 @@ Parallelism detection: `SELECT instance, COUNT(*) FROM agent_traces WHERE run_id
 
 ## Credit Attribution
 
-Post-hoc calculation (FR-106e). Trace stores endpoint, status, timestamp — sufficient for workflow reconstruction. Credits computed by query:
+Post-hoc calculation. Trace stores endpoint, status, timestamp — sufficient for workflow reconstruction. Credits computed by query:
 
 ```sql
 SELECT run_id, agent_name, COUNT(*) AS call_count, SUM(duration_ms) AS total_ms
 FROM agent_traces
-WHERE user_id = $1 AND timestamp > NOW() - INTERVAL '30 days' AND status = 200
+WHERE user_id = $1 AND timestamp > NOW- INTERVAL '30 days' AND status = 200
 GROUP BY run_id, agent_name
 ORDER BY run_id, agent_name;
 ```
@@ -95,6 +95,6 @@ Multiply `call_count` by per-endpoint credit pricing for billing.
 
 ## Cross-Spec Dependencies
 
-- **spec 019**: Hono middleware (`trace.ts`), Redis provisioning, Supabase `agent_traces` migration, batch writer
-- **spec 022**: No changes (Neon not used for tracing)
-- **spec 023**: Skill Preflight instruction in all SKILL.md files, CI validation (Check 18, Check 19)
+- ****: Hono middleware (`trace.ts`), Redis provisioning, Supabase `agent_traces` migration, batch writer
+- ****: No changes (Neon not used for tracing)
+- ****: Skill Preflight instruction in all SKILL.md files, CI validation (Check 18, Check 19)

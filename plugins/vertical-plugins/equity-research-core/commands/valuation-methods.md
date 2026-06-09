@@ -9,6 +9,5 @@ argument-hint: <TICKER> [--mode=<slug>]
 2. Delegate to the `dim-valuation-methods` skill bundled under `equity-research-core`.
 3. Return the structured deliverable produced by the skill.
 
-*Full workflow authored alongside the skill methodology (Phase 3/4/5).*
 
 > See [Mode syntax](../../../docs/commands/MODE_SYNTAX.md) for `--mode=` / `--modes=` / `--peers=` invocation rules.

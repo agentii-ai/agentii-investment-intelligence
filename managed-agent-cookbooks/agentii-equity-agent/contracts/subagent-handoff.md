@@ -1,6 +1,6 @@
 # Subagent Handoff Contract (v1.0 frozen)
 
-Human-readable companion to `failure-policy.yaml` + `evidence-pack.schema.json` + `../subagents/*.yaml`. Codifies which Cowork subagent produces/consumes which artifact, the invocation order, and the fail-safe semantics for each handoff edge. Per spec 023 **the inter-subagent handoff contract** (subagent decomposition by capability axis, not by task name) + **the failure-recovery policya** (max-1-bounce policy, deterministic halts).
+Human-readable companion to `failure-policy.yaml` + `evidence-pack.schema.json` + `../subagents/*.yaml`. Codifies which Cowork subagent produces/consumes which artifact, the invocation order, and the fail-safe semantics for each handoff edge. Per **the inter-subagent handoff contract** (subagent decomposition by capability axis, not by task name) + **the failure-recovery policya** (max-1-bounce policy, deterministic halts).
 
 ## Subagents
 
@@ -18,30 +18,30 @@ Four YAML-defined Cowork subagents, each capability-isolated:
 ## Invocation order (deterministic)
 
 ```
-                 ┌────────────────────┐
-   user request  │  parent agent      │  agentii-equity-agent.md
-       ──────►   │  (orchestrator)    │  decides dimension(s)
-                 └─────────┬──────────┘
-                           │
-                           ▼
-                 ┌────────────────────┐
-                 │ retrieval-subagent │  ALWAYS first
-                 └─────────┬──────────┘
-                           │  evidence_pack.json (the inter-subagent handoff contract)
-                           ▼
-              ┌─────────────────────────────┐
-              │ analytical OR bi subagent   │  (based on dim/skill kind)
-              │ — never both in parallel    │
-              └─────────────┬───────────────┘
-                            │  deliverable.md (+ xlsx_spec.json if applicable)
-                            ▼
-              ┌─────────────────────────────┐
-              │  visualization-subagent     │  (only if office plane invoked)
-              │  — runs xlsx.audit FIRST    │
-              └─────────────┬───────────────┘
-                            │  R2 URLs (.xlsx, .pptx)
-                            ▼
-                        user reply
+ ┌────────────────────┐
+ user request │ parent agent │ agentii-equity-agent.md
+ ──────► │ (orchestrator) │ decides dimension(s)
+ └─────────┬──────────┘
+ │
+ ▼
+ ┌────────────────────┐
+ │ retrieval-subagent │ ALWAYS first
+ └─────────┬──────────┘
+ │ evidence_pack.json (the inter-subagent handoff contract)
+ ▼
+ ┌─────────────────────────────┐
+ │ analytical OR bi subagent │ (based on dim/skill kind)
+ │ — never both in parallel │
+ └─────────────┬───────────────┘
+ │ deliverable.md (+ xlsx_spec.json if applicable)
+ ▼
+ ┌─────────────────────────────┐
+ │ visualization-subagent │ (only if office plane invoked)
+ │ — runs xlsx.audit FIRST │
+ └─────────────┬───────────────┘
+ │ R2 URLs (.xlsx, .pptx)
+ ▼
+ user reply
 ```
 
 **Invariant**: `retrieval-subagent` ALWAYS precedes any reasoning subagent. the hard gate against hardcoded cells hard-gate is a *process* invariant (orchestrator refuses to invoke analytical/bi before evidence pack exists), not a *prompt* convention. This is the entire reason for the the capability-isolated subagent decomposition capability-axis decomposition.
@@ -70,8 +70,8 @@ Four YAML-defined Cowork subagents, each capability-isolated:
 - **Input**: deliverable `.md`, `xlsx_spec.json` (per `xlsx_spec.schema.json`), `pptx_spec.json` (per `pptx_spec.schema.json`)
 - **Output**: presigned R2 URLs for rendered `.xlsx` / `.pptx`
 - **Hard gate**: `visualization-subagent` MUST invoke `xlsx.audit` BEFORE `xlsx.build`. If audit reports a hardcoded projection cell:
-  1. Return audit report to `analytical-subagent`. Analytical revises the `xlsx_spec` to replace hardcoded values with formula expressions.
-  2. **MAX 1 bounce** (`failure-policy.yaml#failures.audit_hardcode_fail`). On second audit failure, halt with `AGENTII_AUDIT_HARDCODE_FAIL` and deliver ZERO workbook (the spec attached for human review).
+ 1. Return audit report to `analytical-subagent`. Analytical revises the `xlsx_spec` to replace hardcoded values with formula expressions.
+ 2. **MAX 1 bounce** (`failure-policy.yaml#failures.audit_hardcode_fail`). On second audit failure, halt with `AGENTII_AUDIT_HARDCODE_FAIL` and deliver ZERO workbook (the spec attached for human review).
 - **Recalc timeout** (`recalc_timeout`): retry once with `safe_mode:true`; halt with `AGENTII_RECALC_TIMEOUT` on second failure.
 
 ### Edge D: any subagent → halt

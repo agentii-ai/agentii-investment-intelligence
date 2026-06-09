@@ -2,16 +2,16 @@
 name: comps
 description: Comparable company analysis, trading comps, peer multiples, EV/EBITDA comparison, P/E benchmarking, comps table, relative valuation, industry multiples, precedent transactions, trading comparable analysis
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 12
-  description: "Typical lookback: 4 quarters, max: 12"
+ default_quarters: 4
+ max_quarters: 12
+ description: "Typical lookback: 4 quarters, max: 12"
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - get_company_financials
-  - search_earnings_calendar
-  - get_company_profile
-  - list_xbrl_concepts
+ - search_companies
+ - search_xbrl_facts
+ - get_company_financials
+ - search_earnings_calendar
+ - get_company_profile
+ - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -21,7 +21,7 @@ min_tool_diversity: 5
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - analyze comps analysis
@@ -45,9 +45,6 @@ min_tool_diversity: 5
 | include_peers | false | Whether to surface a peer comparison block |
 
 
-
-
-
 ## Methodology
 
 ### Retrieval Scope
@@ -57,7 +54,7 @@ This skill performs unstructured document search at scale across SEC filings (10
 ### Retrieval Strategy
 
 Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts. **Before querying XBRL facts for peer comparability, call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<YYYY>` for each peer ticker to verify concept availability — prevents cross-company line-item incomparability where one peer uses a non-standard concept name per FR-085.**
+- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts. **Before querying XBRL facts for peer comparability, call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<YYYY>` for each peer ticker to verify concept availability — prevents cross-company line-item incomparability where one peer uses a non-standard concept name .**
 - Branch (b) for multi-period unstructured queries via `search_cross_period`.
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
@@ -75,12 +72,12 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 1. Pre-retrieval: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format.
 2. Concept discovery: call `list_xbrl_concepts(query=<term>, ticker=<T>)` for unfamiliar XBRL concepts.
 3. Retrieval: follow the three-layer protocol —
-   - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
-   - Layer 2: `read_source_outline` to scan page-level metadata.
-   - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
-   - Layer 3: `read_source_pages` to deep-read only selected pages.
+ - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.
+ - Layer 2: `read_source_outline` to scan page-level metadata.
+ - Layer 2.5 (optional): `search_keyword_in_source` to filter large documents.
+ - Layer 3: `read_source_pages` to deep-read only selected pages.
 4. Evidence-pack handoff: produce `evidence-pack.json` + `evidence-digest.md` per the evidence-pack output contract.
-5. **xlsx-financials output (FR-088)**: invoke `xlsx-financials` as sub-skill to produce formatted `.xlsx` comps table workbook. For multi-ticker comps, output to `_cross/{slug}_{date}_statement-income.xlsx` per FR-093. For single-ticker, output to `{ticker}/{date}_{time}_statement-income.xlsx`.
+5. **xlsx-financials output**: invoke `xlsx-financials` as sub-skill to produce formatted `.xlsx` comps table workbook. For multi-ticker comps, output to `_cross/{slug}_{date}_statement-income.xlsx` . For single-ticker, output to `{ticker}/{date}_{time}_statement-income.xlsx`.
 
 ## Deliverable Chain
 
@@ -117,7 +114,7 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 4. **Trading Multiples Table** — P/E (LTM + NTM), EV/EBITDA (LTM + NTM), EV/Revenue, P/B, PEG ratio for each peer (Validation Gate 2: EV/EBITDA + P/E at minimum)
 5. **Valuation Summary** — mean, median, high, low for each multiple (Validation Gate 3: statistics table mandatory). Implied valuation range for target
 6. **Relative Value Assessment** — target vs. peer median: premium/discount analysis, justified premium factors (growth, margins, moat), unjustified discount factors (overhang, complexity)
-7. **Cross-Company Comparability Notes** — concept availability verified per FR-085 (`get_statement_structure` for each peer), accounting differences flagged, fiscal-year misalignment noted
+7. **Cross-Company Comparability Notes** — concept availability verified (`get_statement_structure` for each peer), accounting differences flagged, fiscal-year misalignment noted
 8. **Coverage Gaps & Citations** — data not retrievable + full citation index in `{ticker} {citation_id} page<N>` format
 
 ## Error Handling

@@ -1,17 +1,17 @@
 # Search Cross Period Contract (v1.0)
 
-Documents `search_cross_period` partial failure semantics, internal sub-batching, and credit metering per the partial failure semantics contract and spec 019 the concurrency limit/the concurrency limita.
+Documents `search_cross_period` partial failure semantics, internal sub-batching, and credit metering per the partial failure semantics contract and the concurrency limit/the concurrency limita.
 
 ## Endpoint Contract
 
-`POST /v1/search_cross_period` (spec 019 the /v1/search_cross_period endpoint):
+`POST /v1/search_cross_period` ( the /v1/search_cross_period endpoint):
 
 ```json
 {
-  "ticker": "LLY",
-  "query": "analyze management commentary on revenue growth drivers",
-  "fiscal_periods": ["2025Q1", "2025Q2", "2025Q3", "2025Q4", "FY2024", "FY2023"],
-  "source_types": ["sec_8k", "sec_6k", "sec_filing"]
+ "ticker": "LLY",
+ "query": "analyze management commentary on revenue growth drivers",
+ "fiscal_periods": ["2025Q1", "2025Q2", "2025Q3", "2025Q4", "FY2024", "FY2023"],
+ "source_types": ["sec_8k", "sec_6k", "sec_filing"]
 }
 ```
 
@@ -21,11 +21,11 @@ When some period sub-queries succeed and others fail, `search_cross_period` retu
 
 - **Successful periods**: included with `"status": "ok"` and their full data payload.
 - **Failed periods**: listed in the top-level `coverage_attestation.gaps[]` with:
-  - `fiscal_period`: the period label (e.g., `"FY2023"`)
-  - `failure_reason`: one of `no_filings_for_period`, `rate_limited`, `timeout`, `empty_xbrl_facts`
-  - `attempted_actions`: what was tried before failing
+ - `fiscal_period`: the period label (e.g., `"FY2023"`)
+ - `failure_reason`: one of `no_filings_for_period`, `rate_limited`, `timeout`, `empty_xbrl_facts`
+ - `attempted_actions`: what was tried before failing
 - **Empty periods**: `"status": "ok"` with empty `data` array and `total_count: 0` — not an error.
-- **HTTP status**: 200 regardless (partial success per spec 019 the concurrency limit).
+- **HTTP status**: 200 regardless (partial success per the concurrency limit).
 
 The retrieval-subagent then follows the existing the retrieval gaps failure policy:
 
@@ -37,7 +37,7 @@ The retrieval-subagent then follows the existing the retrieval gaps failure poli
 
 `search_cross_period` fans out period sub-queries concurrently, bounded by the Neon connection pool:
 
-- **Max concurrent**: 8 (spec 019 the concurrency limit).
+- **Max concurrent**: 8 ( the concurrency limit).
 - **Max total periods**: 20.
 - **Batching example**: 20 periods execute as 3 batches (8 + 8 + 4).
 - **Transparency**: skills treat `search_cross_period` as a single blocking call regardless of batch count.
@@ -47,7 +47,7 @@ The `temporal_scope.max_quarters` per-skill ceiling (the temporal scope contract
 
 ## Credit Metering
 
-Follows `batch_search` precedent (spec 019 credit metering rules):
+Follows `batch_search` precedent ( credit metering rules):
 
 - Each successful per-period result consumes **1 credit**.
 - Periods returning `DATA_NOT_AVAILABLE` consume **0 credits**.
@@ -67,6 +67,6 @@ Follows `batch_search` precedent (spec 019 credit metering rules):
 
 Before calling `search_cross_period`, the retrieval-subagent MUST:
 
-1. Call `get_company_fiscal_calendar/{ticker}` (spec 019 fiscal calendar endpoint) to resolve the company's fiscal period format (`"FY"` vs `"Q<N>"`).
-2. Optionally call `search_earnings_calendar(ticker)` (spec 019 earnings calendar search endpoint) for exact report dates.
+1. Call `get_company_fiscal_calendar/{ticker}` ( fiscal calendar endpoint) to resolve the company's fiscal period format (`"FY"` vs `"Q<N>"`).
+2. Optionally call `search_earnings_calendar(ticker)` ( earnings calendar search endpoint) for exact report dates.
 3. Construct the `fiscal_periods` list using the resolved format labels.

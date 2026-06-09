@@ -2,21 +2,21 @@
 name: turnaround
 description: Turnaround analysis, stagnation detection, performance inflection, operational improvement, restructuring analysis, management change impact, cost cutting effectiveness, business transformation, recovery trajectory, operational metrics improvement
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 10
-  description: "Typical lookback: 4 quarters, max: 10"
+ default_quarters: 4
+ max_quarters: 10
+ description: "Typical lookback: 4 quarters, max: 10"
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - search_documents
-  - search_sec_filings
-  - get_company_financials
-  - get_company_profile
-  - list_coverage
-  - read_source_outline
-  - list_xbrl_concepts
-  - read_source_pages
-  - search_keyword_in_source
+ - search_companies
+ - search_xbrl_facts
+ - search_documents
+ - search_sec_filings
+ - get_company_financials
+ - get_company_profile
+ - list_coverage
+ - read_source_outline
+ - list_xbrl_concepts
+ - read_source_pages
+ - search_keyword_in_source
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 8
 ---
@@ -27,9 +27,9 @@ min_tool_diversity: 8
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 ## Triggers
 
@@ -68,7 +68,7 @@ Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
 
-**Layer 1 `secondary_label` allowlist (FR-078c)**: prefer `?secondary_labels=results_of_operations_8_01,other_events_8_01` to surface restructuring, cost-action, and operational-inflection 8-Ks before Layer 2.
+**Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=results_of_operations_8_01,other_events_8_01` to surface restructuring, cost-action, and operational-inflection 8-Ks before Layer 2.
 
 ### Temporal Scope
 
@@ -80,7 +80,7 @@ See frontmatter `allowed_tools` — 8 tools declared for this dimension.
 
 ### Protocol
 
-This skill delivers analyst-grade output via 9 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+This skill delivers analyst-grade output via 9 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
 
 ### Mode: performance-stagnation-detection-and-classification
 
@@ -209,11 +209,11 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output File
 
-Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_turnaround_turnaround-assessment.md` per FR-079.
+Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_turnaround_turnaround-assessment.md` .
 
 ## Output Structure
 
-The final deliverable MUST be written as a markdown file to the workspace using the convention (FR-079):
+The final deliverable MUST be written as a markdown file to the workspace using the convention :
 
 ```
 {ticker}/{YYYY-MM-DD_HHMM}_turnaround_{affix}.md
@@ -226,9 +226,9 @@ Where `affix` is a short descriptive slug (e.g., `turnaround-thesis`, `restructu
 
 The path is RELATIVE to the agent's invocation cwd. Skills MUST NOT write under absolute paths.
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 8-K p.19](https://agentii.ai/v/LLY/sec129/19)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 8-K p.19](https://agentii.ai/v/LLY/sec129/19)`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
 
 ## Error Handling
 

@@ -2,13 +2,13 @@
 name: reverse-dcf
 description: Reverse DCF valuation, implied growth rate, market expectations analysis, reverse discounted cash flow, implied valuation assumptions, market-implied projections, DCF sanity check
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 12
-  description: "Current price input; historical data for comparison"
+ default_quarters: 4
+ max_quarters: 12
+ description: "Current price input; historical data for comparison"
 allowed_tools:
-  - search_xbrl_facts
-  - get_realtime_quote
-  - search_earnings_calendar
+ - search_xbrl_facts
+ - get_realtime_quote
+ - search_earnings_calendar
 retrieval_scope: structured_only
 min_tool_diversity: 3
 ---
@@ -21,10 +21,10 @@ Starts from the current stock price and solves backward: "What growth rate, marg
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)** and **Workspace style.md override check (FR-094)** apply. **`get_realtime_quote` availability (FR-105)**: If not deployed, prompt user for current stock price — required input for reverse DCF.
+**Ticker resolution ** and **Workspace style.md override check ** apply. **`get_realtime_quote` availability **: If not deployed, prompt user for current stock price — required input for reverse DCF.
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - reverse DCF {ticker}
@@ -61,16 +61,16 @@ Starts from the current stock price and solves backward: "What growth rate, marg
 4. **Solve for implied terminal margin**: if solving for margin, iterate terminal EBITDA/FCF margin instead.
 5. **Solve for implied WACC**: if solving for WACC, iterate WACC until DCF = market price (reveals market-implied discount rate).
 6. **Compare to benchmarks**:
-   - Implied growth vs. consensus estimates (from `search_earnings_calendar`)
-   - Implied growth vs. historical CAGR (from XBRL)
-   - Implied margin vs. current margin + historical trend
-   - Implied WACC vs. CAPM-derived WACC
+ - Implied growth vs. consensus estimates (from `search_earnings_calendar`)
+ - Implied growth vs. historical CAGR (from XBRL)
+ - Implied margin vs. current margin + historical trend
+ - Implied WACC vs. CAPM-derived WACC
 7. **Assessment**: flag when market prices in >20% above consensus (potentially overvalued) or >20% below consensus (potentially undervalued).
-8. **Output**: per FR-079 with YAML frontmatter (FR-090).
+8. **Output**: per with YAML frontmatter .
 
 ## Output File
 
-Write to `{ticker}/{YYYY-MM-DD_HHMM}_reverse-dcf_implied-expectations.md` per FR-079.
+Write to `{ticker}/{YYYY-MM-DD_HHMM}_reverse-dcf_implied-expectations.md` .
 
 ## Output Structure
 
@@ -82,7 +82,7 @@ Write to `{ticker}/{YYYY-MM-DD_HHMM}_reverse-dcf_implied-expectations.md` per FR
 6. **Sensitivity** — implied growth at varying WACC (±1%, ±2%)
 7. **Coverage Gaps & Citations**
 
-**Citation density**: ≥1 citation per 200 words. **Citation link format (FR-081)** and **agentii.md append (FR-087)** apply.
+**Citation density**: ≥1 citation per 200 words. **Citation link format ** and **agentii.md append ** apply.
 
 ## Validation Gates
 

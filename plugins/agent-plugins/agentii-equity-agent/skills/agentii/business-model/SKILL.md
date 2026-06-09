@@ -2,22 +2,22 @@
 name: business-model
 description: Business model classification, business model analysis, structural analysis of how a company makes money, product offering decomposition, distribution channel analysis, customer segment analysis, revenue model identification, market sizing TAM SAM SOM, competitive positioning, business unit performance, management team & leadership analysis, what does the company sell, how does the company go to market, business model type platform service product, channel mix direct vs indirect, revenue concentration risk, CEO CFO executive backgrounds and changes
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 8
-  description: "Business-model analysis is a structural snapshot. Default lookback is 1 fiscal quarter (the most recent disclosure). Max 8 quarters when analyzing channel mix evolution or management changes over a 2-year window."
+ default_quarters: 4
+ max_quarters: 8
+ description: "Business-model analysis is a structural snapshot. Default lookback is 1 fiscal quarter (the most recent disclosure). Max 8 quarters when analyzing channel mix evolution or management changes over a 2-year window."
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - search_documents
-  - search_sec_filings
-  - read_source_outline
-  - read_source_pages
-  - search_keyword_in_source
-  - get_company_financials
-  - get_company_profile
-  - get_company_fiscal_calendar
-  - get_ticker_coverage
-  - list_xbrl_concepts
+ - search_companies
+ - search_xbrl_facts
+ - search_documents
+ - search_sec_filings
+ - read_source_outline
+ - read_source_pages
+ - search_keyword_in_source
+ - get_company_financials
+ - get_company_profile
+ - get_company_fiscal_calendar
+ - get_ticker_coverage
+ - list_xbrl_concepts
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 7
 ---
@@ -29,9 +29,9 @@ min_tool_diversity: 7
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)**: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
+**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
 
-**Workspace style.md override check (FR-094)**: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
+**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 ## Triggers
 
@@ -77,7 +77,7 @@ Follow the retrieval strategy decision tree in `retrieval.md`:
 - **Branch (b)** — `search_cross_period` when analyzing channel-mix evolution over 2+ years (mode 1_2) or management-change continuity (mode 1_5).
 - **Branch (c)** — single-period three-layer for the most recent 10-K/10-Q business-overview pages (modes 1_1, 1_3, 1_4).
 
-**Layer 1 narrowing — `secondary_labels` filter (FR-078c)**: For 8-K-driven business-model-relevant disclosures, prefer `?secondary_label=other_events_8_01` (item 8.01 covers business-strategy events) AND `?secondary_label=financial_results_2_02` (item 2.02 surfaces segment-level revenue commentary). The GIN-indexed filter on `pipeline.src_documents.secondary_labels` is the preferred narrowing axis BEFORE Layer 2.
+**Layer 1 narrowing — `secondary_labels` filter **: For 8-K-driven business-model-relevant disclosures, prefer `?secondary_label=other_events_8_01` (item 8.01 covers business-strategy events) AND `?secondary_label=financial_results_2_02` (item 2.02 surfaces segment-level revenue commentary). The GIN-indexed filter on `pipeline.src_documents.secondary_labels` is the preferred narrowing axis BEFORE Layer 2.
 
 **Layer 2 page-relevance signal**: Score pages using `labels->>'general'->>'description'` (~100-char LLM-generated page summary) AND `labels->>'general'->>'keywords'` (extracted entity terms). Both fields are populated on 96%+ of `pipeline.src_silver_pages` rows. For business-model analysis, prefer pages whose `keywords` contain entity terms like product names, segment names, geographies, channel partners, executive names.
 
@@ -93,11 +93,11 @@ See frontmatter `allowed_tools` — 12 tools declared:
 - `search_xbrl_facts`, `list_xbrl_concepts`, `get_company_financials` — segment-level P&L and revenue concentration metrics.
 - `search_documents`, `search_sec_filings` — Layer 1 document discovery (with `secondary_labels` filter).
 - `read_source_outline`, `read_source_pages`, `search_keyword_in_source` — Layer 2/3 deep read for business-overview pages.
-- `get_company_fiscal_calendar`, `get_ticker_coverage` — FR-075 pre-flight (mandatory first step).
+- `get_company_fiscal_calendar`, `get_ticker_coverage` — pre-flight (mandatory first step).
 
 ### 5. Protocol
 
-1. **FR-075 Pre-flight (mandatory)**: call `get_company_fiscal_calendar/{ticker}` for fiscal orientation, then `get_ticker_coverage/{ticker}` to discover which data sources are populated. Route based on coverage: `sec_filings` populated → standard three-layer protocol; `xbrl_facts`-only → structural inferences from segment data only, flag `data_availability: degraded`.
+1. ** Pre-flight (mandatory)**: call `get_company_fiscal_calendar/{ticker}` for fiscal orientation, then `get_ticker_coverage/{ticker}` to discover which data sources are populated. Route based on coverage: `sec_filings` populated → standard three-layer protocol; `xbrl_facts`-only → structural inferences from segment data only, flag `data_availability: degraded`.
 
 2. **Layer 1 Document Discovery**: `search_documents(ticker={T}, form_type=["10-K","20-F"], limit=3)` to find the most recent annual report (richest business-overview content). Add `?secondary_labels=financial_results_2_02,other_events_8_01` to also surface relevant 8-Ks. Document identifiers returned in `citation_id` form (e.g., `sec135`) — pass these directly to Layer 2.
 
@@ -105,13 +105,13 @@ See frontmatter `allowed_tools` — 12 tools declared:
 
 4. **Layer 3 Deep Read**: `read_source_pages/{ticker}/{citation_id}?row_numbers=page<N1>,page<N2>` — load full `page_content` for ONLY the 3-5 pages identified in Layer 2.
 
-5. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss"], fiscal_year=[<latest>])` — returns `is_primary: true` rows by default (FR-055n superseded; `?include_all_sources=true` only for audit). The `source_authority` field (3=10-K, 2=10-Q, 1=8-K) is returned for fact-provenance transparency.
+5. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss"], fiscal_year=[<latest>])` — returns `is_primary: true` rows by default ( superseded; `?include_all_sources=true` only for audit). The `source_authority` field (3=10-K, 2=10-Q, 1=8-K) is returned for fact-provenance transparency.
 
-6. **Evidence-pack handoff**: produce `evidence-pack.json` + `evidence-digest.md` per FR-046b. All citations use the v1.0 frozen format with `{ticker} {citation_id} page<N>` references.
+6. **Evidence-pack handoff**: produce `evidence-pack.json` + `evidence-digest.md` . All citations use the v1.0 frozen format with `{ticker} {citation_id} page<N>` references.
 
 ## Modes (5 — structural equity analysis)
 
-This skill delivers analyst-grade output via 5 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+This skill delivers analyst-grade output via 5 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
 
 ### Mode: business-model-classification (1_1 — anchor)
 
@@ -142,9 +142,9 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 - **Distribution Partners**: [list disclosed channel types and representative partners]
 - **Current Channel Mix**: Direct : Indirect = 1 : XX (latest available data)
 - **Historical Channel Mix Trend (Trailing 3 Years)**:
-  - Year -2: [Direct : Indirect = 1 : XX]
-  - Year -1: [Direct : Indirect = 1 : XX]
-  - Current: [Direct : Indirect = 1 : XX]
+ - Year -2: [Direct : Indirect = 1 : XX]
+ - Year -1: [Direct : Indirect = 1 : XX]
+ - Current: [Direct : Indirect = 1 : XX]
 - **Strategic Implication**: e.g., "Shift toward direct sales has enhanced pricing control and customer intimacy but increased SG&A".
 
 ### Mode: revenue-composition-and-concentration (1_3)
@@ -158,10 +158,10 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 **Output structure**:
 
 - **Latest Quarter Revenue Breakdown**:
-  - By Product Line: top 3 contributors with %
-  - By User Type (B2B vs. B2C): mix with %
-  - By Geography (NA / EMEA / APAC): top 3 regions with %
-  - By End Market: top 3 markets with %
+ - By Product Line: top 3 contributors with %
+ - By User Type (B2B vs. B2C): mix with %
+ - By Geography (NA / EMEA / APAC): top 3 regions with %
+ - By End Market: top 3 markets with %
 - **Concentration Risk Matrix**: any product/client >20% flagged.
 - **Temporal Comparison**: vs. prior quarter and YoY same-period.
 
@@ -176,11 +176,11 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 **Output structure**:
 
 - **Market Sizing & Growth**:
-  - TAM (Current Year): $XXXB
-  - SAM (Current Year): $XXXB
-  - SOM (Current Year): XX%
-  - TAM CAGR (Past 3 Years): XX%
-  - TAM CAGR (Forward 3-5 Years): XX%
+ - TAM (Current Year): $XXXB
+ - SAM (Current Year): $XXXB
+ - SOM (Current Year): XX%
+ - TAM CAGR (Past 3 Years): XX%
+ - TAM CAGR (Forward 3-5 Years): XX%
 - **Relative Growth Table**: Company Revenue Growth vs. TAM CAGR for past 3Y and next 3Y.
 - **Historical SOM Trajectory**: 3-year evolution with execution-strength assessment.
 
@@ -213,11 +213,11 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 ## Output File
 
-Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_business-model_product-line-decomp.md` per FR-079.
+Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_business-model_product-line-decomp.md` .
 
 ## Output Structure
 
-The final deliverable MUST be written as a markdown file to the workspace using the convention (FR-079):
+The final deliverable MUST be written as a markdown file to the workspace using the convention :
 
 ```
 {ticker}/{YYYY-MM-DD_HHMM}_business-model_{affix}.md
@@ -241,9 +241,9 @@ The deliverable file MUST contain (in order):
 9. **Management & Leadership** (mode 1_5) — executive team, recent changes, strategic implications.
 10. **Coverage Gaps & Citations** — list of dimensions not retrievable + full citation index in `{ticker} {citation_id} page<N>` format.
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format (FR-081)**: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.42](https://agentii.ai/v/LLY/sec175/42)`.
+**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.42](https://agentii.ai/v/LLY/sec175/42)`.
 
-**agentii.md append (FR-087)**: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
 
 ## Error Handling
 

@@ -1,7 +1,7 @@
 # Silver Pages Labels JSONB Audit
 
-**Status**: PENDING — requires read-only Neon DB access  
-**Task**: T264 (Phase 17)  
+**Status**: PENDING — requires read-only Neon DB access
+**Task**:
 **Created**: 2026-06-03
 
 ## Audit Scope
@@ -14,13 +14,13 @@ Verify that `pipeline.src_silver_pages.labels` JSONB column correctly merges:
 
 ```json
 {
-  "general": {
-    "description": "<~100-char LLM-generated page summary>",
-    "keywords": ["entity", "term", "..."],
-    "category": "<page category>"
-  },
-  "financial_results": { "...": "..." },
-  "guidance": { "...": "..." }
+ "general": {
+ "description": "<~100-char LLM-generated page summary>",
+ "keywords": ["entity", "term", "..."],
+ "category": "<page category>"
+ },
+ "financial_results": { "...": "..." },
+ "guidance": { "...": "..." }
 }
 ```
 
@@ -35,4 +35,4 @@ Verify that `pipeline.src_silver_pages.labels` JSONB column correctly merges:
 
 ## Deferred
 
-This audit requires read-only access to the production Neon database (`DATABASE_URL_API_READONLY`). File a spec 022 ticket if drift is found.
+This audit requires read-only access to the production Neon database (`DATABASE_URL_API_READONLY`). File a ticket if drift is found.

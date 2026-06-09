@@ -2,17 +2,17 @@
 name: pitch-deck
 description: Investment pitch deck, investment committee presentation, buy-side pitch, sell-side pitch, investment thesis slides, executive summary presentation, financial presentation, board deck, investor presentation, strategy deck
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 8
-  description: "Typical lookback: 4 quarters, max: 8"
+ default_quarters: 4
+ max_quarters: 8
+ description: "Typical lookback: 4 quarters, max: 8"
 allowed_tools:
-  - search_companies
-  - search_xbrl_facts
-  - get_company_financials
-  - get_company_profile
-  - search_earnings_calendar
-  - search_documents
-  - list_xbrl_concepts
+ - search_companies
+ - search_xbrl_facts
+ - get_company_financials
+ - get_company_profile
+ - search_earnings_calendar
+ - search_documents
+ - list_xbrl_concepts
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -20,7 +20,7 @@ min_tool_diversity: 5
 # pitch-deck
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - Investment pitch deck

@@ -2,17 +2,17 @@
 name: sotp-valuation
 description: Sum of the Parts valuation, segment-based valuation, conglomerate valuation, business segment analysis, breakup value, segment sum valuation, parts worth more than whole, hidden asset value
 temporal_scope:
-  default_quarters: 4
-  max_quarters: 12
-  description: "Latest segment data with up to 12 quarters for segment trend"
+ default_quarters: 4
+ max_quarters: 12
+ description: "Latest segment data with up to 12 quarters for segment trend"
 allowed_tools:
-  - search_xbrl_facts
-  - search_companies
-  - get_realtime_quote
-  - search_documents
-  - read_source_outline
-  - read_source_pages
-  - get_statement_structure
+ - search_xbrl_facts
+ - search_companies
+ - get_realtime_quote
+ - search_documents
+ - read_source_outline
+ - read_source_pages
+ - get_statement_structure
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 7
 ---
@@ -25,10 +25,10 @@ Values each business segment independently and sums for total enterprise value. 
 
 !curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
 
-**Ticker resolution (FR-082)** and **Workspace style.md override check (FR-094)** apply. **`get_realtime_quote` availability (FR-105)**: If not deployed, sector multiples from `_cross/` comps outputs (FR-093) can substitute for current market data. Segment valuation is relative, not price-dependent.
+**Ticker resolution ** and **Workspace style.md override check ** apply. **`get_realtime_quote` availability **: If not deployed, sector multiples from `_cross/` comps outputs can substitute for current market data. Segment valuation is relative, not price-dependent.
 
 
-**Agent Call Tracing (FR-106)**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - sum of the parts valuation {ticker}
@@ -59,28 +59,28 @@ Values each business segment independently and sums for total enterprise value. 
 ### Retrieval Strategy
 
 Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured segment financials via `search_xbrl_facts` + `get_statement_structure` (FR-085).
+- Branch (a) for structured segment financials via `search_xbrl_facts` + `get_statement_structure` .
 - Branch (c) for MD&A segment narrative via `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_realtime_quote` / `search_companies`.
 
 ### Protocol
 
-1. **Pre-retrieval**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` (FR-075).
+1. **Pre-retrieval**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` .
 2. **Segment discovery**: call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<latest>` to identify segment-level concepts. Navigate from `Revenues` → segment children (ProductOrServiceAxis members).
 3. **Segment financials**: query `search_xbrl_facts` for each segment's revenue, operating income, EBITDA, assets.
 4. **Segment narrative**: `search_documents` + `read_source_pages` for MD&A segment discussion — business description, competitive position, growth outlook.
-5. **Segment valuation**: assign appropriate multiple per segment based on industry comparables from `_cross/` outputs (FR-093) or sector norms:
-   - High-growth segments → EV/Revenue
-   - Mature/profitable segments → EV/EBITDA
-   - Financial segments → P/B
-   - Asset-heavy segments → EV/EBITDA
+5. **Segment valuation**: assign appropriate multiple per segment based on industry comparables from `_cross/` outputs or sector norms:
+ - High-growth segments → EV/Revenue
+ - Mature/profitable segments → EV/EBITDA
+ - Financial segments → P/B
+ - Asset-heavy segments → EV/EBITDA
 6. **Corporate adjustments**: subtract unallocated corporate overhead (capitalized at segment multiple), net debt, minority interest, add excess cash.
 7. **SOTP bridge**: Segment A value + Segment B value + ... - Corporate Overhead - Net Debt + Cash = Total Equity Value ÷ Shares Outstanding = Per-Share Value.
-8. **Output**: per FR-079 with YAML frontmatter (FR-090).
+8. **Output**: per with YAML frontmatter .
 
 ## Output File
 
-Write to `{ticker}/{YYYY-MM-DD_HHMM}_sotp-valuation_segment-sum.md` per FR-079.
+Write to `{ticker}/{YYYY-MM-DD_HHMM}_sotp-valuation_segment-sum.md` .
 
 ## Output Structure
 
@@ -92,7 +92,7 @@ Write to `{ticker}/{YYYY-MM-DD_HHMM}_sotp-valuation_segment-sum.md` per FR-079.
 6. **Sensitivity** — per-share value at ±1x multiple for key segments
 7. **Coverage Gaps & Citations**
 
-**Citation density**: ≥1 citation per 200 words. **Citation link format (FR-081)**: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. **agentii.md append (FR-087)** applies.
+**Citation density**: ≥1 citation per 200 words. **Citation link format **: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. **agentii.md append ** applies.
 
 ## Validation Gates
 
