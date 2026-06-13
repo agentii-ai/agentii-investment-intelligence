@@ -23,8 +23,7 @@ agentic-search mechanisms FR-056, FR-058, FR-060, FR-064):
   12. Every SKILL.md has ## Triggers with ≥10 list items.
   13. Every vertical's .mcp.json `agentii` entry is byte-identical to
       contracts/mcp-canonical.json (FR-010, Round 4 Q15).
-  14. Every command .md file in plugins/**/commands/ ends with the canonical
-      MODE_SYNTAX.md footer link (FR-052b, Round 4 Q12).
+  14. RETIRED (2026-06-13, Phase 23) — all commands deleted per FR-014k.
   15–17. (Reserved for FR-044 protocol, pre-publish gate, essentials.yaml)
   18. Every SKILL.md ## Preflight section contains X-Agentii-Trace or
       _run_id instruction (FR-106g(c) / Phase 22 agent call tracing).
@@ -299,19 +298,8 @@ if MCP_CANONICAL.exists():
 else:
     err("mcp-canonical: contracts/mcp-canonical.json missing (FR-010 / Round 4 Q15)")
 
-# --- Check 14: command files end with MODE_SYNTAX.md footer link -------------
-MODE_SYNTAX_LINK_RE = re.compile(
-    r"\[Mode syntax\]\(\.\./\.\./\.\./docs/commands/MODE_SYNTAX\.md\)"
-)
-for cmd in PLUGINS.glob("**/commands/*.md"):
-    checked += 1
-    text = cmd.read_text()
-    if not MODE_SYNTAX_LINK_RE.search(text):
-        err(
-            f"command-mode-syntax: {rel(cmd)}: missing canonical MODE_SYNTAX.md footer "
-            f"link (FR-052b / Round 4 Q12 — every slash command must reference "
-            f"`../../../docs/commands/MODE_SYNTAX.md`)"
-        )
+# --- Check 14: RETIRED (2026-06-13, Phase 23) — all commands/*.md files deleted per FR-014k.
+#     Formerly verified MODE_SYNTAX.md footer links on command files.
 
 # --- Check 15-17: reserved for Phase 4 (FR-044 protocol), Phase 9 (pre-publish gate),
 #     Phase 3 essentials.yaml presence.

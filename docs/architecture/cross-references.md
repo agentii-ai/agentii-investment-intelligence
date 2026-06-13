@@ -4,18 +4,20 @@ Per (Round 3 cross-reference exercise). Each `equity-research-core` dimension is
 
 Every dimension SKILL.md surfaces its analog reference in an `<!-- analog: <skill-name> -->` HTML comment immediately below the frontmatter for auditability.
 
+> **Note (2026-06-13)**: `dim-*` names are historical; canonical invocation is `/agentii:skill-name`. See `.port-manifest.json` for the full dim→skill mapping (FR-014g).
+
 ## Mapping table
 
-| agentii dimension | Analog in `financial-services/equity-research/` | Rationale |
-|---|---|---|
-| `dim-recent-quarter-performance` | `earnings-preview` / `morning-note` | Both produce a post-print summary anchored to a single fiscal period. agentii adds explicit sub-prompt addressability for revenue/margin/EPS/guidance breakdowns. |
-| `dim-competitive-landscape` | `sector-overview` | Both situate a target in its peer set. agentii is per-name with optional peers; the upstream skill is sector-wide. |
-| `dim-growth-strategy` | `initiating-coverage` (growth-strategy sub-section) | Both assess TAM expansion, M&A capacity, capital deployment. agentii decomposes into 5 sub-prompts (organic/inorganic/TAM/pipeline/capital-discipline). |
-| `dim-secular-tech-trends` | `idea-generation` | Both identify which secular trends a company rides. agentii ports the 5-trend taxonomy (AI / data / EV / automation / renewable energy) from the prompt set. |
-| `dim-turnaround-stagnation` | `thesis-tracker` | Both compare current performance against a thesis baseline. agentii's `target_with_required_peers` semantics make peer comparison mandatory (turnaround framing is meaningless solo). |
-| `dim-risk-analysis` | (no direct analog; closest: `risk-factors-summary` within `morning-note`) | Risk analysis is a cross-cutting concern in the upstream design; agentii promotes it to a top-level dimension with its own 4 sub-prompts. |
-| `dim-earnings-sentiment` | `earnings-analysis` / `catalyst-calendar` | Both analyze call transcripts and Q&A tone. agentii decomposes into 6 sub-prompts (tone / surprise / guide-cut / Q&A-quality / forward-statement-rate / catalyst-density). |
-| `dim-valuation-methods` | `initiating-coverage` (valuation section) / `model-update` | Both apply DCF / comps / precedent-transaction valuation. agentii has 3 sub-prompts (DCF, comps, sum-of-parts) and links to `models-and-pitches` for live workbook generation. |
+| agentii: name | Historical dim-* name | Analog in `financial-services/equity-research/` | Rationale |
+|---|---|---|---|
+| `business-model` | `dim-recent-quarter-performance` (dim-1) | `earnings-preview` / `morning-note` | Both produce a post-print summary anchored to a single fiscal period. agentii adds explicit sub-prompt addressability for revenue/margin/EPS/guidance breakdowns. |
+| `competitive` | `dim-competitive-landscape` (dim-2) | `sector-overview` | Both situate a target in its peer set. agentii is per-name with optional peers; the upstream skill is sector-wide. |
+| `growth-strategy` | `dim-growth-strategy` (dim-3) | `initiating-coverage` (growth-strategy sub-section) | Both assess TAM expansion, M&A capacity, capital deployment. agentii decomposes into 5 sub-prompts (organic/inorganic/TAM/pipeline/capital-discipline). |
+| `secular-trends` | `dim-secular-tech-trends` (dim-4) | `idea-generation` | Both identify which secular trends a company rides. agentii ports the 5-trend taxonomy (AI / data / EV / automation / renewable energy) from the prompt set. |
+| `turnaround` | `dim-turnaround-stagnation` (dim-5) | `thesis-tracker` | Both compare current performance against a thesis baseline. agentii's `target_with_required_peers` semantics make peer comparison mandatory (turnaround framing is meaningless solo). |
+| `risk` | `dim-risk-analysis` (dim-6) | (no direct analog; closest: `risk-factors-summary` within `morning-note`) | Risk analysis is a cross-cutting concern in the upstream design; agentii promotes it to a top-level dimension with its own 4 sub-prompts. |
+| `earnings-sentiment` | `dim-earnings-sentiment` (dim-7) | `earnings-analysis` / `catalyst-calendar` | Both analyze call transcripts and Q&A tone. agentii decomposes into 6 sub-prompts (tone / surprise / guide-cut / Q&A-quality / forward-statement-rate / catalyst-density). |
+| `valuation-methods` | `dim-valuation-methods` (dim-8) | `initiating-coverage` (valuation section) / `model-update` | Both apply DCF / comps / precedent-transaction valuation. agentii has 3 sub-prompts (DCF, comps, sum-of-parts) and links to `models-and-pitches` for live workbook generation. |
 
 ## Why these are inspirational and NOT port paths
 

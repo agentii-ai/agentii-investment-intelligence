@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# migrate-commands-to-skills.sh
-# Migrates slash commands from commands/*.md legacy format to
-# skills/agentii/<name>/SKILL.md (Claude Code 2.1.3+ unified Skills format).
+# RETIRED — 2026-06-13 (Phase 23)
+# Migration complete. All 32 command files deleted per FR-014k.
+# SKILL.md is the single entrance. This script is preserved for historical reference.
+exit 0
 # Feature: 023 — Namespace isolation via skills/agentii/ directory (FR-014a)
 
 set -euo pipefail
