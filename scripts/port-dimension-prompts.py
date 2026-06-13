@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# RETIRED — 2026-06-13
+# One-time migration complete. Agentii-prefixed skills in skills/agentii/ are
+# the canonical source. Do not regenerate. See FR-014c, FR-014f.
 """
 Port references/prompts/{1..8}/*.yaml -> equity-research-core/skills/dim-*/SKILL.md.
 
@@ -7,6 +10,10 @@ analyst-curated sub-prompt YAMLs from `references/prompts/<dim>/`, applies
 tool-name rewrites per `contracts/tool-name-map.json:system_v2_7`, slugifies
 mode names per `contracts/slug-rules.md`, and emits enhanced SKILL.md files
 plus per-mode output schemas under `outputs/<slug>.yaml`.
+THIS SCRIPT IS RETIRED. Its output (12 hollow SKILL.md files) was deleted per
+FR-014c. The agentii-prefixed skills in skills/agentii/ are hand-maintained
+and are the canonical source. Do NOT run this script again.
+"""
 
 Determinism guarantees (T064):
   - All dict iterations are sorted by key.

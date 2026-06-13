@@ -59,6 +59,10 @@ Discrepancies are categorized: (a) **material** (≥5% of parent value) — refu
 3. **cross-sheet reference integrity**: all cross-sheet references resolve to valid cell ranges. *If failed*: If broken references found: refuse delivery with broken reference map.
 4. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (3). *If failed*: flag as depth-insufficient in Coverage Gaps.
 
+## Output File
+
+Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_audit-xls_{{affix}}.md` .
+
 ## Output Structure
 
 1. Executive Summary

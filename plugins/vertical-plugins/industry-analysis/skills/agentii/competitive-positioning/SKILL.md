@@ -49,6 +49,10 @@ min_tool_diversity: 6
 
 This skill follows the agentii retrieval protocol. Retrieval scope: **unstructured_document_search**. Minimum tool diversity: 6 distinct tools.
 
+## Output File
+
+Write the final deliverable to `_cross/{descriptive-slug}_{{YYYY-MM-DD_HHMM}}_competitive-positioning_{{affix}}.md` or `_sector/{sector_name}/{{YYYY-MM-DD_HHMM}}_competitive-positioning_{{affix}}.md` .
+
 ## Output Structure
 
 1. Executive Summary

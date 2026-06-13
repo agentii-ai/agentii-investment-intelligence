@@ -44,6 +44,10 @@ min_tool_diversity: 6
 
 This skill follows the agentii retrieval protocol. Retrieval scope: **structured_only**. Minimum tool diversity: 6 distinct tools.
 
+## Output File
+
+Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_unit-economics_{{affix}}.md` .
+
 ## Output Structure
 
 1. Executive Summary

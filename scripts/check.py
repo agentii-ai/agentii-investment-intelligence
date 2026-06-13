@@ -557,6 +557,53 @@ for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else [
         elif len(items) > 5:
             err(f"skill-gates: {rel(sk_md)}: Validation Gates has {len(items)} items (max 5 per FR-067)")
 
+# --- Check 27: Namespace gate — no SKILL.md outside skills/agentii/ (FR-014e, Phase 23) ---
+# Enumerates all skills/*/SKILL.md files; fails if any parent directory is not "agentii".
+ALL_SKILL_MD_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/*/SKILL.md")) + \
+                     sorted(PLUGINS.glob("agent-plugins/*/skills/*/SKILL.md")) + \
+                     sorted(PLUGINS.glob("agentii-plugin/skills/*/SKILL.md"))
+for sk in ALL_SKILL_MD_FILES:
+    checked += 1
+    parent_dir = sk.parent.name
+    if parent_dir != "agentii":
+        err(
+            f"skill-namespace: {rel(sk)}: SKILL.md outside skills/agentii/ parent "
+            f"(parent is '{parent_dir}') — FR-014c/FR-014e namespace gate"
+        )
+
+# --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---
+for sk in SKILL_FILES:
+    text = sk.read_text()
+    if "## Output File" not in text:
+        err(
+            f"skill-output-file: {rel(sk)}: missing '## Output File' section "
+            f"(FR-079/FR-014e — must specify target file path with {{ticker}}, _cross/, or _sector/)"
+        )
+    else:
+        # Extract ## Output File section content
+        of_match = re.search(r"## Output File\s*\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
+        if of_match:
+            of_body = of_match.group(1)
+            if not re.search(r"\{ticker\}|_cross/|_sector/", of_body):
+                err(
+                    f"skill-output-file: {rel(sk)}: '## Output File' must contain "
+                    f"{{ticker}}, _cross/, or _sector/ path template (FR-079/FR-014e)"
+                )
+
+# --- Check 29: Output Structure gate — ≥5 non-empty lines (FR-014e, Phase 23) ---
+for sk in SKILL_FILES:
+    text = sk.read_text()
+    # Count non-empty lines between ## Output Structure and next ## heading
+    structure_match = re.search(r"## Output Structure\s*\n(.*?)(?=\n## )", text, re.DOTALL)
+    if structure_match:
+        structure_body = structure_match.group(1)
+        non_empty_lines = [l for l in structure_body.split("\n") if l.strip()]
+        if len(non_empty_lines) < 5:
+            err(
+                f"skill-output-structure: {rel(sk)}: '## Output Structure' has "
+                f"{len(non_empty_lines)} non-empty lines (need ≥5 per FR-014e)"
+            )
+
 # --- report ----------------------------------------------------------------
 if errors:
     print(f"FAIL — {len(errors)} issue(s) across {checked} file(s):\n", file=sys.stderr)

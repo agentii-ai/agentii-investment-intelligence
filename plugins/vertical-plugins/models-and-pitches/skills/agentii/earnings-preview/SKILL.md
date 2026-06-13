@@ -121,6 +121,10 @@ Tool errors are retried ONCE with the fallback action before escalating to the r
 
 11. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
 
+## Output File
+
+Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_earnings-preview_{{affix}}.md` .
+
 ## Output Structure
 
 1. **Slide 1 — Title**: Company name, ticker, "Earnings Preview — Q<N> FY<YYYY>", report date

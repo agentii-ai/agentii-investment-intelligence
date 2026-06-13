@@ -44,6 +44,10 @@ min_tool_diversity: 6
 
 This skill follows the agentii retrieval protocol. Retrieval scope: **structured_only**. Minimum tool diversity: 6 distinct tools. **XBRL statement tree navigation **: before querying `search_xbrl_facts`, optionally call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<YYYY>` to retrieve the hierarchical concept tree from `gold.xbrl_presentation` (3.8M rows) — navigate from root `Revenues` → `RevenueFromContractWithCustomer` → product/region dimension children to discover segment-level concepts.
 
+## Output File
+
+Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_revenue-decomp_{{affix}}.md` .
+
 ## Output Structure
 
 1. Executive Summary

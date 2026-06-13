@@ -106,6 +106,10 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 
 Tool errors are retried ONCE with the fallback action before escalating to the retrieval gaps failure policy. If both Layer 2 and Layer 3 tools are unavailable, enter document access degradation mode (structured data + metadata only, flag output as degraded).
 
+## Output File
+
+Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_lbo_{{affix}}.md` .
+
 ## Output Structure
 
 1. **Executive Summary** — sponsor IRR, MOIC, exit year, key value creation drivers (EBITDA growth, debt paydown, multiple expansion)

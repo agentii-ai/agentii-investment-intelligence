@@ -107,6 +107,10 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 
 Tool errors are retried ONCE with the fallback action before escalating to the retrieval gaps failure policy. If both Layer 2 and Layer 3 tools are unavailable, enter document access degradation mode (structured data + metadata only, flag output as degraded).
 
+## Output File
+
+Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_3-statement_{{affix}}.md` .
+
 ## Output Structure
 
 1. **Executive Summary** — key model outputs (revenue CAGR, terminal EBITDA margin, ending cash balance), model integrity check results

@@ -81,7 +81,11 @@ Default: latest fiscal year (max 12). Users can request specific fiscal years fo
 5. **Inject calculation arcs**: when `include_calculations=true`, add a hidden "Validation" sheet with the calculation arc cross-check: parent expected value vs sum of weighted children .
 6. **Write workbook** via `Bash` executing a Python `openpyxl` script: write a self-contained `.py` script, execute with `python3`, output to the path specified by the parent skill. Follow Anthropic FSI conventions: blue=hardcoded input, black=formula, green=cross-sheet link, named ranges, Checks tab.
 
-## Output
+## Output File
+
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_xlsx-financials_{affix}.md` .
+
+## Output Structure
 
 ### Single-Ticker
 ```

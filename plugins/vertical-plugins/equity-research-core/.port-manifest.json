@@ -22,7 +22,7 @@
         "revenue-composition-concentration-risk-analysis"
       ],
       "mts": "single_target",
-      "skill": "dim-recent-quarter-performance",
+      "skill": "business-model",
       "source_yaml_count": 5
     },
     "dim-2": {
@@ -52,7 +52,7 @@
         "market-share-growth-drivers-and-retention-risk-analysis"
       ],
       "mts": "target_with_optional_peers",
-      "skill": "dim-competitive-landscape",
+      "skill": "competitive",
       "source_yaml_count": 8
     },
     "dim-3": {
@@ -76,7 +76,7 @@
         "organic-growth-drivers-analysis"
       ],
       "mts": "single_target",
-      "skill": "dim-growth-strategy",
+      "skill": "growth-strategy",
       "source_yaml_count": 5
     },
     "dim-4": {
@@ -106,7 +106,7 @@
         "evaluate-company-s-strategic-position-within-identified-technology-trends"
       ],
       "mts": "target_with_optional_peers",
-      "skill": "dim-secular-tech-trends",
+      "skill": "secular-trends",
       "source_yaml_count": 8
     },
     "dim-5": {
@@ -138,7 +138,7 @@
         "strategic-leadership-impact-assessment-and-financial-projection"
       ],
       "mts": "target_with_required_peers",
-      "skill": "dim-turnaround-stagnation",
+      "skill": "turnaround",
       "source_yaml_count": 9
     },
     "dim-6": {
@@ -160,7 +160,7 @@
         "technology-disruption-risk-analysis"
       ],
       "mts": "single_target",
-      "skill": "dim-risk-analysis",
+      "skill": "risk",
       "source_yaml_count": 4
     },
     "dim-7": {
@@ -186,7 +186,7 @@
         "management-guidance-extraction"
       ],
       "mts": "single_target",
-      "skill": "dim-earnings-sentiment",
+      "skill": "earnings-sentiment",
       "source_yaml_count": 6
     },
     "dim-8": {
@@ -205,9 +205,10 @@
         "valuation-assumptions-extraction"
       ],
       "mts": "single_target",
-      "skill": "dim-valuation-methods",
+      "skill": "valuation-methods",
       "source_yaml_count": 3
     }
   },
-  "tool_map_version": "1.0.0"
+  "tool_map_version": "1.0.0",
+  "_note": "Historical reference \u2014 dim-* names superseded by FR-014g. See skills/agentii/ for canonical SKILL.md files."
 }

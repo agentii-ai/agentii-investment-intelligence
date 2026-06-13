@@ -45,6 +45,10 @@ min_tool_diversity: 5
 
 This skill follows the agentii retrieval protocol. Retrieval scope: **structured_only**. Minimum tool diversity: 5 distinct tools.
 
+## Output File
+
+Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_pitch-deck_{{affix}}.md` .
+
 ## Output Structure
 
 1. Executive Summary
