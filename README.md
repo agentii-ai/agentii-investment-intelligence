@@ -42,29 +42,29 @@ This repository mirrors [`anthropics/financial-services`](https://github.com/ant
 
 ```bash
 export AGENTII_API_KEY=sk_live_YOUR_KEY_HERE
-claude mcp add-json --scope global agentii \
-  '{"type":"http","url":"https://mcp.agentii.ai/mcp","headers":{"Authorization":"Bearer ${AGENTII_API_KEY}"}}'
+claude mcp add-json --scope user agentii \
+  '{"type":"http","url":"https://mcp.agentii.ai/mcp","headers":{"Authorization":"Bearer <YOUR_KEY>"}}'
 ```
 
 Writes to `~/.claude.json`. Restart Claude Code — 20+ tools auto-discover on every session from any directory.
 
-### 3. Install Skills (Single Entrance)
+### 3. Install Skills (Primary: Local Copy)
 
+```bash
+bash scripts/copy-skills-local.sh   # Copies all 31 skills + commands to ~/.claude/
+```
+
+Restart Claude Code — all 31 skills register as `/agentii:skill-name`. This is the **recommended install method** — works reliably on all Claude Code versions.
+
+Optional: install via plugin system for a subset of skills:
 ```bash
 claude plugin marketplace add agentii-ai/agentii-investment-intelligence
-claude plugin install agentii   # ← Unified meta-plugin — all 30 skills register as /agentii:skill-name
-```
-
-Optional: install individual verticals for a subset of skills:
-```bash
-claude plugin install equity-research-core   # 9 ER-core skills only
-claude plugin install models-and-pitches     # 8 model-building skills only
+claude plugin install models-and-pitches     # 9 model-building skills only
 claude plugin install business-intelligence  # 4 BI skills only
-claude plugin install industry-analysis      # 4 industry skills only
-claude plugin install quantitative-analysis  # 5 quantitative skills only
+# ... etc for other verticals
 ```
 
-> **Known issue**: Claude Code v2.1.143 has a [plugin bug](https://github.com/anthropics/claude-code/issues/15178) where `claude plugin install` may not inject skills. Workaround: `bash scripts/copy-skills-local.sh` then restart. Skills register as `/agentii:<name>`.
+> **Future path**: `claude plugin install agentii@agentii-investment-intelligence` for the unified meta-plugin. Currently blocked by [Claude Code issue #15178](https://github.com/anthropics/claude-code/issues/15178). Use `bash scripts/copy-skills-local.sh` until the plugin bug is fixed.
 
 ### 4. Verify
 

@@ -1,13 +1,13 @@
 {
   "_comment": "Single source of truth for the canonical 'agentii' data-plane MCP server declaration. This entry MUST be replicated byte-identically into every vertical's .mcp.json. scripts/check.py Check 13 enforces byte-equality and fails CI on drift. Host CLIs dedupe MCP servers by 'name', so duplicate declarations are runtime-free. The office-plane 'agentii-office' MCP is a separate entry declared ONLY in models-and-pitches/.mcp.json.",
-  "_auth_note": "The MCP server at mcp.agentii.ai accepts both X-API-Key and Authorization: Bearer headers. Set AGENTII_API_KEY env var before starting your agent. Claude Code expands ${AGENTII_API_KEY} at startup. The MCP proxy translates any accepted auth header to X-API-Key for the downstream REST API. For one-time global setup (tools load from any directory), use: claude mcp add-json --scope global agentii '{\"type\":\"http\",\"url\":\"https://mcp.agentii.ai/mcp\",\"headers\":{\"Authorization\":\"Bearer ${AGENTII_API_KEY}\"}}'",
+  "_auth_note": "The MCP server at mcp.agentii.ai accepts both X-API-Key and Authorization: Bearer headers. Set AGENTII_API_KEY env var before starting your agent. Claude Code expands <YOUR_API_KEY> at startup. The MCP proxy translates any accepted auth header to X-API-Key for the downstream REST API. For one-time global setup (tools load from any directory), use: claude mcp add-json --scope user agentii '{\"type\":\"http\",\"url\":\"https://mcp.agentii.ai/mcp\",\"headers\":{\"Authorization\":\"Bearer <YOUR_API_KEY>\"}}'",
   "_onboarding": "See docs/install/global-mcp-setup.md for the recommended global MCP config path and namespace isolation via skills/agentii/ directory format. See scripts/copy-skills-local.sh for Claude Code v2.1.143 plugin bug workaround (GitHub issue #15178).",
   "_trace_note": "Agent Call Tracing: Every MCP tool call MUST include the X-Agentii-Trace HTTP header with agent, parent, and instance fields. The MCP server auto-injects run_id, depth, and user_id. The first tools/call response includes _run_id for the agent to propagate. See contracts/x-agentii-trace-header.md and contracts/x-agentii-trace-delivery.md for the full contract.",
   "agentii": {
     "type": "http",
     "url": "https://mcp.agentii.ai/mcp",
     "headers": {
-      "Authorization": "Bearer ${AGENTII_API_KEY}"
+      "Authorization": "Bearer <YOUR_API_KEY>"
     }
   }
 }

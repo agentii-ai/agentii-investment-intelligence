@@ -32,6 +32,7 @@ VERTICALS=(
   "business-intelligence"
   "industry-analysis"
   "models-and-pitches"
+  "quantitative-analysis"
 )
 
 for vertical in "${VERTICALS[@]}"; do
