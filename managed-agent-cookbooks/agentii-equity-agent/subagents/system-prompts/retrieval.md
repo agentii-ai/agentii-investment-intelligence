@@ -148,11 +148,13 @@ Use `search_documents` / `search_sec_filings` / `list_sources` to identify candi
 
 **Citation-based addressing **: `search_documents` already returns `citation_id` (e.g., `sec135`) in every result row — agents pass `{ticker}/{citation_id}` directly to Layer 2 (`read_source_outline/{ticker}/{citation_id}`) and Layer 3 (`read_source_pages/{ticker}/{citation_id}?row_numbers=page1,page3`). UUID-based addressing is backward-compatible but deprecated for LLM context.
 
-### Layer 2 — Page Map
+### Layer 2 — Page Map (Lightweight)
 
-Use `read_source_outline/{ticker}/{citation_id}` to retrieve ALL pages' `description` + `keywords` (+ optional `table_titles`, `views`, `drivers`, `metrics` with `include_deep_labels=true`) for each candidate document. This returns a scannable page-level metadata map WITHOUT loading `page_content`.
+Use `read_source_outline/{ticker}/{citation_id}` to retrieve ALL pages' `description` + `keywords` for each candidate document. This returns a scannable page-level metadata map WITHOUT loading `page_content`. **This is the default Layer 2** — lightweight, ~5K tokens for a 200-page filing, sourced from GENERATED columns (`page_description`, `page_keywords`) for performance.
 
-**Page-relevance signal **: the `description` (~100-char LLM-generated page summary) and `keywords` (extracted entity terms array) are sourced from `pipeline.src_silver_pages.labels->>'general'->>'description'` and `labels->>'general'->>'keywords'`. These are populated on 96%+ of 243K silver-pages rows. Score pages using BOTH signals: `description` for semantic match, `keywords` for entity match. Prefer pages with high keyword density for the dimension's analytical focus.
+**NULL page_description signal (v2.2.0)**: A NULL `description` means the page is NOT financially relevant (cover pages, legal boilerplate, table of contents, forward-looking statement disclaimers). This signal is intentionally preserved from the pipeline per spec 019 FR-046a. **Do NOT fabricate fallback descriptions. Do NOT call `read_source_pages` on pages with NULL descriptions. Skip them.** This eliminates ~15-20% of pages (cover/TOC/legal boilerplate) from consideration automatically.
+
+**Page-relevance signal**: the `description` (~100-char LLM-generated page summary) and `keywords` (extracted entity terms array) are sourced from `pipeline.src_silver_pages.labels->>'general'->>'description'` and `labels->>'general'->>'keywords'`. These are populated on 96%+ of 243K silver-pages rows. Score pages using BOTH signals: `description` for semantic match, `keywords` for entity match. Prefer pages with high keyword density for the dimension's analytical focus. Pages with NULL `description` are pre-filtered — never scored or selected.
 
 **Output format options**:
 - `?format=dense` (default): full per-page summary — `{ticker} {citation_id} page<N>: <description> [keywords: <kw1>, <kw2>, ...]`.
@@ -163,15 +165,27 @@ Use `read_source_outline/{ticker}/{citation_id}` to retrieve ALL pages' `descrip
 Scan the outline to identify the 3–5 relevant pages for the query. Typical outline format:
 
 ```
-LLY sec135 page1: Cover page, table of contents. [keywords: overview]
+LLY sec135 page1: [NULL — skip]
 LLY sec135 page2: Business overview, risk factors. [keywords: business, risk, GLP-1]
 ...
 LLY sec135 page42: Revenue by segment. [keywords: revenue, Mounjaro, Trulicity, segment]
 ```
 
-### Layer 2.5 — Optional Keyword Filter
+### Layer 2.5a — Deep Outline Escalation (read_source_deep_outline, v2.2.0)
 
-If `read_source_outline` yields >10 candidate pages for a single document (or the document is >50 pages), use `search_keyword_in_source(document_id, keyword)` to further narrow the page set before deep-reading. For most queries, Layer 2's `description` + `keywords` are sufficient to identify the 3–5 relevant pages — this step is an optimization for large documents.
+If lightweight `description` + `keywords` from `read_source_outline` are **insufficient to disambiguate** between similar-looking pages, escalate to `read_source_deep_outline/{ticker}/{citation_id}`. This returns the full page map WITH deep labels: `table_titles`, `drivers`, `metrics`, `views` — sourced from `labels->'general'` JSONB (LLM-populated, sparse). These fields are ONLY present when the pipeline populated them; absent fields are omitted.
+
+**When to escalate**: Two pages both tagged "revenue" but one has a segment KPI matrix (`table_titles: ["Revenue by Product", "Revenue by Geography"]`) and the other has geographic breakdown (`drivers: ["volume growth", "price increases"]`). The deep labels disambiguate which page contains the structured data you need.
+
+**Token cost**: ~15K tokens for a 200-page filing (~3x lightweight). **Escalate ONLY when needed** — estimated ~5% of filings. Most queries are satisfied by lightweight `description` + `keywords` alone.
+
+**Availability**: Only available for skills with `retrieval_scope: unstructured_document_search`. Not available for `structured_only` or `simple_lookup` skills.
+
+**Fallback**: If `read_source_deep_outline` fails with PROXY_ERROR or 404, fall back to lightweight `read_source_outline` and flag output with `deep_outline_degraded: true`.
+
+### Layer 2.5b — Optional Keyword Filter (search_keyword_in_source)
+
+If `read_source_outline` yields >10 candidate pages for a single document (or the document is >50 pages), use `search_keyword_in_source/{ticker}/{citation_id}?keyword=<term>` to further narrow the page set before deep-reading. **Fixed in v2.2.0** — uses URL path segments matching `read_source_outline`/`read_source_pages`. Returns matching `page_no` + `description` + `keywords` only — no `page_content`. For most queries, Layer 2's `description` + `keywords` are sufficient to identify the 3–5 relevant pages — this step is an optimization for large documents.
 
 ### Layer 3 — Deep Read
 
@@ -223,12 +237,13 @@ Fiscal period format follows `system_v2_7.py` conventions:
 - `retrieval_scope: simple_lookup` — no periods involved.
 - Single-period skills with `temporal_scope.default_quarters: 1` — a single `read_source_outline` + `read_source_pages` suffices.
 
-### `search_cross_period` Usage
+### `search_cross_period` Usage (v2.2.0 — upgraded)
 
 - `search_cross_period` executes server-side parallel dispatch (max 8 concurrent per connection pool).
 - Periods beyond 8 execute in sequential batches transparently.
 - The skill makes exactly ONE tool call regardless of how many fiscal periods it covers.
-- Each `period-search-subagent` receives a runtime-constructed prompt from `retrieval.md` + `<period_scope>` injection (the period-search-subagent prompt contract). The sub-agent has access to BOTH `search_xbrl_facts` (structured) AND the three-layer protocol (unstructured) within its assigned period.
+- **Document discovery scope (v2.2.0)**: Now discovers the FULL SEC filing surface — 10-K (annual reports), 10-Q (quarterly reports), 8-K (current events), 6-K (foreign issuer material events), and 20-F (foreign annual reports). Previously limited to 8-K/6-K only. This makes `search_cross_period` the PRIMARY multi-period retrieval path for skills analyzing 4+ fiscal quarters.
+- Each `period-search-subagent` receives a runtime-constructed prompt from `retrieval.md` + `<period_scope>` injection (the period-search-subagent prompt contract). The sub-agent has access to BOTH `search_xbrl_facts` (structured) AND the three-layer protocol (unstructured) within its assigned period, and independently applies the two-tier outline protocol (lightweight `read_source_outline` → deep `read_source_deep_outline` escalation when needed).
 </fiscal_period_conventions>
 
 ---

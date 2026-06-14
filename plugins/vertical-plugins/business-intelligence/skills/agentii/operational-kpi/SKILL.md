@@ -13,7 +13,8 @@ allowed_tools:
  - search_documents
  - list_xbrl_concepts
 retrieval_scope: structured_only
-min_tool_diversity: 6
+  - read_source_deep_outline
+min_tool_diversity: 7
 ---
 
 # operational-kpi

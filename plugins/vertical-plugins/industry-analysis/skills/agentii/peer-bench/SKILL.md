@@ -18,7 +18,8 @@ allowed_tools:
  - read_source_pages
  - search_keyword_in_source
 retrieval_scope: unstructured_document_search
-min_tool_diversity: 6
+  - read_source_deep_outline
+min_tool_diversity: 7
 ---
 
 # peer-bench
