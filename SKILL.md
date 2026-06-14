@@ -1,6 +1,6 @@
 ---
 name: agentii-investment-intelligence
-version: 2.0.6
+version: 2.2.1
 description: >-
   Institutional-grade equity research skills for AI agents. 25 Claude-type skills
   across 4 verticals (equity-research-core, business-intelligence, industry-analysis,

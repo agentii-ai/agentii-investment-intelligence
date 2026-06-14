@@ -4,20 +4,25 @@
     "name": "agentii-ai"
   },
   "metadata": {
-    "description": "Agent-use-ready US equity + biotech investment-intelligence skills and plugins for Claude Code, Claude Cowork, OpenCode, OpenClaw, Codex, and Goose. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar, clinical trials, FDA approvals) with gold-label signal extraction and a four-verb MCP tool taxonomy.",
-    "version": "2.0.6",
+    "description": "Agent-use-ready US equity investment-intelligence skills and plugins for Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar) with three-layer retrieval protocol and two-tier page outline (v2.2.0).",
+    "version": "2.2.1",
     "schema_version": "1.0"
   },
   "plugins": [
     {
+      "name": "agentii",
+      "source": "./plugins/agentii-plugin",
+      "description": "Unified meta-plugin — all 30 skills across 5 verticals under a single /agentii:skill-name namespace. The recommended single install."
+    },
+    {
       "name": "equity-research-core",
       "source": "./plugins/vertical-plugins/equity-research-core",
-      "description": "8 equity-research dimension skills with ~48 addressable sub-prompt modes: recent-quarter performance, competitive landscape, growth strategy, secular tech trends, turnaround analysis, risk analysis, earnings sentiment, and valuation methods."
+      "description": "9 equity-research dimension skills with ~48 addressable sub-prompt modes: recent-quarter performance, business-model analysis, competitive landscape, growth strategy, secular tech trends, turnaround analysis, risk analysis, earnings sentiment, and valuation methods."
     },
     {
       "name": "business-intelligence",
       "source": "./plugins/vertical-plugins/business-intelligence",
-      "description": "5 business-intelligence skills: business-model analysis, revenue decomposition, unit economics, what-if scenarios, and operational KPI tracking."
+      "description": "4 business-intelligence skills: revenue decomposition, unit economics, what-if scenarios, and operational KPI tracking."
     },
     {
       "name": "industry-analysis",
@@ -27,12 +32,17 @@
     {
       "name": "models-and-pitches",
       "source": "./plugins/vertical-plugins/models-and-pitches",
-      "description": "7 financial-modeling + presentation skills: DCF, comps, 3-statement, LBO, audit-xls, xlsx-author, and pitch-deck. 6 ported from anthropics/financial-services (Apache-2.0); pitch-deck is net-new. All Excel-producing skills follow the FR-044 4-step office protocol (spec \u2192 build \u2192 recalc \u2192 audit)."
+      "description": "9 financial-modeling + presentation skills: DCF, comps, 3-statement, LBO, SOTP-valuation, audit-xls, xlsx-financials, earnings-preview, and pitch-deck. All Excel-producing skills follow the FR-044 4-step office protocol (spec → build → recalc → audit)."
+    },
+    {
+      "name": "quantitative-analysis",
+      "source": "./plugins/vertical-plugins/quantitative-analysis",
+      "description": "5 quantitative-analysis skills: ratio-analysis, PEG-valuation, reverse-DCF, DDM-valuation, and residual-income / EVA."
     },
     {
       "name": "agentii-equity-agent",
       "source": "./plugins/agent-plugins/agentii-equity-agent",
-      "description": "Orchestrating agent plugin bundling all 24 skills from the 4 vertical plugins, with a long-range equity research system prompt ported from references/prompts/system_v2_7.py."
+      "description": "Orchestrating agent plugin bundling all 30 skills from the 5 vertical plugins, with capability-isolated subagents (retrieval, analytical, BI, visualization) and a three-layer retrieval protocol system prompt."
     }
   ]
 }
