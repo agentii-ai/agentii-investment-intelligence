@@ -88,9 +88,12 @@ rm -rf "$META_SKILLS_DIR"
 mkdir -p "$META_SKILLS_DIR"
 
 while IFS=' ' read -r skill_name vertical; do
-  src="${REPO_ROOT}/plugins/vertical-plugins/${vertical}/skills/agentii/${skill_name}"
   dst="${META_SKILLS_DIR}/${skill_name}"
-  ln -sf "$src" "$dst"
+  # Relative symlink so the namespace dir stays portable when copied/published
+  # (absolute targets break on other machines). dst lives at
+  # plugins/agentii-plugin/skills/agentii/<name> → ../../../ reaches plugins/.
+  rel="../../../vertical-plugins/${vertical}/skills/agentii/${skill_name}"
+  ln -sf "$rel" "$dst"
 done < "$TMPFILE"
 echo "Symlinked $count skills into $META_SKILLS_DIR."
 

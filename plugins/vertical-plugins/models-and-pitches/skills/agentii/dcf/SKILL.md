@@ -1,5 +1,6 @@
 ---
 name: dcf
+multi_ticker_semantics: target_with_optional_peers
 description: DCF valuation model, discounted cash flow, intrinsic value, WACC calculation, terminal value, free cash flow projection, equity value per share, DCF sensitivity analysis, unlevered free cash flow, present value calculation, build a DCF
 temporal_scope:
  default_quarters: 4
@@ -91,9 +92,7 @@ See frontmatter `allowed_tools` — 12 tools declared for this vertical.
 2. **terminal growth rate**: < risk-free rate proxy (current 10Y UST). *If failed*: If terminal_g ≥ rf: flag in assumptions section, note conservatism violation.
 3. **WACC components**: WACC = (E/V × Ke) + (D/V × Kd × (1-T) with all components cited to source data. *If failed*: If components uncited: refuse delivery, list missing citations.
 4. **hardcoded_count**: == 0 for all cells tagged projection|margin|discount_factor|pv|sensitivity per xlsx_audit output. *If failed*: If hardcoded_count > 0: per the hardcode gate, refuse delivery. Bounce back to analytical-subagent ONCE with audit report.
-5. **calculation arc cross-validation **: cross-statement balancing verified against `gold.xbrl_calculations` weights — the DCF free-cash-flow projection and income statement structure MUST align with the filer's reported concept hierarchy. Call `get_statement_structure/{ticker}?statement_type=income_statement&include_calculations=true`. Flag discrepancies ≥1% as audit findings. *If failed*: If material discrepancy (≥1%): flag in audit findings, refuse delivery for discrepancies ≥5%.
-
-6. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
+5. **calculation arc cross-validation **: cross-statement balancing verified against `gold.xbrl_calculations` weights — the DCF free-cash-flow projection and income statement structure MUST align with the filer's reported concept hierarchy. Call `get_statement_structure/{ticker}?statement_type=income_statement&include_calculations=true`. Flag discrepancies ≥1% as audit findings. *If failed*: If material discrepancy (≥1%): flag in audit findings, refuse delivery for discrepancies ≥5%. Tool-diversity is also tracked here: distinct MCP tools used MUST be ≥ `min_tool_diversity` (5); below that, flag as depth-insufficient in Coverage Gaps (a quality signal, not a delivery blocker).
 
 ## Tool Fallbacks
 

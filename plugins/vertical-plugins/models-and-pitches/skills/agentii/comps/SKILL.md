@@ -1,5 +1,6 @@
 ---
 name: comps
+multi_ticker_semantics: target_with_required_peers
 description: Comparable company analysis, trading comps, peer multiples, EV/EBITDA comparison, P/E benchmarking, comps table, relative valuation, industry multiples, precedent transactions, trading comparable analysis
 temporal_scope:
  default_quarters: 4
@@ -12,6 +13,7 @@ allowed_tools:
  - search_earnings_calendar
  - get_company_profile
  - list_xbrl_concepts
+ - batch_search
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---

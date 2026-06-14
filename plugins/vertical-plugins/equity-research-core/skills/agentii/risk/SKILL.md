@@ -1,5 +1,6 @@
 ---
 name: risk
+multi_ticker_semantics: single_target
 description: Risk analysis, regulatory risk assessment, competitive risk, macro risk, technology risk, litigation risk, financial risk assessment, enterprise risk, operational risk, geopolitical risk exposure
 temporal_scope:
  default_quarters: 4
@@ -13,6 +14,7 @@ allowed_tools:
  - get_company_financials
  - list_coverage
  - read_source_outline
+ - read_source_deep_outline
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source

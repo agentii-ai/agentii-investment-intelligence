@@ -1,5 +1,6 @@
 ---
 name: business-model
+multi_ticker_semantics: target_with_optional_peers
 description: Business model classification, business model analysis, structural analysis of how a company makes money, product offering decomposition, distribution channel analysis, customer segment analysis, revenue model identification, market sizing TAM SAM SOM, competitive positioning, business unit performance, management team & leadership analysis, what does the company sell, how does the company go to market, business model type platform service product, channel mix direct vs indirect, revenue concentration risk, CEO CFO executive backgrounds and changes
 temporal_scope:
  default_quarters: 4
@@ -11,6 +12,7 @@ allowed_tools:
  - search_documents
  - search_sec_filings
  - read_source_outline
+ - read_source_deep_outline
  - read_source_pages
  - search_keyword_in_source
  - get_company_financials
@@ -178,8 +180,8 @@ This skill delivers analyst-grade output via 5 addressable mode(s); invoke with 
 **Output structure**:
 
 - **Market Sizing & Growth**:
- - TAM (Current Year): $XXXB
- - SAM (Current Year): $XXXB
+ - TAM (Current Year): USD XXX bn
+ - SAM (Current Year): USD XXX bn
  - SOM (Current Year): XX%
  - TAM CAGR (Past 3 Years): XX%
  - TAM CAGR (Forward 3-5 Years): XX%

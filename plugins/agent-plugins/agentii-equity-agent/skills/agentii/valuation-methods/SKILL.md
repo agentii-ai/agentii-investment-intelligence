@@ -1,5 +1,6 @@
 ---
 name: valuation-methods
+multi_ticker_semantics: target_with_optional_peers
 description: Valuation methods analysis, DCF inputs, comparable multiples, P/E ratio, EV/EBITDA, price to book, valuation assumptions, relative valuation, intrinsic value, fair value estimate
 temporal_scope:
  default_quarters: 4
@@ -10,6 +11,7 @@ allowed_tools:
  - search_xbrl_facts
  - search_documents
  - read_source_outline
+ - read_source_deep_outline
  - read_source_pages
  - get_company_financials
  - search_earnings_calendar

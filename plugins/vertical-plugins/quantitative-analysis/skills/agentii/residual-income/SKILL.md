@@ -1,5 +1,6 @@
 ---
 name: residual-income
+multi_ticker_semantics: target_with_optional_peers
 description: Residual Income valuation, EVA Economic Value Added, excess return valuation, book value plus economic profit, financial institution valuation, bank valuation, insurance company valuation
 temporal_scope:
  default_quarters: 4
@@ -51,6 +52,22 @@ Values a company as: Book Value + Present Value of Future Economic Profit. Econo
 ### Retrieval Scope
 
 `structured_only` — Residual Income uses book value from XBRL + earnings estimates + current price.
+
+### Retrieval Strategy
+
+Follows the retrieval strategy decision tree in `retrieval.md`. Primary branch: **(a) Structured Data Query**. Resolve the canonical ticker first (exact → fuzzy alias → share-class) before any data call.
+
+### Temporal Scope
+
+Default lookback: 4 fiscal quarter(s); maximum: 20. The default balances recency against the trend window this analysis requires.
+
+### Tool Allowlist
+
+Per frontmatter `allowed_tools`:
+
+- `search_xbrl_facts` — primary structured financial facts (is_primary default)
+- `get_realtime_quote` — latest market price for valuation cross-checks
+- `search_earnings_calendar` — EPS actual/estimate/surprise + report dates
 
 ### Protocol
 

@@ -1,5 +1,6 @@
 ---
 name: xlsx-financials
+multi_ticker_semantics: single_target
 description: Produce formatted .xlsx financial statement workbooks from XBRL statement data. Uses Bash + openpyxl (Python) following Anthropic FSI xlsx-author conventions for professional Excel output with calculation arc cross-validation.
 temporal_scope:
  default_quarters: 4
@@ -19,7 +20,6 @@ min_tool_diversity: 2
 Shared skill for producing formatted Excel workbooks from XBRL financial statement data. Invoked as a sub-skill by financial modeling and analysis skills. Centralizes formatting, formula auditing, and calculation arc cross-validation in one place.
 
 
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 ## Triggers
 
 - Produce Excel financial statements for {ticker}
@@ -81,6 +81,16 @@ Default: latest fiscal year (max 12). Users can request specific fiscal years fo
 5. **Inject calculation arcs**: when `include_calculations=true`, add a hidden "Validation" sheet with the calculation arc cross-check: parent expected value vs sum of weighted children .
 6. **Write workbook** via `Bash` executing a Python `openpyxl` script: write a self-contained `.py` script, execute with `python3`, output to the path specified by the parent skill. Follow Anthropic FSI conventions: blue=hardcoded input, black=formula, green=cross-sheet link, named ranges, Checks tab.
 
+## Deliverable Chain
+
+**Inputs** → **Build** → **Validate** → **Output** → **Next**
+
+1. **Inputs**: resolved ticker + structured facts (`search_xbrl_facts`, `get_company_financials`) and any filing pages from the three-layer protocol.
+2. **Build**: assemble the workbook/deck spec and call `xlsx.build` / `pptx.build` (office plane).
+3. **Validate**: run `xlsx.audit` (or recalc) and the `## Validation Gates` below.
+4. **Output**: write the artifact path per `## Output File`.
+5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
+
 ## Output File
 
 Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_xlsx-financials_{affix}.md` .
@@ -127,6 +137,12 @@ Following Anthropic FSI `xlsx-author` conventions:
 | `get_statement` | Endpoint unavailable | Use `search_xbrl_facts` with individual concept queries; structure manually from `get_statement_structure` tree | "Statement endpoint unavailable; built from individual XBRL facts" |
 | `get_statement_structure` | Timeout | Use `list_xbrl_concepts` for concept discovery; flat structure without hierarchy | "Statement tree unavailable; flat concept list used" |
 | `Bash` / openpyxl | Python/openpyxl not installed | Output markdown table as fallback; annotate output with "Excel generation failed; markdown table provided" | "openpyxl unavailable; markdown table provided" |
+
+## Preflight
+
+!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
+
+**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
 
 ## Error Handling
 

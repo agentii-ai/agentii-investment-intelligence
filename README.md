@@ -7,7 +7,7 @@
 <p align="center">
   <strong>The financial data layer for AI agents.</strong><br>
   Open-source alternative to FactSet / Daloopa / S&P Global for AI agents.<br>
-  500+ US equities with full SEC filing history. 30 Claude-type skills. 20+ MCP tools.<br>
+  500+ US equities with full SEC filing history. 31 Claude-type skills. 20+ MCP tools.<br>
   One API key. Zero infrastructure. Single entrance: <code>/agentii:skill-name</code>.
 </p>
 
@@ -80,8 +80,8 @@ Expected: structured, citation-backed report with real SEC filing data and `[�
 
 | Component | Description |
 |-----------|-------------|
-| **Skills** | 30 Claude-type skills across 5 verticals — trigger-phrase auto-activation + `/agentii:skill-name` single entrance |
-| **Meta-Plugin** | `plugins/agentii-plugin/` — unified install bundles all 30 skills under `/agentii:*` namespace |
+| **Skills** | 31 Claude-type skills across 5 verticals — trigger-phrase auto-activation + `/agentii:skill-name` single entrance |
+| **Meta-Plugin** | `plugins/agentii-plugin/` — unified install bundles all 31 skills under `/agentii:*` namespace |
 | **Agent Plugin** | `agentii-equity-agent` — managed agent with capability-isolated subagents and three-layer retrieval protocol |
 | **Managed Agent Cookbook** | Headless deployment via Claude Managed Agents API with retrieval/analytical/BI/visualization subagents |
 | **MCP Tools** | 20+ tools at `mcp.agentii.ai/mcp` — SEC filings, XBRL financials, entity search, earnings calendar, two-tier page outline |
@@ -91,7 +91,7 @@ Expected: structured, citation-backed report with real SEC filing data and `[�
 
 ## Skills
 
-Skills auto-activate when trigger phrases match. Each is a `skills/agentii/<name>/SKILL.md` file with YAML frontmatter and markdown methodology — the single canonical artifact across all 6 CLI hosts (Claude Code, OpenCode, Codex, OpenClaw, Goose, Claude Cowork). No legacy `commands/` wrappers. [Full methodology →](./contracts/skill-methodology-template.md)
+Skills auto-activate when trigger phrases match. Each is a `skills/agentii/<name>/SKILL.md` file with YAML frontmatter and markdown methodology — the single canonical artifact across all 6 CLI hosts (Claude Code, OpenCode, Codex, OpenClaw, Goose, Claude Cowork). Thin `commands/*.md` wrappers are also shipped per vertical for explicit `/agentii:skill-name` slash-command invocation on hosts that surface commands. [Full methodology →](./contracts/skill-methodology-template.md)
 
 ### equity-research-core (9 skills)
 

@@ -1,5 +1,6 @@
 ---
 name: earnings-preview
+multi_ticker_semantics: single_target
 description: Earnings preview deck, quarterly earnings presentation, earnings summary slides, consensus vs actual presentation, earnings preview report, pre-earnings analysis, earnings expectations deck, quarterly preview, upcoming earnings summary, earnings announcement preview
 temporal_scope:
  default_quarters: 4

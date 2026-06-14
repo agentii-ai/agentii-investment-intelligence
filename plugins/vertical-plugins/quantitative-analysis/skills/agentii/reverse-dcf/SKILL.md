@@ -1,5 +1,6 @@
 ---
 name: reverse-dcf
+multi_ticker_semantics: target_with_optional_peers
 description: Reverse DCF valuation, implied growth rate, market expectations analysis, reverse discounted cash flow, implied valuation assumptions, market-implied projections, DCF sanity check
 temporal_scope:
  default_quarters: 4
@@ -52,6 +53,22 @@ Starts from the current stock price and solves backward: "What growth rate, marg
 ### Retrieval Scope
 
 `structured_only` — Reverse DCF uses current price + XBRL financials + consensus estimates.
+
+### Retrieval Strategy
+
+Follows the retrieval strategy decision tree in `retrieval.md`. Primary branch: **(a) Structured Data Query**. Resolve the canonical ticker first (exact → fuzzy alias → share-class) before any data call.
+
+### Temporal Scope
+
+Default lookback: 4 fiscal quarter(s); maximum: 12. The default balances recency against the trend window this analysis requires.
+
+### Tool Allowlist
+
+Per frontmatter `allowed_tools`:
+
+- `search_xbrl_facts` — primary structured financial facts (is_primary default)
+- `get_realtime_quote` — latest market price for valuation cross-checks
+- `search_earnings_calendar` — EPS actual/estimate/surprise + report dates
 
 ### Protocol
 

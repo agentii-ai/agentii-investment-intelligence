@@ -1,5 +1,6 @@
 ---
 name: turnaround
+multi_ticker_semantics: single_target
 description: Turnaround analysis, stagnation detection, performance inflection, operational improvement, restructuring analysis, management change impact, cost cutting effectiveness, business transformation, recovery trajectory, operational metrics improvement
 temporal_scope:
  default_quarters: 4
@@ -14,6 +15,7 @@ allowed_tools:
  - get_company_profile
  - list_coverage
  - read_source_outline
+ - read_source_deep_outline
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source

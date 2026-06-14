@@ -1,5 +1,6 @@
 ---
 name: ratio-analysis
+multi_ticker_semantics: target_with_optional_peers
 description: Financial ratio analysis, profitability ratios ROE ROA ROIC, liquidity ratios current quick cash, leverage ratios debt-to-equity interest coverage, efficiency ratios asset turnover inventory turnover DSO, valuation ratios PE PB EV/EBITDA, cross-company ratio comparison, DuPont analysis
 temporal_scope:
  default_quarters: 4
@@ -12,8 +13,8 @@ allowed_tools:
  - get_realtime_quote
  - search_earnings_calendar
  - get_company_financials
+ - batch_search
 retrieval_scope: structured_only
-  - read_source_deep_outline
 min_tool_diversity: 7
 ---
 

@@ -1,5 +1,6 @@
 ---
 name: earnings-sentiment
+multi_ticker_semantics: single_target
 description: Earnings sentiment analysis, analyst estimates vs guidance, earnings surprise history, consensus sentiment, earnings revision trends, analyst rating changes, earnings beat miss track record, guidance accuracy, whisper numbers, pre-announcement sentiment
 temporal_scope:
  default_quarters: 4
@@ -10,6 +11,7 @@ allowed_tools:
  - search_xbrl_facts
  - search_documents
  - read_source_outline
+ - read_source_deep_outline
  - read_source_pages
  - search_earnings_calendar
  - get_company_financials

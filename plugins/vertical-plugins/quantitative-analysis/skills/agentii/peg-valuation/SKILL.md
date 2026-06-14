@@ -1,5 +1,6 @@
 ---
 name: peg-valuation
+multi_ticker_semantics: target_with_optional_peers
 description: PEG valuation, Price Earnings to Growth ratio, Peter Lynch PEG methodology, growth-adjusted valuation, earnings growth rate, PE ratio valuation, PEG sector comparison, undervalued growth stocks, fair value PEG
 temporal_scope:
  default_quarters: 4

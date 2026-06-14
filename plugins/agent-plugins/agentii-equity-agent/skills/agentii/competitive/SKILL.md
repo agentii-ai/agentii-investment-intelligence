@@ -1,5 +1,6 @@
 ---
 name: competitive
+multi_ticker_semantics: target_with_required_peers
 description: Competitive landscape analysis, competitor comparison, peer positioning, market share dynamics, competitive moat assessment, Porter five forces, industry competition, competitive advantage analysis, market positioning, strategic group mapping, compare competitors
 temporal_scope:
  default_quarters: 4
@@ -16,6 +17,7 @@ allowed_tools:
  - get_company_profile
  - batch_search
  - read_source_outline
+ - read_source_deep_outline
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source

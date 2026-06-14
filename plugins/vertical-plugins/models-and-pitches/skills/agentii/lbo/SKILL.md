@@ -1,5 +1,6 @@
 ---
 name: lbo
+multi_ticker_semantics: target_with_optional_peers
 description: LBO model, leveraged buyout, private equity acquisition, sources and uses, debt schedule, returns waterfall, sponsor IRR, MOIC calculation, PE exit analysis, LBO valuation
 temporal_scope:
  default_quarters: 4

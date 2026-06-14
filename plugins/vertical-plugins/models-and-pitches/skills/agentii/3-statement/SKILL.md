@@ -1,5 +1,6 @@
 ---
 name: 3-statement
+multi_ticker_semantics: single_target
 description: 3-statement financial model, integrated IS BS CF, income statement projection, balance sheet forecast, cash flow statement, cross-statement balancing, financial model build, operating model, three statement model, integrated financial statements
 temporal_scope:
  default_quarters: 4

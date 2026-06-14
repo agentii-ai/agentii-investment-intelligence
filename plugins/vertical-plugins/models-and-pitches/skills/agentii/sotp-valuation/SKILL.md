@@ -1,5 +1,6 @@
 ---
 name: sotp-valuation
+multi_ticker_semantics: target_with_optional_peers
 description: Sum of the Parts valuation, segment-based valuation, conglomerate valuation, business segment analysis, breakup value, segment sum valuation, parts worth more than whole, hidden asset value
 temporal_scope:
  default_quarters: 4
@@ -11,6 +12,7 @@ allowed_tools:
  - get_realtime_quote
  - search_documents
  - read_source_outline
+ - read_source_deep_outline
  - read_source_pages
  - get_statement_structure
 retrieval_scope: unstructured_document_search
@@ -63,6 +65,23 @@ Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
 - Branch (c) for MD&A segment narrative via `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_realtime_quote` / `search_companies`.
 
+### Temporal Scope
+
+Default lookback: 4 fiscal quarter(s); maximum: 12. The default balances recency against the trend window this analysis requires.
+
+### Tool Allowlist
+
+Per frontmatter `allowed_tools`:
+
+- `search_xbrl_facts` — primary structured financial facts (is_primary default)
+- `search_companies` — ticker resolution + company context (entity-alias fuzzy match)
+- `get_realtime_quote` — latest market price for valuation cross-checks
+- `search_documents` — Layer 1 document discovery (page-level silver records)
+- `read_source_outline` — Layer 2 lightweight page map (description + keywords)
+- `read_source_deep_outline` — Layer 2.5a deep page map (table_titles/drivers/metrics)
+- `read_source_pages` — Layer 3 deep read of selected pages with table markers
+- `get_statement_structure` — XBRL presentation tree (concept hierarchy)
+
 ### Protocol
 
 1. **Pre-retrieval**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` .
@@ -77,6 +96,16 @@ Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
 6. **Corporate adjustments**: subtract unallocated corporate overhead (capitalized at segment multiple), net debt, minority interest, add excess cash.
 7. **SOTP bridge**: Segment A value + Segment B value + ... - Corporate Overhead - Net Debt + Cash = Total Equity Value ÷ Shares Outstanding = Per-Share Value.
 8. **Output**: per with YAML frontmatter .
+
+## Deliverable Chain
+
+**Inputs** → **Build** → **Validate** → **Output** → **Next**
+
+1. **Inputs**: resolved ticker + structured facts (`search_xbrl_facts`, `get_company_financials`) and any filing pages from the three-layer protocol.
+2. **Build**: assemble the workbook/deck spec and call `xlsx.build` / `pptx.build` (office plane).
+3. **Validate**: run `xlsx.audit` (or recalc) and the `## Validation Gates` below.
+4. **Output**: write the artifact path per `## Output File`.
+5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
 
 ## Output File
 

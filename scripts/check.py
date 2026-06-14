@@ -166,8 +166,9 @@ for yml in sorted(MANAGED.rglob("*.yaml")):
 # --- 5. agent-plugin bundled skills match vertical source ------------------
 import filecmp
 
-src_by_name = {p.name: p for p in PLUGINS.glob("vertical-plugins/*/skills/*") if p.is_dir()}
-for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/*")):
+# Keyed by skill name under the agentii namespace (skills/agentii/<name>/).
+src_by_name = {p.name: p for p in PLUGINS.glob("vertical-plugins/*/skills/agentii/*") if p.is_dir()}
+for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/agentii/*")):
     if not bundled.is_dir():
         continue
     src = src_by_name.get(bundled.name)
@@ -181,7 +182,7 @@ for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/*")):
 # --- 6. agent.md skill references -------------------------------------------
 for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
     slug = md.parents[1].name
-    sk_dir = PLUGINS / "agent-plugins" / slug / "skills"
+    sk_dir = PLUGINS / "agent-plugins" / slug / "skills" / "agentii"
     bundle = {p.name for p in sk_dir.iterdir() if p.is_dir()} if sk_dir.is_dir() else set()
     for ref in set(re.findall(r"`([a-z0-9]+(?:-[a-z0-9]+)+)`", md.read_text())):
         if ref in src_by_name and ref not in bundle:
@@ -212,8 +213,22 @@ for d in sorted(MANAGED.iterdir()):
             err(f"missing: {rel(d)}/{req}")
 
 # --- 9-12. SKILL.md structural checks ---------------------------------------
-SKILL_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/*/SKILL.md")) + \
-              sorted(PLUGINS.glob("agent-plugins/*/skills/*/SKILL.md"))
+# Skills live under the unified `skills/agentii/<name>/` namespace (Phase 23,
+# FR-014c/e). Globs MUST target that depth — `skills/*/SKILL.md` matches the
+# namespace dir, not the skills, and silently validates zero files.
+SKILL_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/agentii/*/SKILL.md")) + \
+              sorted(PLUGINS.glob("agent-plugins/*/skills/agentii/*/SKILL.md")) + \
+              sorted(PLUGINS.glob("agentii-plugin/skills/agentii/*/SKILL.md"))
+
+# Self-test: the gate must never silently match zero skills again. If this
+# fires, the namespace layout changed and the globs above need updating.
+MIN_EXPECTED_SKILLS = 29
+if len(SKILL_FILES) < MIN_EXPECTED_SKILLS:
+    err(
+        f"check-config: SKILL_FILES glob matched {len(SKILL_FILES)} files "
+        f"(expected >= {MIN_EXPECTED_SKILLS}) — skill-level checks would be a "
+        f"no-op. Verify the skills/agentii/<name>/SKILL.md namespace layout."
+    )
 
 for sk in SKILL_FILES:
     checked += 1
@@ -374,7 +389,7 @@ for sk in SKILL_FILES:
 # Gather canonical MCP tool names from tool-name-map.json
 CANONICAL_TOOLS: set[str] = set()
 OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "xlsx.convert", "pptx.build", "pptx.refresh", "pptx.edit", "xlsx.edit"}
-DOCUMENT_TOOLS = {"read_source_outline", "read_source_pages", "search_keyword_in_source", "search_documents", "search_sec_filings"}
+DOCUMENT_TOOLS = {"read_source_outline", "read_source_deep_outline", "read_source_pages", "search_keyword_in_source", "search_documents", "search_sec_filings"}
 # Full canonical surface: FR-011 MCP tools + office tools
 FR011_TOOLS = {
     "search_clinical_trials", "search_xbrl_facts", "read_rendered_statement",
@@ -385,10 +400,15 @@ FR011_TOOLS = {
     "search_insider_trades", "search_biotech_news", "search_medical_devices",
     "get_homepage_summary", "search_earnings_calendar", "get_company_fiscal_calendar",
     "list_xbrl_concepts", "search_cross_period", "search_ipos",
-    "get_stock_quote", "get_options_chain", "get_index_quotes",
+    "get_stock_quote", "get_realtime_quote", "get_options_chain", "get_index_quotes",
     "search_stock_movers", "search_faers_events", "list_coverage",
     "get_ticker_coverage", "list_upcoming_earnings", "get_earnings_calendar_event",
     "list_domains",
+    # Phase 24+ agentic-search surface (spec 019 FR-119 + batch primitive FR-051a)
+    "read_source_deep_outline", "batch_search",
+    # XBRL Part B statement/calculation surface (spec 019 P0)
+    "get_statement", "get_statement_structure", "get_calculation_tree",
+    "validate_calculation", "get_financial_ratios", "get_segment_data",
 }
 CANONICAL_TOOLS.update(FR011_TOOLS)
 CANONICAL_TOOLS.update(OFFICE_TOOLS)
@@ -456,7 +476,7 @@ for sk in SKILL_FILES:
     except (ValueError, yaml.YAMLError):
         continue
     rs = meta.get("retrieval_scope")
-    valid_rs = {"structured_only", "single_document", "simple_lookup"}
+    valid_rs = {"structured_only", "single_document", "simple_lookup", "unstructured_document_search"}
     has_layer1 = "read_source_outline" in sk.read_text()
     has_layer3 = "read_source_pages" in sk.read_text()
     has_protocol = has_layer1 and has_layer3
@@ -473,12 +493,14 @@ for sk in SKILL_FILES:
         )
 
 # --- Check 23: methodology template subsection conformance (FR-064) ----------
+# Subsections may carry an optional ordinal prefix, e.g. "### 1. Retrieval Scope"
+# (the canonical skill-methodology-template.md numbers them). Match both forms.
 METHODOLOGY_SUBS = [
-    "### Retrieval Scope",
-    "### Retrieval Strategy",
-    "### Temporal Scope",
-    "### Tool Allowlist",
-    "### Protocol",
+    "Retrieval Scope",
+    "Retrieval Strategy",
+    "Temporal Scope",
+    "Tool Allowlist",
+    "Protocol",
 ]
 for sk in SKILL_FILES:
     text = sk.read_text()
@@ -489,18 +511,20 @@ for sk in SKILL_FILES:
         )
         continue
     for sub in METHODOLOGY_SUBS:
-        if sub not in text:
+        if not re.search(rf"^###\s+(?:\d+\.\s+)?{re.escape(sub)}\b", text, re.MULTILINE):
             err(
-                f"skill-methodology: {rel(sk)}: missing '{sub}' subsection "
+                f"skill-methodology: {rel(sk)}: missing '### {sub}' subsection "
                 f"under ## Methodology (FR-064 — skill-methodology-template.md)"
             )
 
 # --- Check 24: models-and-pitches references/ directory (FR-068) -------------
-MODELS_DIR = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills"
+MODELS_DIR = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills" / "agentii"
 REQUIRED_REFS = {"formula-sheet.md", "validation-checklist.md", "institutional-defaults.md"}
 for sk_dir in sorted(MODELS_DIR.iterdir()) if MODELS_DIR.is_dir() else []:
     if not sk_dir.is_dir():
         continue
+    if not (sk_dir / "SKILL.md").is_file():
+        continue  # shared dirs (e.g. references/) are not skills
     refs_dir = sk_dir / "references"
     if not refs_dir.is_dir():
         err(f"skill-references: {rel(sk_dir)}: missing 'references/' directory (FR-068)")
@@ -546,17 +570,18 @@ for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else [
             err(f"skill-gates: {rel(sk_md)}: Validation Gates has {len(items)} items (max 5 per FR-067)")
 
 # --- Check 27: Namespace gate — no SKILL.md outside skills/agentii/ (FR-014e, Phase 23) ---
-# Enumerates all skills/*/SKILL.md files; fails if any parent directory is not "agentii".
-ALL_SKILL_MD_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/*/SKILL.md")) + \
-                     sorted(PLUGINS.glob("agent-plugins/*/skills/*/SKILL.md")) + \
-                     sorted(PLUGINS.glob("agentii-plugin/skills/*/SKILL.md"))
+# Recursively enumerates every SKILL.md under any skills/ dir; fails if the file
+# is not located under a skills/agentii/ namespace segment. Recursive glob is
+# required so a stray skills/<name>/SKILL.md (old layout) is actually detected.
+ALL_SKILL_MD_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/**/SKILL.md")) + \
+                     sorted(PLUGINS.glob("agent-plugins/*/skills/**/SKILL.md")) + \
+                     sorted(PLUGINS.glob("agentii-plugin/skills/**/SKILL.md"))
 for sk in ALL_SKILL_MD_FILES:
     checked += 1
-    parent_dir = sk.parent.name
-    if parent_dir != "agentii":
+    if "/skills/agentii/" not in sk.as_posix():
         err(
-            f"skill-namespace: {rel(sk)}: SKILL.md outside skills/agentii/ parent "
-            f"(parent is '{parent_dir}') — FR-014c/FR-014e namespace gate"
+            f"skill-namespace: {rel(sk)}: SKILL.md outside skills/agentii/ namespace "
+            f"— FR-014c/FR-014e namespace gate"
         )
 
 # --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---

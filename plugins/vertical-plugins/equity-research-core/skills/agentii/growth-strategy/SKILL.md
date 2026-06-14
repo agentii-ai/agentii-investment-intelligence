@@ -1,5 +1,6 @@
 ---
 name: growth-strategy
+multi_ticker_semantics: target_with_optional_peers
 description: Growth strategy analysis, organic growth decomposition, inorganic growth, M&A strategy, pipeline analysis, revenue growth drivers, strategic initiatives, expansion strategy, growth trajectory, product pipeline growth
 temporal_scope:
  default_quarters: 4
@@ -14,6 +15,7 @@ allowed_tools:
  - get_company_profile
  - list_coverage
  - read_source_outline
+ - read_source_deep_outline
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source

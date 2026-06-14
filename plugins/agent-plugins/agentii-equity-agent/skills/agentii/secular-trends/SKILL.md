@@ -1,5 +1,6 @@
 ---
 name: secular-trends
+multi_ticker_semantics: target_with_optional_peers
 description: Secular technology trends, technology adoption cycle, disruption risk, AI impact analysis, digital transformation, industry 4.0 trends, technology moat, innovation trajectory, R&D effectiveness, tech competitive positioning
 temporal_scope:
  default_quarters: 4
@@ -14,6 +15,7 @@ allowed_tools:
  - list_coverage
  - search_unified
  - read_source_outline
+ - read_source_deep_outline
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source

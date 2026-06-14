@@ -1,5 +1,6 @@
 ---
 name: recent-quarter
+multi_ticker_semantics: single_target
 description: Recent quarter performance analysis, quarterly earnings review, last quarter results, quarterly financial performance, analyze recent quarter, Q4 earnings, quarterly revenue breakdown, EPS this quarter, margin analysis recent quarter, sequential growth, quarterly performance review
 temporal_scope:
  default_quarters: 1
@@ -14,8 +15,8 @@ allowed_tools:
  - get_company_fiscal_calendar
  - get_ticker_coverage
  - list_xbrl_concepts
+ - batch_search
 retrieval_scope: structured_only
-  - read_source_deep_outline
 min_tool_diversity: 6
 ---
 

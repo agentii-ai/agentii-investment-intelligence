@@ -52,7 +52,7 @@ def parse_frontmatter(text: str) -> dict:
 
 def main() -> int:
     errs: list[str] = []
-    skills = list(ROOT.glob("plugins/**/skills/*/SKILL.md"))
+    skills = list(ROOT.glob("plugins/**/skills/agentii/*/SKILL.md"))
     for sk in sorted(skills):
         meta = parse_frontmatter(sk.read_text())
         mts = meta.get("multi_ticker_semantics")

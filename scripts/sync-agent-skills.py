@@ -31,8 +31,8 @@ for sk in list(VERTICALS.glob("*/skills/agentii/*")) + list(VERTICALS.glob("*/sk
 
 synced = 0
 missing: list[str] = []
-for bundled in sorted(AGENTS.glob("*/skills/*")):
-    if not bundled.is_dir():
+for bundled in sorted(AGENTS.glob("*/skills/agentii/*")):
+    if not bundled.is_dir() or bundled.name == "agentii":
         continue
     src = src_by_name.get(bundled.name)
     if not src:

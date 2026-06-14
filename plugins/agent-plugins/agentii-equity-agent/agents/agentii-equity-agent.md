@@ -392,8 +392,8 @@ Every MCP tool call you make is traced via the `X-Agentii-Trace` HTTP header to 
 
 | Field | When | Example |
 |-------|------|---------|
-| `agent` | Always | `ratio-analysis`, `dcf-model`, `retrieval-subagent` |
+| `agent` | Always | `recent-quarter`, `dcf-model`, `retrieval-subagent` |
 | `parent` | When spawned by another agent | `equity-research` |
-| `instance` | When running in parallel with same-type agents | `ratio-analysis-3` |
+| `instance` | When running in parallel with same-type agents | `recent-quarter-3` |
 
 See `contracts/x-agentii-trace-header.md` for the full contract.

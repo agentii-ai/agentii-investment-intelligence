@@ -86,7 +86,7 @@ def scan_steering_examples(path: Path) -> list[str]:
 
 def main() -> int:
     errs: list[str] = []
-    skills = list(ROOT.glob("plugins/**/skills/*/SKILL.md"))
+    skills = list(ROOT.glob("plugins/**/skills/agentii/*/SKILL.md"))
     for sk in sorted(skills):
         errs.extend(scan_skill(sk))
     for ex in sorted(ROOT.glob("managed-agent-cookbooks/*/steering-examples.json")):

@@ -19,8 +19,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Two canonical forms are accepted:
+#   1. v1.0 link:   [📄 <ticker> <form> p.<N>](agentii://source/<uuid>?accession=<acc>&page=<N>)
+#   2. path-based (current canonical, skill-methodology-template.md §"Citation Link Format"):
+#                   [📄 <ticker> <form> p.<N>](https://agentii.ai/v/<ticker>/<citation_id>[/<N>])
+# Both allow {placeholder} segments used in instructional "Citation link format" examples.
 CANONICAL_RE = re.compile(
-    r"\[📄 [^\]]+ p\.\d+\]\(agentii://source/[a-f0-9-]+\?accession=[\d-]+&page=\d+\)"
+    r"\[📄 [^\]]+ p\.[\w{}]+\]\("
+    r"(?:agentii://source/[a-f0-9{}-]+\?accession=[\d{}-]+&page=[\w{}]+"
+    r"|https://agentii\.ai/v/[\w{}-]+/[\w{}-]+(?:/[\w{}-]+)?)"
+    r"\)"
 )
 
 FORBIDDEN_PATTERNS = [
