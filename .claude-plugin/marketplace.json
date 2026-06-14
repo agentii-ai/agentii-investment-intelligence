@@ -4,15 +4,15 @@
     "name": "agentii-ai"
   },
   "metadata": {
-    "description": "Agent-use-ready US equity investment-intelligence skills and plugins for Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar) with three-layer retrieval protocol and two-tier page outline (v2.2.0).",
-    "version": "2.2.1",
+    "description": "Agent-use-ready US equity investment-intelligence skills and plugins for Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar) with three-layer retrieval protocol and two-tier page outline (v2.2.2).",
+    "version": "2.2.2",
     "schema_version": "1.0"
   },
   "plugins": [
     {
       "name": "agentii",
       "source": "./plugins/agentii-plugin",
-      "description": "Unified meta-plugin — all 30 skills across 5 verticals under a single /agentii:skill-name namespace. The recommended single install."
+      "description": "Unified meta-plugin — all 31 skills across 5 verticals under a single /agentii:skill-name namespace. The recommended single install."
     },
     {
       "name": "equity-research-core",
@@ -42,7 +42,7 @@
     {
       "name": "agentii-equity-agent",
       "source": "./plugins/agent-plugins/agentii-equity-agent",
-      "description": "Orchestrating agent plugin bundling all 30 skills from the 5 vertical plugins, with capability-isolated subagents (retrieval, analytical, BI, visualization) and a three-layer retrieval protocol system prompt."
+      "description": "Orchestrating agent plugin bundling all 31 skills from the 5 vertical plugins, with capability-isolated subagents (retrieval, analytical, BI, visualization) and a three-layer retrieval protocol system prompt."
     }
   ]
 }
