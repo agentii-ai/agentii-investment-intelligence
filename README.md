@@ -7,7 +7,7 @@
 <p align="center">
   <strong>The financial data layer for AI agents.</strong><br>
   Open-source alternative to FactSet / Daloopa / S&P Global for AI agents.<br>
-  165+ US equities with full SEC filing history. 30 Claude-type skills. 20+ MCP tools.<br>
+  500+ US equities with full SEC filing history. 30 Claude-type skills. 20+ MCP tools.<br>
   One API key. Zero infrastructure. Single entrance: <code>/agentii:skill-name</code>.
 </p>
 
@@ -154,7 +154,7 @@ All valuation skills support `--mode=scenario` for Bear/Base/Bull probability-we
 
 ## Coverage
 
-**165+ US public companies** across all 11 GICS sectors, with full SEC filing history from 2022 onward (10-K, 10-Q, 8-K, 6-K, 20-F). Every data point carries a clickable citation watermark linking to the original filing page.
+**500+ US public companies** across all 11 GICS sectors, with full SEC filing history from 2022 onward (10-K, 10-Q, 8-K, 6-K, 20-F). Every data point carries a clickable citation watermark linking to the original filing page.
 
 | Sector | Count | Example Tickers |
 |--------|-------|-----------------|
