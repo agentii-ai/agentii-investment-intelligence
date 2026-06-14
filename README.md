@@ -7,8 +7,8 @@
 <p align="center">
   <strong>The financial data layer for AI agents.</strong><br>
   Open-source alternative to FactSet / Daloopa / S&P Global for AI agents.<br>
-  506 US equities with full SEC filing history. 25+ Claude-type skills. 20+ MCP tools.<br>
-  One API key. Zero infrastructure.
+  165+ US equities with full SEC filing history. 30 Claude-type skills. 20+ MCP tools.<br>
+  One API key. Zero infrastructure. Single entrance: <code>/agentii:skill-name</code>.
 </p>
 
 <p align="center">
@@ -48,16 +48,20 @@ claude mcp add-json --scope global agentii \
 
 Writes to `~/.claude.json`. Restart Claude Code — 20+ tools auto-discover on every session from any directory.
 
-### 3. Install Skills
+### 3. Install Skills (Single Entrance)
 
 ```bash
 claude plugin marketplace add agentii-ai/agentii-investment-intelligence
-claude plugin install agentii-equity-agent
-claude plugin install equity-research-core
-claude plugin install models-and-pitches
-claude plugin install business-intelligence
-claude plugin install industry-analysis
-claude plugin install quantitative-analysis
+claude plugin install agentii   # ← Unified meta-plugin — all 30 skills register as /agentii:skill-name
+```
+
+Optional: install individual verticals for a subset of skills:
+```bash
+claude plugin install equity-research-core   # 9 ER-core skills only
+claude plugin install models-and-pitches     # 8 model-building skills only
+claude plugin install business-intelligence  # 4 BI skills only
+claude plugin install industry-analysis      # 4 industry skills only
+claude plugin install quantitative-analysis  # 5 quantitative skills only
 ```
 
 > **Known issue**: Claude Code v2.1.143 has a [plugin bug](https://github.com/anthropics/claude-code/issues/15178) where `claude plugin install` may not inject skills. Workaround: `bash scripts/copy-skills-local.sh` then restart. Skills register as `/agentii:<name>`.
@@ -76,18 +80,18 @@ Expected: structured, citation-backed report with real SEC filing data and `[�
 
 | Component | Description |
 |-----------|-------------|
-| **Skills** | 25+ Claude-type skills across 5 verticals with trigger-phrase auto-activation |
-| **Slash Commands** | 24+ commands (`/agentii:dcf`, `/agentii:peg-valuation`, `/agentii:peer-bench`) with `--mode=` addressability |
-| **Agent Plugin** | `agentii-equity-agent` — one install bundles all skills, commands, and system prompt |
-| **Managed Agent Cookbook** | Headless deployment via Claude Managed Agents API with capability-isolated subagents |
-| **MCP Tools** | 20+ tools at `mcp.agentii.ai/mcp` — SEC filings, XBRL financials, entity search, earnings calendar |
+| **Skills** | 30 Claude-type skills across 5 verticals — trigger-phrase auto-activation + `/agentii:skill-name` single entrance |
+| **Meta-Plugin** | `plugins/agentii-plugin/` — unified install bundles all 30 skills under `/agentii:*` namespace |
+| **Agent Plugin** | `agentii-equity-agent` — managed agent with capability-isolated subagents and three-layer retrieval protocol |
+| **Managed Agent Cookbook** | Headless deployment via Claude Managed Agents API with retrieval/analytical/BI/visualization subagents |
+| **MCP Tools** | 20+ tools at `mcp.agentii.ai/mcp` — SEC filings, XBRL financials, entity search, earnings calendar, two-tier page outline |
 | **Citation Portal** | Every fact links to `agentii.ai/v/{ticker}/{citation_id}/{page}` — clickable, verifiable source |
 
 ---
 
 ## Skills
 
-Skills auto-activate when trigger phrases match. Each is a `skills/agentii/<name>/SKILL.md` file with YAML frontmatter and markdown methodology. [Full methodology →](./contracts/skill-methodology-template.md)
+Skills auto-activate when trigger phrases match. Each is a `skills/agentii/<name>/SKILL.md` file with YAML frontmatter and markdown methodology — the single canonical artifact across all 6 CLI hosts (Claude Code, OpenCode, Codex, OpenClaw, Goose, Claude Cowork). No legacy `commands/` wrappers. [Full methodology →](./contracts/skill-methodology-template.md)
 
 ### equity-research-core (9 skills)
 
@@ -150,18 +154,18 @@ All valuation skills support `--mode=scenario` for Bear/Base/Bull probability-we
 
 ## Coverage
 
-**506 US public companies** across all 11 GICS sectors, with full SEC filing history from 2022 onward. Every data point carries a clickable citation watermark linking to the original filing page.
+**165+ US public companies** across all 11 GICS sectors, with full SEC filing history from 2022 onward (10-K, 10-Q, 8-K, 6-K, 20-F). Every data point carries a clickable citation watermark linking to the original filing page.
 
 | Sector | Count | Example Tickers |
 |--------|-------|-----------------|
-| Technology | ~130 | NVDA, AMD, AVGO, MSFT, AAPL, CRM, ORCL |
-| Healthcare / Biotech | ~120 | LLY, ABBV, JNJ, PFE, MRK, BMY, UNH |
-| Financials | ~60 | JPM, BAC, GS, MS, V, MA, XYZ |
-| Consumer | ~80 | AMZN, WMT, COST, HD, NKE, TSLA |
-| Industrials / Energy / Materials | ~80 | GE, CAT, XOM, BA, RTX, LMT |
-| Communication / Utilities / Real Estate | ~36 | META, GOOG, NFLX, DIS, T, VZ |
+| Technology | ~40 | NVDA, AMD, AVGO, MSFT, AAPL, CRM, ORCL, INTC |
+| Healthcare / Biotech | ~50 | LLY, ABBV, JNJ, PFE, MRK, BMY, UNH |
+| Financials | ~25 | JPM, BAC, GS, MS, V, MA, XYZ |
+| Consumer | ~25 | AMZN, WMT, COST, HD, NKE, TSLA |
+| Industrials / Energy / Materials | ~20 | GE, CAT, XOM, BA, RTX, LMT |
+| Communication / Utilities / Real Estate | ~10 | META, GOOG, NFLX, DIS, T, VZ |
 
-Data freshness: XBRL facts updated daily via Dagster pipeline. SEC filings indexed within hours of EDGAR publication. [Full coverage →](https://agentii.ai/coverage) | [Request a ticker →](https://agentii.ai/request-data)
+**Data volume**: 4.17M XBRL facts, 11,575 source documents, 243K+ parsed silver pages. Data freshness: XBRL facts updated daily via Dagster pipeline. SEC filings indexed within hours of EDGAR publication. [Full coverage →](https://agentii.ai/coverage) | [Request a ticker →](https://agentii.ai/request-data)
 
 ---
 
@@ -184,7 +188,9 @@ Data freshness: XBRL facts updated daily via Dagster pipeline. SEC filings index
                     └────────────┘                  └────────────┘
 ```
 
-**Data plane**: Neon PostgreSQL (product data — XBRL facts, companies, filings, entity aliases). **Tracing plane**: Redis Upstash (hot, 7d TTL) + Supabase PostgreSQL (cold, long-term audit).  **Office plane**: `mcp.agentii.ai/office` for Excel/PPT generation.
+**Data plane**: Neon PostgreSQL (product data — XBRL facts, companies, filings, entity aliases). **Tracing plane**: Redis Upstash (hot, 7d TTL) + Supabase PostgreSQL (cold, long-term audit). **Office plane**: `mcp.agentii.ai/office` for Excel/PPT generation.
+
+**Retrieval protocol (v2.2.0)**: Three-layer agent-use-ready retrieval with two-tier page outline — lightweight `read_source_outline` (~5K tokens for 200 pages) defaults, `read_source_deep_outline` escalation with `table_titles`/`drivers`/`metrics`/`views` for deep disambiguation. NULL page descriptions signal "skip this page" for cover/TOC/legal boilerplate. `search_cross_period` with 10-K/10-Q discovery for multi-period analysis.
 
 See [`contracts/`](./contracts/) for the full API and MCP tool specifications. See [`docs/architecture/`](./docs/architecture/) for system design.
 
@@ -206,23 +212,21 @@ See [`contracts/`](./contracts/) for the full API and MCP tool specifications. S
 
 ### OpenCode / Codex / Goose / OpenClaw
 
-Each vertical is independently installable. The `agentii` MCP entry is replicated in each vertical's `.mcp.json` — host CLIs deduplicate by server name.
+All 30 skills use the Agent Skills open standard (`skills/agentii/<name>/SKILL.md`) — works identically across all 6 CLI hosts. The `agentii` MCP entry is replicated in each vertical's `.mcp.json` — host CLIs deduplicate by server name.
 
 ```bash
-# OpenCode
-cp -r plugins/vertical-plugins/equity-research-core ~/.config/opencode/skills/
+# Recommended: install the full agentii namespace
+cp -r plugins/agentii-plugin/skills/agentii ~/.claude/skills/agentii/    # Claude Code
+cp -r plugins/agentii-plugin/skills/agentii ~/.config/opencode/skills/    # OpenCode
+cp -r plugins/agentii-plugin/skills/agentii ~/.codex/skills/              # Codex
+cp -r plugins/agentii-plugin/skills/agentii ~/.config/goose/skills/       # Goose
+openclaw add ./plugins/agentii-plugin                                       # OpenClaw
 
-# Codex
-cp -r plugins/vertical-plugins/equity-research-core ~/.codex/skills/
-
-# Goose
-cp -r plugins/vertical-plugins/equity-research-core ~/.config/goose/skills/
-
-# OpenClaw
-openclaw add ./plugins/vertical-plugins/equity-research-core
+# Or: single vertical for lightweight installs
+cp -r plugins/vertical-plugins/equity-research-core/skills/agentii ~/.config/opencode/skills/
 ```
 
-All agents benefit from `ai-agents.txt` at the repo root. See [`ai-agents.txt`](./ai-agents.txt).
+See [`adapters/`](./adapters/) for per-CLI configuration files. All agents benefit from `ai-agents.txt` at the repo root. See [`ai-agents.txt`](./ai-agents.txt).
 
 ---
 
@@ -247,7 +251,8 @@ All agents benefit from `ai-agents.txt` at the repo root. See [`ai-agents.txt`](
 | `API_KEY_REQUIRED` | Key not sent | Verify `Authorization: Bearer` header in config |
 | `AGENTII_CREDITS_EXHAUSTED` | Trial credits used | Regenerate key or upgrade at [agentii.ai](https://agentii.ai) |
 | `list_xbrl_concepts` returns empty | Concept name mismatch | Try "Revenues" not "Revenue", "NetIncomeLoss" not "Net Income" |
-| Ticker not found | Non-canonical ticker (GOOGL, FB, SQ) | Use primary ticker (GOOG, META, XYZ) — resolution layer handles aliases |
+| Ticker not found | Non-canonical ticker (GOOGL, FB, SQ) | Use primary ticker (GOOG, META, XYZ) — three-layer ticker resolution handles aliases |
+| Old `dim-*` or `/equity-research-core:` commands missing | Legacy commands deleted (Phase 23) | All skills now at `/agentii:skill-name` — single entrance |
 
 ---
 
@@ -255,8 +260,9 @@ All agents benefit from `ai-agents.txt` at the repo root. See [`ai-agents.txt`](
 
 Everything is markdown, YAML, and Python. Fork, edit, PR.
 
-- **Edit skills** in `plugins/vertical-plugins/`, then run `python3 scripts/sync-agent-skills.py`
-- **Run `python3 scripts/check.py`** before pushing — validates all manifests, frontmatter, and cross-file consistency
+- - **Edit skills** in `plugins/vertical-plugins/<vertical>/skills/agentii/<name>/SKILL.md` — the single canonical source
+- **Sync changes**: `python3 scripts/sync-agent-skills.py` then `bash scripts/assemble-agentii-namespace.sh`
+- **Run `python3 scripts/check.py`** before pushing — validates all manifests, frontmatter, CI gates (checks 27-29), and cross-file consistency
 - Skills follow the open Agent Skills standard, supported by Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork
 
 ---
