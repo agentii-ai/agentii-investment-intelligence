@@ -87,6 +87,8 @@ Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_xlsx-financials_{affi
 
 ## Output Structure
 
+The final deliverable is an `.xlsx` workbook with proper number formatting, frozen headers, and calculation arc cross-validation. Output conventions follow the Anthropic FSI xlsx-author standard (blue font = hardcoded inputs, black font = formulas).
+
 ### Single-Ticker
 ```
 {ticker}/{YYYY-MM-DD_HHMM}_statement-{type}.xlsx
