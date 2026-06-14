@@ -1,6 +1,6 @@
 {
   "name": "quantitative-analysis",
-  "version": "0.1.0",
+  "version": "2.2.1",
   "description": "Quantitative financial analysis skills — ratio analysis, PEG valuation, reverse DCF, DDM, residual income. Uses XBRL financial data and real-time price data for US equity analysis.",
   "author": {"name": "agentii-ai"},
   "keywords": ["quantitative-analysis", "financial-ratios", "peg-valuation", "reverse-dcf", "ddm", "residual-income", "us-equity"]
