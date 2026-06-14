@@ -15,7 +15,8 @@ allowed_tools:
  - get_ticker_coverage
  - list_xbrl_concepts
 retrieval_scope: structured_only
-min_tool_diversity: 5
+  - read_source_deep_outline
+min_tool_diversity: 6
 ---
 
 # Recent Quarter Performance
