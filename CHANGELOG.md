@@ -14,7 +14,7 @@ All notable changes to `agentii-investment-intelligence`.
 - **Marketplace CI enforcement**: `check.py` validates marketplace.json version, skill count, and plugin resolution. (FR-001)
 
 ### Changed
-- **Business-model decontamination**: Fixed `essentials.yaml` lineage (root cause of `NVDA-recent-quarter/` output bug). Temporal scope broadened to 4 quarters. XBRL-first protocol ordering.
+- **Business-model decontamination**: Fixed `references/prompts/1/` dimension lineage (root cause of `NVDA-recent-quarter/` output bug). Temporal scope broadened to 4 quarters. XBRL-first protocol ordering. The original `essentials.yaml` dimension file was absorbed into the SKILL.md body.
 - **Office output fixes**: `xlsx-financials` now produces actual `.xlsx` workbooks (was `.md` description only). `pitch-deck`/`earnings-preview` upgraded to `.pptx` primary output with `.md` as degraded fallback. Stale `xlsx.build`/`pptx.build` references replaced with `Bash`+openpyxl/python-pptx.
 - **Deliverable Chain standardization**: `3-statement`/`dcf`/`lbo`/`comps` expanded to full FR-066 format (Inputs → Build → Validate → Output → Next).
 - **retrieval.md co-location**: Symlinked into all 5 vertical plugin directories for CLI install resolvability.

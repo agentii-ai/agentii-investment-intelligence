@@ -109,3 +109,8 @@ End the closing chat reply with a compact **Key Citations** list (headline 5–1
 | No data available | Flag in Coverage Gaps, proceed with available data |
 | API key invalid | Direct user to agentii.ai/api-keys |
 | MCP server unreachable | Retry once; if persistent, halt with AGENTII_MCP_UNREACHABLE |
+
+## References
+
+- **Methodology**: [`references/methodology.md`](references/methodology.md) — tool fallbacks, retrieval strategy, analysis framework
+- **Output Structure**: [`references/output-structure.md`](references/output-structure.md) — detailed deliverable sections and ordering

@@ -27,7 +27,6 @@ min_tool_diversity: 7
 ---
 
 <!-- analog: equity-research-core/business-model -->
-<!-- methodology source: references/prompts/1/ (1_1 through 1_5) -->
 
 ## Preflight
 

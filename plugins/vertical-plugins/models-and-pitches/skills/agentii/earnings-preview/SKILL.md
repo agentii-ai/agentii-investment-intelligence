@@ -20,30 +20,23 @@ min_tool_diversity: 5
 
 ## Preflight
 
-Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace
+`style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-```bash
-# Tier 1: agentii-office MCP (recommended)
-OFFICE_BACKEND="mcp"
-curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/office/mcp/health 2>/dev/null || echo "UNREACHABLE"
+**Office dependency probe (FR-043)** — this skill produces `.pptx` via `Bash` + `python-pptx`:
 
-# Tier 2: Python+LibreOffice local fallback
-if [ "$OFFICE_BACKEND" = "unreachable" ]; then
- python3 -c "import openpyxl; import pptx" 2>/dev/null && OFFICE_BACKEND="python" || echo "DEPS_MISSING"
-fi
+1. **Live Office session?** If `mcp__office__*` tools are present (Cowork), drive the live
+   document instead of headless Python.
+2. **Python library**: `Bash: python3 -c "import pptx"` — if exit ≠ 0, fall back to `.md`
+   slide spec with `data_availability: degraded` + `python_pptx_missing: true`.
+3. **LibreOffice**: `Bash: which soffice` for structural validation and PDF export.
 
-# Tier 3: OfficeCLI single-binary fallback
-if [ "$OFFICE_BACKEND" = "unreachable" ]; then
- officecli --version 2>/dev/null && OFFICE_BACKEND="officecli" || echo "OFFICECLI_MISSING"
-fi
+If the Python library is absent, report the exact remediation:
+`pip install python-pptx` and produce the `.md` degraded fallback per
+`contracts/office-tooling.md`.
 
-if [ "$OFFICE_BACKEND" = "unreachable" ]; then
- echo "AGENTII_OFFICE_UNREACHABLE: No office backend available."
- echo "Options: (a) set AGENTII_API_KEY, (b) pip install openpyxl python-pptx, (c) install OfficeCLI"
-fi
-```
-
-Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
+Include the `X-Agentii-Trace` header on every tool call per
+`contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - generate earnings preview deck

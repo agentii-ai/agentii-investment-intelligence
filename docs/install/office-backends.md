@@ -1,35 +1,44 @@
-# Office Backends — Excel & PowerPoint Generation
+# Office Backends — Excel, PowerPoint & Word Generation (v2.3.1)
 
-The `models-and-pitches` skills support 3 office backends, probed in order at Preflight time. If ANY backend is available, skills proceed. If ALL are unavailable, skills halt with `AGENTII_OFFICE_UNREACHABLE`.
+v2.3.1 uses **code-mode** office output — the agent writes self-contained Python
+scripts, executes them via `Bash`, and validates the results. No office MCP
+server. No API calls for file generation. Everything happens on your machine.
 
-## Tier 1: agentii-office MCP (Recommended)
+The canonical contract is [`contracts/office-tooling.md`](../../contracts/office-tooling.md).
+This doc covers installation only.
 
-Server-side LibreOffice with guaranteed formula fidelity. Requires `AGENTII_API_KEY`.
+---
 
-```bash
-# No installation needed — skills probe automatically:
-curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/office/mcp/health
-```
+## Two Bindings, One Contract
 
-**Pros**: Zero local deps, guaranteed LibreOffice version, presigned R2 URLs, R2 artifact storage.
-**Cons**: Requires agentii.ai account with office quota; internet required.
+Office-producing skills probe backends in order:
 
-## Tier 2: Python + LibreOffice (Local)
+1. **Live Office JS** — if `mcp__office__excel_*` / `mcp__office__powerpoint_*` tools
+   are present (Claude Cowork), the agent drives the live workbook or deck directly.
+2. **Headless Python** — the default. The agent writes a `.py` script using
+   `openpyxl` (Excel) or `python-pptx` (PowerPoint), executes it via `Bash`,
+   recalculates formulas through LibreOffice, and audits the result.
 
-Open-source stack using `openpyxl`, `python-pptx`, and LibreOffice headless.
+If neither backend is available, the skill degrades gracefully to a `.md`
+deliverable with `data_availability: degraded` and the exact `pip install`
+command to fix it. Never a silent failure.
+
+---
+
+## Python + LibreOffice (Default Code-Mode Backend)
 
 ### macOS
 
 ```bash
-# Python deps
+# Python libraries
 pip install openpyxl python-pptx
 
-# LibreOffice (includes headless calc)
+# LibreOffice (includes headless calc + impress)
 brew install --cask libreoffice
 
 # Verify
 python3 -c "import openpyxl; import pptx; print('OK')"
-libreoffice --headless --version
+which soffice
 ```
 
 ### Linux (Debian/Ubuntu)
@@ -45,62 +54,107 @@ python3 -c "import openpyxl; import pptx; print('OK')"
 ```powershell
 pip install openpyxl python-pptx
 # LibreOffice: download from https://www.libreoffice.org/download/
-# Verify:
 python -c "import openpyxl; import pptx; print('OK')"
 ```
 
-**Pros**: Fully offline, mature ecosystem, CI-validatable deterministic output.
-**Cons**: ~500 MB LibreOffice install; version skew possible across users.
+### Word (Optional, Deferred)
 
-## Tier 3: OfficeCLI (Single Binary)
-
-Zero-dependency single binary with embedded .NET runtime. Apache 2.0 license.
-
-### macOS / Linux
+Word `.docx` support via `python-docx` is documented in the office contract as
+available-but-optional. All skills default to `.md` at v2.3.1. `.docx`
+consumption is deferred until a dedicated memo/IC-note skill ships.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/iOfficeAI/OfficeCLI/main/install.sh | bash
-officecli --version
+pip install python-docx   # Optional — not required for any current skill
 ```
 
-### Windows (PowerShell)
+---
 
-```powershell
-irm https://raw.githubusercontent.com/iOfficeAI/OfficeCLI/main/install.ps1 | iex
-officecli --version
-```
+## How the Agent Produces Office Files
 
-**Pros**: ~50 MB, zero deps, no Python, no LibreOffice, 150+ Excel functions, built-in MCP server, template merging.
-**Cons**: Newer project (2026), smaller community than LibreOffice.
+The agent never calls a remote service for file generation. Instead:
 
-## Quick-Start Smoke Test
+1. **Write** — agent authors a self-contained `_build_{ticker}_{type}.py` script using
+   data already retrieved via XBRL tools
+2. **Execute** — `Bash: python3 _build_{ticker}_{type}.py`
+3. **Verify** — `Bash: ls -la {output_path}` — confirm file exists and size > 0
+4. **Recalculate** (Excel only) — `soffice --headless` resolves all formulas; the
+   package ships `scripts/recalc.py` as a convenience wrapper that also audits
+   `hardcoded_count == 0` for projection/margin/discount cells
+5. **Audit** — every tagged cell must be a live formula, never a hardcoded value
 
-Verify your chosen backend works before invoking skills:
+### Excel Conventions
+
+- **Blue font** = hardcoded input assumptions
+- **Black font** = live formulas
+- **Green font** = cross-sheet links
+- Named ranges for key metrics
+- A `Checks` tab with TRUE/FALSE validation ties (balance sheet balances, cash
+  flow ties to cash)
+
+### PowerPoint Conventions
+
+- One idea per slide; every figure footnoted to its source model cell or `/v/`
+  citation
+- Firm-branded templates honored when mounted at `./templates/`
+- Charts embedded as model-rendered PNGs when fidelity matters
+
+---
+
+## Quick Smoke Test
 
 ```bash
-# Python backend
+# Verify Python stack
 python3 -c "
 import openpyxl
-wb = openpyxl.Workbook
+wb = openpyxl.Workbook()
 ws = wb.active
 ws['A1'] = 'Hello from agentii'
 wb.save('/tmp/agentii-test.xlsx')
-print('Python backend: OK')
+print('openpyxl: OK')
 "
 
-# OfficeCLI backend
-officecli xlsx new /tmp/agentii-test.xlsx && echo "OfficeCLI backend: OK"
+# Verify LibreOffice
+soffice --headless --version
+
+# Verify recalc.py
+python3 scripts/recalc.py --audit-only /tmp/agentii-test.xlsx
 ```
 
-## Cross-Backend Determinism
+---
 
-The same `xlsx_spec` or `pptx_spec` produces **byte-identical output** across backends. This is CI-enforced: golden fixtures are rendered under both Python+LibreOffice and OfficeCLI, and SHA256 checksums are compared. Any backend-specific rendering differences fail CI.
+## Degraded Fallback Behavior
+
+When a Python library is missing, skills never fail silently:
+
+```
+# Example: openpyxl not installed
+data_availability: degraded
+openpyxl_missing: true
+# Remediation: pip install openpyxl
+```
+
+The `.md` fallback contains every data table. You're never blocked — just
+missing the formatted workbook until you install the library.
+
+---
 
 ## Minimum Versions
 
-| Component | Minimum Version | Notes |
-|-----------|----------------|-------|
-| openpyxl | 3.1+ | Required for xlsx_build + xlsx_evaluate |
-| python-pptx | 0.6.21+ | Required for pptx_build + pptx.edit |
-| LibreOffice | 7.4+ | Required for xlsx_recalc (formula resolution) |
-| OfficeCLI | 1.0.80+ | Required for all office operations via single binary |
+| Component | Minimum | Notes |
+|-----------|---------|-------|
+| Python | 3.10+ | Required for openpyxl / python-pptx |
+| openpyxl | 3.1+ | Excel workbook creation |
+| python-pptx | 0.6.21+ | PowerPoint deck creation |
+| python-docx | 0.8.11+ | Word document creation (optional, deferred) |
+| LibreOffice | 7.4+ | Formula recalculation + PDF export |
+
+---
+
+## Cross-Platform Notes
+
+- **LibreOffice rendering may differ from Microsoft Office** — skills warn users
+  to review the final file in the native app
+- **CI golden fixtures** test structural correctness (sheet count, named range
+  presence, formula-cell count) — not pixel-perfect rendering
+- **Live Office JS** (Cowork) produces native Microsoft Office rendering when
+  available; headless Python is the portable fallback
