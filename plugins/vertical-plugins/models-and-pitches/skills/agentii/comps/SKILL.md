@@ -78,9 +78,13 @@ Step-by-step execution detail is in `references/methodology.md`.
 
 ## Deliverable Chain
 
-```
-[search_companies + search_xbrl_facts] → Bash+openpyxl(spec: comps) → LibreOffice recalc → audit → [.xlsx output]
-```
+**Inputs** → **Build** → **Validate** → **Output** → **Next**
+
+1. **Inputs**: resolved ticker + peers via `search_companies` + `search_xbrl_facts` for all tickers (revenue, EBITDA, EPS, multiples) + `get_company_financials`.
+2. **Build**: write a self-contained Python script using `openpyxl` that creates the comps workbook (peer profiles, trading multiples, valuation summary) per `## Output Structure`. Execute via `Bash: python3 script.py`. Verify the `.xlsx` exists. If `import openpyxl` fails, fall back to `.md` summary with `data_availability: degraded` (see `contracts/office-tooling.md`).
+3. **Validate**: run LibreOffice recalc; audit per `## Validation Gates`.
+4. **Output**: write the artifact path per `## Output File`.
+5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
 
 ## Validation Gates
 

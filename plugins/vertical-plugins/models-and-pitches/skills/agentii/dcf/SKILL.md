@@ -78,9 +78,13 @@ Step-by-step execution detail is in `references/methodology.md`.
 
 ## Deliverable Chain
 
-```
-[search_xbrl_facts + get_company_financials] → Bash+openpyxl(spec: dcf) → LibreOffice recalc → audit(hardcoded_count==0) → [.xlsx output] → (optional) Bash+python-pptx(executive-summary) → LibreOffice convert(pdf)
-```
+**Inputs** → **Build** → **Validate** → **Output** → **Next**
+
+1. **Inputs**: resolved ticker + `search_xbrl_facts` (Income Statement, Balance Sheet, Cash Flow) + `get_company_financials` + `get_realtime_quote` for current price.
+2. **Build**: write a self-contained Python script using `openpyxl` that creates the DCF workbook (projections, WACC, terminal value, sensitivity tables) per `## Output Structure`. Execute via `Bash: python3 script.py`. Verify the `.xlsx` exists. If `import openpyxl` fails, fall back to `.md` summary with `data_availability: degraded` (see `contracts/office-tooling.md`).
+3. **Validate**: run LibreOffice recalc; audit `hardcoded_count == 0` for tagged cells per `## Validation Gates`; verify projection horizon ≥ 5 years, terminal growth < risk-free proxy.
+4. **Output**: write the artifact path per `## Output File`. (Optional) render an executive-summary `.pptx` via `Bash`+`python-pptx`; convert `.xlsx → PDF` via LibreOffice.
+5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
 
 ## Validation Gates
 
