@@ -24,16 +24,11 @@ Quantitative skill computing 6 categories of financial ratios from XBRL financia
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
-
-**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0.
-
-**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides.
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
 **`get_realtime_quote` availability **: If `get_realtime_quote` is not yet deployed in the MCP surface, use `search_earnings_calendar` for PE/earnings data and flag valuation ratios as "current price unavailable — using latest reported data." Prompts user for current stock price as manual fallback.
 
-
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - analyze financial ratios for {ticker}
@@ -63,9 +58,7 @@ Quantitative skill computing 6 categories of financial ratios from XBRL financia
 
 ### Retrieval Strategy
 
-Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts.
-- Branch (d) for simple lookups via `get_realtime_quote` / `search_companies` / `search_earnings_calendar`.
+See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
 ### Temporal Scope
 
@@ -73,70 +66,15 @@ Default: 4 fiscal quarters (max 12). Ratio analysis uses trailing 4 quarters for
 
 ### Tool Allowlist
 
-See frontmatter `allowed_tools` — 5 tools declared for this vertical. `search_xbrl_facts` is the primary data source for financial statement line items. `get_realtime_quote` provides current stock price for valuation ratios (P/E, P/B, P/S). `search_companies` enables peer identification for cross-company comparison.
+See frontmatter `allowed_tools`. `search_xbrl_facts` is the primary data source for financial statement line items. `get_realtime_quote` provides current stock price for valuation ratios (P/E, P/B, P/S). `search_companies` enables peer identification for cross-company comparison.
 
 ### Protocol
 
-1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` .
-2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","Assets","Liabilities","Equity","OperatingCashFlow","InventoryNet","ReceivablesNet","CurrentAssets","CurrentLiabilities","InterestExpense","LongTermDebt"], fiscal_year=[latest, latest-1, latest-2, latest-3])` — batch all concepts × 4 years.
-3. **Price data**: `get_realtime_quote(ticker)` for current stock price, market cap, PE (TTM).
-4. **Peer identification**: `search_companies(sector=<sector>)` to identify peer tickers for cross-company comparison.
-5. **Compute ratios** into 6 categories per the Ratio Definitions below.
-6. **Cross-company comparison**: for each peer, fetch key ratios and present comparison table with mean/median/high/low.
-7. **Output**: per file convention with YAML frontmatter .
+Step-by-step execution detail is in `references/methodology.md`.
 
 ### Ratio Definitions
 
-#### Profitability
-| Ratio | Formula | Interpretation |
-|-------|---------|---------------|
-| ROE | Net Income / Avg Total Equity | >15% = strong; measures return to shareholders |
-| ROA | Net Income / Avg Total Assets | >5% = efficient; asset utilization |
-| ROIC | (EBIT × (1 - Tax Rate) / (Total Debt + Equity - Cash) | > WACC = value-creating |
-| Gross Margin | Gross Profit / Revenue | Industry-dependent; higher = pricing power |
-| Operating Margin | Operating Income / Revenue | >15% = healthy operations |
-| Net Margin | Net Income / Revenue | >10% = strong bottom-line efficiency |
-
-#### Liquidity
-| Ratio | Formula | Interpretation |
-|-------|---------|---------------|
-| Current Ratio | Current Assets / Current Liabilities | >1.5 = healthy; <1.0 = liquidity risk |
-| Quick Ratio | (Cash + Receivables) / Current Liabilities | >1.0 = strong; acid test |
-| Cash Ratio | Cash / Current Liabilities | Most conservative; >0.5 = adequate |
-| Operating CF Ratio | Operating Cash Flow / Current Liabilities | >1.0 = can cover obligations from ops |
-
-#### Leverage
-| Ratio | Formula | Interpretation |
-|-------|---------|---------------|
-| Debt-to-Equity | Total Debt / Total Equity | <2.0 = conservative; >4.0 = aggressive |
-| Interest Coverage | EBIT / Interest Expense | >3x = safe; <1.5x = distress risk |
-| Debt-to-EBITDA | Total Debt / EBITDA | <3x = manageable; >5x = highly leveraged |
-
-#### Efficiency
-| Ratio | Formula | Interpretation |
-|-------|---------|---------------|
-| Asset Turnover | Revenue / Avg Total Assets | Higher = more efficient |
-| Inventory Turnover | COGS / Avg Inventory | Higher = faster sales; watch for stockouts |
-| Days Sales Outstanding | (Receivables / Revenue) × 365 | Lower = faster collections |
-| Days Inventory Outstanding | (Inventory / COGS) × 365 | Lower = leaner operations |
-
-#### Valuation (requires current price from `get_realtime_quote`)
-| Ratio | Formula | Interpretation |
-|-------|---------|---------------|
-| P/E (LTM) | Price / LTM EPS | Lower = cheaper; sector-dependent |
-| P/E (NTM) | Price / NTM Consensus EPS | Forward-looking; from `search_earnings_calendar` |
-| P/B | Price / Book Value Per Share | <1.0 = below book; financials focus |
-| EV/EBITDA | Enterprise Value / EBITDA | Capital-structure neutral |
-| P/S | Market Cap / Revenue | Growth check; <2.0 = reasonable |
-| PEG | P/E / Earnings Growth Rate | <1.0 = undervalued per Peter Lynch |
-
-#### Growth
-| Ratio | Formula | Interpretation |
-|-------|---------|---------------|
-| Revenue CAGR (3yr) | (Revenue_t / Revenue_t-3)^(1/3) - 1 | Trend; >10% = strong growth |
-| EPS CAGR (3yr) | (EPS_t / EPS_t-3)^(1/3) - 1 | >10% = strong earnings growth |
-| Revenue CAGR (5yr) | (Revenue_t / Revenue_t-5)^(1/5) - 1 | Longer trend |
-| EPS CAGR (5yr) | (EPS_t / EPS_t-5)^(1/5) - 1 | Longer earnings trend |
+Full ratio formula definitions are in `references/methodology.md`.
 
 ## Output File
 
@@ -144,27 +82,30 @@ Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_ratio-analysis_{affix
 
 ## Output Structure
 
-1. **Executive Summary** — top 3-5 ratios with interpretation, overall financial health assessment
-2. **Profitability Analysis** — ROE, ROA, ROIC, margins table with trailing 4-quarter trend and industry comparison
-3. **Liquidity Analysis** — current, quick, cash, operating CF ratios with short-term risk assessment
-4. **Leverage Analysis** — D/E, interest coverage, debt/EBITDA with solvency assessment
-5. **Efficiency Analysis** — asset turnover, inventory turnover, DSO, DIO with operational assessment
-6. **Valuation Snapshot** — P/E (LTM+NTM), P/B, EV/EBITDA, P/S, PEG with sector peer comparison
-7. **Growth Trends** — revenue/EPS CAGR (3yr + 5yr) with trend commentary
-8. **Cross-Company Comparison** — peer ratio comparison table with mean/median/high/low (optional: --peers flag)
-9. **Coverage Gaps & Citations** — data not retrievable + citation index in `{ticker} {citation_id} page<N>` format
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.42](https://agentii.ai/v/LLY/sec175/42)`.
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
 
-**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root. See `contracts/agentii-md-schema.md`.
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action | Coverage Annotation |
-|------|-------------|-----------------|---------------------|
-| `get_realtime_quote` | Rate limit / unavailable | Use `search_earnings_calendar` for EPS estimates; flag valuation ratios as "price data unavailable" | "Real-time price unavailable; valuation ratios omitted" |
-| `search_xbrl_facts` | Concept not found | Try alternative concept names via `list_xbrl_concepts` | "XBRL concept unavailable; used alternative" |
-| `search_companies` | Sector undefined | Use SIC code from `get_company_profile` | "Peer identification via SIC code" |
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

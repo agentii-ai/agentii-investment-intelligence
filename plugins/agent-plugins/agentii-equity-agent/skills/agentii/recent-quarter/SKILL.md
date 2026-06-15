@@ -24,14 +24,9 @@ min_tool_diversity: 6
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
-
-**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
-
-
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - analyze recent quarter performance for {ticker}
@@ -71,7 +66,7 @@ Default: 1 fiscal quarter (max 4). This skill is a temporal snapshot of the most
 
 ### 4. Tool Allowlist
 
-See frontmatter `allowed_tools` — 7 tools declared for this dimension. This skill is `structured_only` (temporal/quantitative only). `search_xbrl_facts` is the primary data source for consolidated P&L metrics. `search_earnings_calendar` provides EPS actuals, estimates, and surprise data. `get_company_fiscal_calendar` resolves fiscal period orientation. Document search and structural analysis belong to `/agentii:business-model` .
+See frontmatter `allowed_tools`. This skill is `structured_only` (temporal/quantitative only). `search_xbrl_facts` is the primary data source for consolidated P&L metrics. `search_earnings_calendar` provides EPS actuals, estimates, and surprise data. `get_company_fiscal_calendar` resolves fiscal period orientation. Document search and structural analysis belong to `/agentii:business-model` .
 
 ### 5. Protocol
 
@@ -85,63 +80,13 @@ See frontmatter `allowed_tools` — 7 tools declared for this dimension. This sk
 
 **This skill is temporal/quantitative ONLY.** Structural analysis (business model classification, product-line decomposition, channel analysis) belongs to `/agentii:business-model` . Modes below focus on quarterly P&L data, growth rates, margins, and earnings vs. consensus.
 
-### Mode: consolidated-p-and-l (essentials)
+### Analyst Modes
 
-**Display name**: Consolidated P&L Progression
-
-**Objective**: Extract and present the most recent quarter's consolidated P&L — revenue, gross profit, operating income, net income, diluted EPS — with sequential (QoQ) and year-over-year (YoY) growth rates.
-
-**Tool calls**: `get_company_financials/{ticker}`, `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss"], fiscal_year=[latest], fiscal_period=[latest])`
-
-**Output**: Consolidated P&L table with QoQ and YoY growth rates. Citation format: `{ticker} {citation_id} page<N>`.
-
-### Mode: margin-analysis (essentials)
-
-**Display name**: Margin Analysis
-
-**Objective**: Track gross margin, operating margin, and net margin across the most recent 4 quarters. Identify trends, inflection points, and drivers (pricing power, cost structure changes, operating leverage).
-
-**Tool calls**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss"], fiscal_year=[latest, latest-1])`
-
-**Output**: Margin trend table with QoQ deltas. Commentary on margin drivers.
-
-### Mode: earnings-vs-consensus
-
-**Display name**: Earnings vs. Consensus
-
-**Objective**: Compare actual EPS against consensus estimates for the most recent quarter. Present surprise %, beat/miss track record (trailing 4 quarters), and guidance accuracy.
-
-**Tool calls**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])`
-
-**Output**: EPS actual vs. estimated table with surprise % and beat/miss streak.
-
-### Mode: sequential-growth
-
-**Display name**: Sequential Growth Analysis
-
-**Objective**: Compute quarter-over-quarter growth rates for revenue, gross profit, operating income, and EPS across the trailing 4 quarters. Highlight accelerating or decelerating trends.
-
-**Tool calls**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","EarningsPerShareDiluted"], fiscal_year=[latest, latest-1])`
-
-**Output**: Sequential growth rate table with trend arrows and inflection detection.
-
-### Mode: forward-outlook
-
-**Display name**: Forward Outlook & Guidance
-
-**Objective**: Extract management guidance for the upcoming quarter, upcoming earnings date, consensus estimates for next quarter, and key catalysts (product launches, regulatory events, earnings announcements).
-
-**Tool calls**: `search_earnings_calendar(ticker, upcoming=true)`, `get_company_financials/{ticker}` (for guidance narrative)
-
-**Output**: Forward outlook summary with guidance, consensus, upcoming catalysts, and earnings date.
+This skill exposes addressable analysis modes (`--mode=<slug>` / `--modes=<s1>,<s2>` / `--mode=all`; see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The full mode definitions and their output templates live in `references/modes.md`. The default invocation runs the essentials subset.
 
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action | Coverage Annotation |
-|------|-------------|-----------------|---------------------|
-| `search_xbrl_facts` | Empty result | Try prior fiscal year; if still empty, flag as data-unavailable | "XBRL facts unavailable for this ticker/period" |
-| `search_earnings_calendar` | Empty result | Use `get_company_fiscal_calendar` to determine correct fiscal period format | "Earnings calendar unavailable; using fiscal calendar for period orientation" |
-| `get_company_financials` | 404 / error | Use individual `search_xbrl_facts` calls for each concept | "Financials overview unavailable; using granular XBRL facts" |
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
 
 ## Output File
 
@@ -149,17 +94,26 @@ Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_recent-quarter_{affix
 
 ## Output Structure
 
-1. **Executive Summary** (≤200 words) — top-line revenue, EPS, key metrics for the quarter
-2. **Consolidated P&L** (mode: consolidated-p-and-l) — revenue, gross profit, operating income, net income, diluted EPS with QoQ and YoY growth rates
-3. **Margin Analysis** (mode: margin-analysis) — gross margin, operating margin, net margin trends across trailing 4 quarters
-4. **Earnings vs. Consensus** (mode: earnings-vs-consensus) — EPS actual vs. estimated, surprise %, beat/miss streak
-5. **Sequential Growth** (mode: sequential-growth) — QoQ growth rates for key line items
-6. **Forward Outlook** (mode: forward-outlook) — guidance, consensus estimates, upcoming catalysts, earnings date
-7. **Coverage Gaps & Citations** — data not retrievable + citation index in `{ticker} {citation_id} page<N>` format
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-Q p.12](https://agentii.ai/v/LLY/sec178/12)`.
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
 
-**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

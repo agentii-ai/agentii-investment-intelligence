@@ -20,12 +20,9 @@ Values a company as: Book Value + Present Value of Future Economic Profit. Econo
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-**Ticker resolution ** and **Workspace style.md override check ** apply. **`get_realtime_quote` availability **: If not deployed, use industry beta (Damodaran) for CAPM. Current price not critical for RI model (book-value based).
-
-
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - residual income valuation {ticker}
@@ -55,7 +52,7 @@ Values a company as: Book Value + Present Value of Future Economic Profit. Econo
 
 ### Retrieval Strategy
 
-Follows the retrieval strategy decision tree in `retrieval.md`. Primary branch: **(a) Structured Data Query**. Resolve the canonical ticker first (exact → fuzzy alias → share-class) before any data call.
+See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
 ### Temporal Scope
 
@@ -71,17 +68,7 @@ Per frontmatter `allowed_tools`:
 
 ### Protocol
 
-1. **Pre-retrieval**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` .
-2. **Book value**: `search_xbrl_facts(ticker, concept=["Equity", "StockholdersEquity"], fiscal_year=[latest])` — latest book value of equity.
-3. **Earnings**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest+1, latest+2])` for consensus EPS estimates.
-4. **Cost of equity (Ke)**: CAPM — Rf (10Y UST) + β × ERP (5%). β from `get_realtime_quote`.
-5. **Forecast residual income**:
- - For each forecast year: RI_t = Net Income_t - (Ke × Beginning Book Value_t-1)
- - Book Value_t = Book Value_t-1 + Net Income_t - Dividends_t
- - Dividends_t = Net Income_t × Payout Ratio (historical average or zero if no dividend)
-6. **Terminal value**: TV = RI_terminal × (1+g) / (Ke - g), where g is perpetuity growth (typically 0% or GDP-like rate for RI).
-7. **Fair value**: BV_0 + PV(RI_1) + PV(RI_2) + ... + PV(RI_terminal) + PV(TV) = per-share equity value.
-8. **Output**: per with YAML frontmatter .
+Step-by-step execution detail is in `references/methodology.md`.
 
 ### When to Use Residual Income vs. DCF
 
@@ -96,21 +83,19 @@ Per frontmatter `allowed_tools`:
 
 ## Output File
 
-Write to `{ticker}/{YYYY-MM-DD_HHMM}_residual-income_eva-model.md` .
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_residual-income_{affix}.md`.
 
 ## Output Structure
 
-1. **Executive Summary** — per-share fair value, premium/discount to current price, implied P/B vs current P/B
-2. **Book Value Analysis** — current BV per share, historical BV growth, ROE trend
-3. **Cost of Equity** — CAPM decomposition: Rf, β, ERP → Ke
-4. **Residual Income Projection** — year-by-year RI forecast with NI, BV, Dividends, RI per year
-5. **Terminal Value** — perpetuity of residual income beyond forecast horizon
-6. **Fair Value Bridge** — BV_0 + PV(RI_1..5) + PV(TV) = per-share value
-7. **Implied P/B** — fair value P/B vs. current P/B; if <1.0, market prices below book (distress signal or value opportunity)
-8. **Sensitivity** — fair value at varying Ke (±1%, ±2%) and terminal RI growth (±1%)
-9. **Coverage Gaps & Citations**
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-**Citation density**: ≥1 citation per 200 words. **Citation link format ** and **agentii.md append ** apply.
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
+
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
 ## Validation Gates
 
@@ -120,10 +105,18 @@ Write to `{ticker}/{YYYY-MM-DD_HHMM}_residual-income_eva-model.md` .
 
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action |
-|------|-------------|-----------------|
-| `get_realtime_quote` | Beta unavailable | Use industry average beta from Damodaran data |
-| `search_earnings_calendar` | No consensus | Use historical EPS trend + manual ROE forecast |
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

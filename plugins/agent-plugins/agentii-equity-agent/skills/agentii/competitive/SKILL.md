@@ -29,14 +29,9 @@ min_tool_diversity: 10
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0: (1) exact match via `search_companies(ticker=<input>)`, (2) pg_trgm fuzzy alias match via `gold.entity_aliases` (6,721 rows), (3) share class normalization for multi-class tickers (GOOG/GOOGL→GOOG, BRK.A/BRK.B→BRK.B). Return canonical ticker, match method, and confidence indicator.
-
-**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides (`default_lookback_quarters`, `reporting_currency`, `sector_focus`, `output_verbosity`, `peer_universe`). Apply overrides to output formatting and temporal scope. Precedence: workspace `style.md` > package `style.md` > skill defaults.
-
-
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - analyze dim competitive landscape
@@ -69,7 +64,7 @@ This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filin
 
 ### Retrieval Strategy
 
-Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
+Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This skill uses:
 - Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts.
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
@@ -82,154 +77,46 @@ Default: 8 fiscal quarters (max 16). Competitive landscape: 8 quarters for marke
 
 ### Tool Allowlist
 
-See frontmatter `allowed_tools` — 11 tools declared for this dimension.
+See frontmatter `allowed_tools`.
 
 ### Protocol
 
 This skill delivers analyst-grade output via 8 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
 
-### Mode: direct-competitor-identification-and-analysis
+### Analyst Modes
 
-**Display name**: direct-competitor-identification-and-analysis
-
-<!-- ported_from: references/prompts/2/2_1_1.yaml -->
-
-**Focus**: Leverage multiple sources to identify and evaluate the company's major competitors across products, geographies, and development stages, providing a c.
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `list_sources`
-- `search_keyword_in_source`
-
-### Mode: market-share-dynamics-analysis
-
-**Display name**: market-share-dynamics-analysis
-
-<!-- ported_from: references/prompts/2/2_1_2.yaml -->
-
-**Focus**: Leverage multiple data sources to identify and evaluate the company's market share dynamics over the past 2 years, using trackable operating metrics d.
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `read_source_outline`
-- `search_xbrl_facts`
-
-### Mode: market-share-evolution-and-competitive-benchmarking
-
-**Display name**: market-share-evolution-and-competitive-benchmarking
-
-<!-- ported_from: references/prompts/2/2_1_3.yaml -->
-
-**Focus**: Leverage multiple data sources to identify and evaluate the company's market share trends over the past 12 quarters, using trackable operating metrics.
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `search_keyword_in_source`
-- `search_xbrl_facts`
-
-### Mode: forward-looking-market-share-outlook-and-strategic-assessment
-
-**Display name**: forward-looking-market-share-outlook-and-strategic-assessment
-
-<!-- ported_from: references/prompts/2/2_1_4.yaml -->
-
-**Focus**: Leverage multiple data sources to evaluate the company's forward-looking market share outlook over the next 1-2 years, using operating metrics and qua.
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `list_sources`
-- `search_keyword_in_source`
-
-### Mode: market-concentration-and-competitive-positioning-analysis
-
-**Display name**: market-concentration-and-competitive-positioning-analysis
-
-<!-- ported_from: references/prompts/2/2_1_5.yaml -->
-
-**Focus**: Leverage multiple data sources to identify and evaluate the company's market share dynamics and competitive positioning over the past 12 quarters, usi.
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `search_keyword_in_source`
-- `search_xbrl_facts`
-
-### Mode: market-share-growth-drivers-and-retention-risk-analysis
-
-**Display name**: market-share-growth-drivers-and-retention-risk-analysis
-
-<!-- ported_from: references/prompts/2/2_1_6.yaml -->
-
-**Focus**: Leverage multiple data sources to identify and evaluate the company's market share growth drivers and retention risks over the most recent 12 quarters.
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `search_keyword_in_source`
-- `search_xbrl_facts`
-
-### Mode: market-share-capture-efficiency-and-execution-analysis
-
-**Display name**: market-share-capture-efficiency-and-execution-analysis
-
-<!-- ported_from: references/prompts/2/2_1_7.yaml -->
-
-**Focus**: Leverage multiple data sources to evaluate the company's capability to capture market share and execute against market opportunities, using operating .
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `search_keyword_in_source`
-- `search_xbrl_facts`
-
-### Mode: indirect-competition-and-substitution-threat-analysis
-
-**Display name**: indirect-competition-and-substitution-threat-analysis
-
-<!-- ported_from: references/prompts/2/2_2.yaml -->
-
-**Focus**: Leverage multiple data sources to identify and evaluate the indirect competitive landscape facing the company, including substitutes, adjacent market .
- (rewritten via tool-name-map.json:system_v2_7)
-
-- `get_company_profile`
-- `read_source_outline`
-- `search_keyword_in_source`
-
-<!-- END port-dimension-prompts methodology + modes -->
+This skill exposes addressable analysis modes (`--mode=<slug>` / `--modes=<s1>,<s2>` / `--mode=all`; see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The full mode definitions and their output templates live in `references/modes.md`. The default invocation runs the essentials subset.
 
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action | Coverage Annotation |
-|------|-------------|-----------------|---------------------|
-| `read_source_pages` | SQL error / PROXY_ERROR | Use `search_keyword_in_source(document_id, keyword)` if document_id known; otherwise `search_documents` with same query | "source file unavailable; used keyword search instead" |
-| `read_source_deep_outline` | PROXY_ERROR / 404 | Use lightweight `read_source_outline` and flag `deep_outline_degraded: true` | "deep outline unavailable; used lightweight page map instead" |
-| `read_source_outline` | PROXY_ERROR / 404 | Use `list_sources` for document-level metadata | "page map unavailable; used document listing instead" |
-| `list_xbrl_concepts` | Timeout / 503 | Use direct `search_xbrl_facts` with standard US-GAAP concepts (Revenues, NetIncomeLoss, EarningsPerShareDiluted, OperatingIncomeLoss, Assets) | "concept discovery skipped due to timeout; using standard US-GAAP concepts" |
-| `get_company_fiscal_calendar` | Cross-validation failed | Use XBRL-derived period grid from `search_xbrl_facts` `period_end` dates | "fiscal calendar mismatch; using XBRL-derived period grid" |
-| `search_unified` | Intermittent error | Use parallel `search_documents` + `search_xbrl_facts` with the same query | "unified search unavailable; used parallel document + XBRL search" |
-| `batch_search` | PROXY_ERROR | Use sequential individual calls (one per sub-query) | "batch search unavailable; used sequential calls" |
-
-Tool errors are retried ONCE with the fallback action before escalating to the retrieval gaps failure policy. If both Layer 2 and Layer 3 tools are unavailable, enter document access degradation mode (structured data + metadata only, flag output as degraded).
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
 
 ## Output File
 
-Write the final deliverable to `{{ticker}}/{{YYYY-MM-DD_HHMM}}_competitive_peer-positioning.md` .
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_competitive_peer-positioning.md` .
 
 ## Output Structure
 
-The final deliverable MUST be written as a markdown file to the workspace using the convention :
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-```
-{ticker}/{YYYY-MM-DD_HHMM}_competitive_{affix}.md
-```
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
 
-Where `affix` is a short descriptive slug (e.g., `peer-positioning`, `moat-analysis`, `share-shift`, `competitive-dynamics`). Examples:
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
-- `LLY/2026-05-25_1430_competitive_peer-positioning.md`
-- `NVDA/2026-05-25_1545_competitive_moat-analysis.md`
+## Memory & Snapshot
 
-The path is RELATIVE to the agent's invocation cwd. Skills MUST NOT write under absolute paths.
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
 
-**Citation density**: ≥1 citation per 200 words. Bare `page_no` integers are forbidden — always use `{ticker} {citation_id} page<N>`. **Citation link format **: use clickable links: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. Example: `[📄 LLY 10-K p.42](https://agentii.ai/v/LLY/sec175/42)`.
+## Final Summary (TUI)
 
-**agentii.md append **: After writing the output file, append a YAML block to `agentii.md` at the workspace root with `ticker`, `date`, `skill`, `output_file`, and `key_conclusions`. Create the file with a `# Project Memory Index` heading if it doesn't exist. See `contracts/agentii-md-schema.md`.
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

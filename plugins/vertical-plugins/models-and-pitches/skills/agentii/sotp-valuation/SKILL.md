@@ -25,12 +25,9 @@ Values each business segment independently and sums for total enterprise value. 
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-**Ticker resolution ** and **Workspace style.md override check ** apply. **`get_realtime_quote` availability **: If not deployed, sector multiples from `_cross/` comps outputs can substitute for current market data. Segment valuation is relative, not price-dependent.
-
-
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - sum of the parts valuation {ticker}
@@ -60,10 +57,7 @@ Values each business segment independently and sums for total enterprise value. 
 
 ### Retrieval Strategy
 
-Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured segment financials via `search_xbrl_facts` + `get_statement_structure` .
-- Branch (c) for MD&A segment narrative via `read_source_outline` → `read_source_pages`.
-- Branch (d) for simple lookups via `get_realtime_quote` / `search_companies`.
+See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
 ### Temporal Scope
 
@@ -84,44 +78,33 @@ Per frontmatter `allowed_tools`:
 
 ### Protocol
 
-1. **Pre-retrieval**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` .
-2. **Segment discovery**: call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<latest>` to identify segment-level concepts. Navigate from `Revenues` → segment children (ProductOrServiceAxis members).
-3. **Segment financials**: query `search_xbrl_facts` for each segment's revenue, operating income, EBITDA, assets.
-4. **Segment narrative**: `search_documents` + `read_source_pages` for MD&A segment discussion — business description, competitive position, growth outlook.
-5. **Segment valuation**: assign appropriate multiple per segment based on industry comparables from `_cross/` outputs or sector norms:
- - High-growth segments → EV/Revenue
- - Mature/profitable segments → EV/EBITDA
- - Financial segments → P/B
- - Asset-heavy segments → EV/EBITDA
-6. **Corporate adjustments**: subtract unallocated corporate overhead (capitalized at segment multiple), net debt, minority interest, add excess cash.
-7. **SOTP bridge**: Segment A value + Segment B value + ... - Corporate Overhead - Net Debt + Cash = Total Equity Value ÷ Shares Outstanding = Per-Share Value.
-8. **Output**: per with YAML frontmatter .
+Step-by-step execution detail is in `references/methodology.md`.
 
 ## Deliverable Chain
 
 **Inputs** → **Build** → **Validate** → **Output** → **Next**
 
 1. **Inputs**: resolved ticker + structured facts (`search_xbrl_facts`, `get_company_financials`) and any filing pages from the three-layer protocol.
-2. **Build**: assemble the workbook/deck spec and call `xlsx.build` / `pptx.build` (office plane).
-3. **Validate**: run `xlsx.audit` (or recalc) and the `## Validation Gates` below.
+2. **Build**: write the `.md` sum-of-the-parts valuation (segment multiples, conglomerate-discount analysis) per `## Output Structure`.
+3. **Validate**: run the `## Validation Gates` below.
 4. **Output**: write the artifact path per `## Output File`.
 5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
 
 ## Output File
 
-Write to `{ticker}/{YYYY-MM-DD_HHMM}_sotp-valuation_segment-sum.md` .
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_sotp-valuation_{affix}.md`.
 
 ## Output Structure
 
-1. **Executive Summary** — SOTP per-share value, premium/discount to current price, key value driver segment
-2. **Segment Identification** — segments discovered via statement tree, business description per segment
-3. **Segment Financials** — revenue, EBITDA, operating income, assets per segment with growth rates
-4. **Segment Valuation** — multiple selection rationale, comparable companies, per-segment enterprise value
-5. **SOTP Bridge** — segment-by-segment value → corporate overhead → net debt → cash → equity value → per-share
-6. **Sensitivity** — per-share value at ±1x multiple for key segments
-7. **Coverage Gaps & Citations**
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-**Citation density**: ≥1 citation per 200 words. **Citation link format **: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`. **agentii.md append ** applies.
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
+
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
 ## Validation Gates
 
@@ -131,10 +114,18 @@ Write to `{ticker}/{YYYY-MM-DD_HHMM}_sotp-valuation_segment-sum.md` .
 
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action |
-|------|-------------|-----------------|
-| `get_statement_structure` | Tree unavailable | Use `search_documents` for "segment" keyword in 10-K MD&A |
-| `read_source_pages` | SQL error | Use `search_documents` for segment narrative; flag as partial |
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

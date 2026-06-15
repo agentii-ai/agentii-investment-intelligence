@@ -54,17 +54,24 @@ Writes to `~/.claude.json`. Restart Claude Code — 20+ tools auto-discover on e
 bash scripts/copy-skills-local.sh   # Copies all 31 skills + commands to ~/.claude/
 ```
 
-Restart Claude Code — all 31 skills register as `/agentii:skill-name`. This is the **recommended install method** — works reliably on all Claude Code versions.
+Restart Claude Code — all 31 skills register under a **single unified namespace, `/agentii:skill-name`** (skills land in `~/.claude/skills/agentii/`, commands in `~/.claude/commands/agentii/`). This is the **recommended install method** — one namespace, no per-vertical prefixes, and it works reliably on all Claude Code versions.
 
-Optional: install via plugin system for a subset of skills:
+> **Single namespace by design**: the local-copy path deliberately exposes *only* `/agentii:*`. There is no `/equity-research-core:*` or `/models-and-pitches:*` surface — every skill is reached the same way regardless of which vertical authored it.
+
+<details>
+<summary>Advanced (not recommended): per-vertical plugin installs</summary>
+
+Installing the vertical plugins individually creates **additional** `/vertical:skill` namespaces (e.g. `/equity-research-core:risk`) alongside `/agentii:*`. Prefer the local-copy path above for a clean single namespace.
+
 ```bash
 claude plugin marketplace add agentii-ai/agentii-investment-intelligence
-claude plugin install models-and-pitches     # 9 model-building skills only
-claude plugin install business-intelligence  # 4 BI skills only
+claude plugin install models-and-pitches     # adds /models-and-pitches:* namespace
 # ... etc for other verticals
 ```
 
-> **Future path**: `claude plugin install agentii@agentii-investment-intelligence` for the unified meta-plugin. Currently blocked by [Claude Code issue #15178](https://github.com/anthropics/claude-code/issues/15178). Use `bash scripts/copy-skills-local.sh` until the plugin bug is fixed.
+> **Future path**: `claude plugin install agentii@agentii-investment-intelligence` for the unified meta-plugin (single `/agentii:*` namespace). Currently blocked by [Claude Code issue #15178](https://github.com/anthropics/claude-code/issues/15178); use `bash scripts/copy-skills-local.sh` until the plugin bug is fixed.
+
+</details>
 
 ### 4. Verify
 

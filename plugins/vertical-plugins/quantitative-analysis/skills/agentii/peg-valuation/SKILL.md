@@ -21,16 +21,11 @@ Peter Lynch PEG (Price/Earnings to Growth) methodology. PEG = P/E Ratio ÷ Earni
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
-
-**Ticker resolution **: Before any data retrieval, resolve the ticker via the three-layer fallback per retrieval.md Pre-Flight Step 0.
-
-**Workspace style.md override check **: Check `./style.md` in the workspace root for per-workspace overrides.
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
 **`get_realtime_quote` availability **: If `get_realtime_quote` is not yet deployed, prompt user for current stock price. PE numerator from `search_earnings_calendar` (NTM consensus EPS × current price = PE) as fallback.
 
-
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - PEG valuation for {ticker}
@@ -60,9 +55,7 @@ Peter Lynch PEG (Price/Earnings to Growth) methodology. PEG = P/E Ratio ÷ Earni
 
 ### Retrieval Strategy
 
-Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured financial metrics via `search_xbrl_facts`.
-- Branch (d) for simple lookups via `get_realtime_quote` / `search_earnings_calendar`.
+See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
 ### Temporal Scope
 
@@ -74,16 +67,7 @@ See frontmatter `allowed_tools` — 4 tools. `get_realtime_quote` for current pr
 
 ### Protocol
 
-1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}` .
-2. **Price data**: `get_realtime_quote(ticker)` → current stock price, PE (TTM), market cap, EPS (TTM).
-3. **Consensus estimates**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest+1])` → consensus EPS (current year, next year), long-term growth rate estimate.
-4. **Historical EPS (fallback)**: if consensus growth unavailable, `search_xbrl_facts(ticker, concept=["EarningsPerShareDiluted"], fiscal_year=[latest, latest-1, latest-2, latest-3, latest-4])` → compute 3yr and 5yr EPS CAGR.
-5. **Compute PEG**:
- - PEG (LTM) = PE_TTM ÷ Consensus LTG (%)
- - PEG (NTM) = PE_NTM ÷ Consensus LTG (%)
- - PEG (Historical) = PE_TTM ÷ EPS CAGR_3yr (%)
-6. **Peer PEG comparison**: `search_companies` for sector peers → get PE + growth for each → compute peer PEGs → mean/median/high/low comparison.
-7. **Output**: per with YAML frontmatter .
+Step-by-step execution detail is in `references/methodology.md`.
 
 ### PEG Interpretation (Peter Lynch Framework)
 
@@ -98,29 +82,34 @@ See frontmatter `allowed_tools` — 4 tools. `get_realtime_quote` for current pr
 
 ## Output File
 
-Write to `{ticker}/{YYYY-MM-DD_HHMM}_peg-valuation_growth-adjusted.md` .
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_peg-valuation_{affix}.md`.
 
 ## Output Structure
 
-1. **Executive Summary** — PEG (LTM + NTM), rating, 1-sentence investment implication
-2. **PEG Computation** — P/E numerator breakdown (LTM, NTM), growth rate denominator (source: consensus or historical CAGR), PEG result
-3. **Growth Rate Analysis** — consensus LTG vs historical CAGR, growth quality assessment (sustainable? accelerating? decelerating?)
-4. **Sector PEG Comparison** — peer PEG table with mean/median/high/low, target's percentile rank
-5. **Sensitivity** — PEG at varying growth rates (±5%, ±10%, ±20% from base case)
-6. **Limitations** — PEG not meaningful for cyclical, negative earnings, or zero-growth companies
-7. **Coverage Gaps & Citations** — data sources + citation index
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-**Citation density**: ≥1 citation per 200 words. **Citation link format **: `[📄 {ticker} {form_type} p.{N}](https://agentii.ai/v/{ticker}/{citation_id}/{N})`.
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
 
-**agentii.md append **: After writing the output file, append a YAML block to `agentii.md`.
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action | Coverage Annotation |
-|------|-------------|-----------------|---------------------|
-| `search_earnings_calendar` | No consensus LTG | Use historical EPS CAGR from XBRL | "Consensus growth unavailable; using 3yr historical EPS CAGR" |
-| `get_realtime_quote` | Rate limit | Use latest quarter EPS from XBRL + manual price input prompt | "Real-time price unavailable; prompt user for current price" |
-| Negative earnings | PE < 0 | Flag "PEG not meaningful"; suggest EV/Revenue or P/S | "Negative earnings — PEG not applicable" |
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

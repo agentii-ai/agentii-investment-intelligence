@@ -386,9 +386,16 @@ for sk in SKILL_FILES:
         )
 
 # --- Check 21: allowed_tools frontmatter field (FR-060) ---------------------
+# Set of models-and-pitches skill names (office-plane tools allowed only here).
+# Sourced from the vertical so it works for the flattened agentii-plugin copies.
+_MODELS_AGENTII = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills" / "agentii"
+MODELS_SKILL_NAMES = {
+    p.name for p in _MODELS_AGENTII.iterdir()
+    if p.is_dir() and (p / "SKILL.md").is_file()
+} if _MODELS_AGENTII.is_dir() else set()
 # Gather canonical MCP tool names from tool-name-map.json
 CANONICAL_TOOLS: set[str] = set()
-OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "xlsx.convert", "pptx.build", "pptx.refresh", "pptx.edit", "xlsx.edit"}
+OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "xlsx.convert", "pptx.build", "pptx.refresh", "pptx.edit", "xlsx.edit", "xlsx-read"}
 DOCUMENT_TOOLS = {"read_source_outline", "read_source_deep_outline", "read_source_pages", "search_keyword_in_source", "search_documents", "search_sec_filings"}
 # Full canonical surface: FR-011 MCP tools + office tools
 FR011_TOOLS = {
@@ -410,9 +417,13 @@ FR011_TOOLS = {
     "get_statement", "get_statement_structure", "get_calculation_tree",
     "validate_calculation", "get_financial_ratios", "get_segment_data",
 }
+# Claude Code built-in tools usable by skills (e.g. xlsx-financials runs an
+# openpyxl script via Bash per contracts/office-tooling.md).
+BUILTIN_TOOLS = {"Bash"}
 CANONICAL_TOOLS.update(FR011_TOOLS)
 CANONICAL_TOOLS.update(OFFICE_TOOLS)
 CANONICAL_TOOLS.update(DOCUMENT_TOOLS)
+CANONICAL_TOOLS.update(BUILTIN_TOOLS)
 # Also load from tool-name-map for any missing
 tnm_path = CONTRACTS / "tool-name-map.json"
 if tnm_path.exists():
@@ -437,8 +448,11 @@ for sk in SKILL_FILES:
             f"(FR-060 — must declare ~5-10 tools the skill uses)"
         )
         continue
-    skill_dir = str(sk.parent.parent.parent.name)  # vertical plugin directory name
-    is_models = (skill_dir == "models-and-pitches")
+    # Determine whether this is a models-and-pitches skill by NAME membership.
+    # The agentii-plugin/agent-plugin copies flatten the vertical out of the
+    # path, so the vertical can't be read positionally — match the skill name
+    # against the set sourced from vertical-plugins/models-and-pitches/.
+    is_models = (sk.parent.name in MODELS_SKILL_NAMES)
     rs = meta.get("retrieval_scope", "")
     for tool in at:
         if tool in CANONICAL_TOOLS:
@@ -616,6 +630,131 @@ for sk in SKILL_FILES:
                 f"skill-output-structure: {rel(sk)}: '## Output Structure' has "
                 f"{len(non_empty_lines)} non-empty lines (need ≥5 per FR-014e)"
             )
+
+# === Phase 28 (spec 023) Context-Optimization CI gates =====================
+# Lock in the optimization end-state so drift cannot reappear.
+import re as _re
+
+COMMAND_FILES = sorted(PLUGINS.glob("vertical-plugins/*/commands/*.md"))
+
+
+def _section(text: str, header: str) -> str:
+    m = _re.search(rf"\n{_re.escape(header)}\s*\n(.*?)(?=\n## |\Z)", text, _re.DOTALL)
+    return m.group(1) if m else ""
+
+
+# Gate 1 (T057): tracing/preflight canonical strings live only in contracts (pointers in bodies)
+for sk in SKILL_FILES:
+    t = sk.read_text()
+    if "first tool you call will return" in t:
+        err(f"ctx-gate-tracing: {rel(sk)}: inline Agent Call Tracing block — use the contracts/x-agentii-trace-header.md pointer")
+    if "https://mcp.agentii.ai/mcp/health" in t:
+        err(f"ctx-gate-preflight: {rel(sk)}: inline MCP health probe — use the contracts/preflight.md pointer")
+
+# Gate 2 (T024): tool-allowlist closure — already enforced for structured_only in Check 21.
+# Here: every document-retrieval tool named in the Protocol/Tool-Fallbacks pointer
+# context must be in allowed_tools when the body drives the three-layer protocol.
+for sk in SKILL_FILES:
+    try:
+        _, fm_text, body = sk.read_text().split("---", 2)
+        meta = yaml.safe_load(fm_text) or {}
+    except (ValueError, yaml.YAMLError):
+        continue
+    at = set(meta.get("allowed_tools") or [])
+    for tool in DOCUMENT_TOOLS:
+        # if the body actively instructs calling the tool (not just a pointer mention)
+        if _re.search(rf"`{_re.escape(tool)}`", body) and tool not in at:
+            err(f"ctx-gate-tool-closure: {rel(sk)}: body references `{tool}` absent from allowed_tools (FR-060 closure)")
+
+# Gate 3 (T058): no stray 'Write to {ticker}' lines (## Output File is canonical)
+for sk in SKILL_FILES:
+    if _re.search(r"(?m)^Write to `?\{ticker\}", sk.read_text()):
+        err(f"ctx-gate-output-path: {rel(sk)}: stray 'Write to {{ticker}}' line outside ## Output File")
+
+# Gate 4 (T059): progressive disclosure — body word ceiling. Target is < 900;
+# content-rich models skills (mandatory Deliverable Chain + Validation Gates) and
+# business-model's correctness-critical Data-Source-Priority directive justify the
+# 1300 ceiling. This still prevents the pre-optimization 2000-2700-word bloat.
+CTX_MAX_BODY_WORDS = 1300
+for sk in SKILL_FILES:
+    parts = sk.read_text().split("---", 2)
+    body = parts[2] if len(parts) == 3 else sk.read_text()
+    wc = len(body.split())
+    if wc > CTX_MAX_BODY_WORDS:
+        err(f"ctx-gate-body-size: {rel(sk)}: body {wc} words exceeds {CTX_MAX_BODY_WORDS} (move detail to references/)")
+
+# Gate 5 (T060): no legacy verbose / agent-only citation literals in skill markdown
+for sk in SKILL_FILES:
+    t = sk.read_text()
+    if "/view?ticker=" in t:
+        err(f"ctx-gate-citation: {rel(sk)}: legacy verbose /view?ticker= citation — use https://agentii.ai/v/{{ticker}}/{{citation_id}}/{{N}}")
+    if "agentii://" in t:
+        err(f"ctx-gate-citation: {rel(sk)}: agent-only agentii:// scheme in markdown — use the clickable /v/ form")
+
+# Gate 6 (T061): contracts/ and references/ md references resolve
+for sk in SKILL_FILES:
+    t = sk.read_text()
+    for ref in set(_re.findall(r"`(contracts/[A-Za-z0-9._/-]+\.md)`", t)):
+        if not (ROOT / ref).is_file():
+            err(f"ctx-gate-refs: {rel(sk)}: contracts reference `{ref}` does not resolve")
+    for ref in set(_re.findall(r"`(references/[A-Za-z0-9._/-]+\.md)`", t)):
+        if not (sk.parent / ref).is_file():
+            err(f"ctx-gate-refs: {rel(sk)}: references reference `{ref}` does not resolve next to the skill")
+
+# Gate 7 (T062): every skill references the shared memory/snapshot/output-frontmatter includes
+for sk in SKILL_FILES:
+    t = sk.read_text()
+    for req in ("contracts/memory-load.md", "contracts/snapshot-synthesis.md", "contracts/output-frontmatter-schema.md"):
+        if req not in t:
+            err(f"ctx-gate-memory: {rel(sk)}: missing reference to {req} (FR-090/091/092)")
+
+# Gate 8 (T063): temporal/identity consistency
+for sk in SKILL_FILES:
+    try:
+        _, fm_text, body = sk.read_text().split("---", 2)
+        meta = yaml.safe_load(fm_text) or {}
+    except (ValueError, yaml.YAMLError):
+        continue
+    ts = meta.get("temporal_scope") or {}
+    dq = ts.get("default_quarters") or 0
+    low = body.lower()
+    if dq and dq > 1 and ("1 fiscal quarter" in low or "most recent quarter" in low):
+        if "insufficient" not in low and "never" not in low and "formerly" not in low:
+            err(f"ctx-gate-temporal: {rel(sk)}: single-quarter language contradicts default_quarters={dq}")
+    name = meta.get("name", sk.parent.name)
+    of = _section(sk.read_text(), "## Output File")
+    if name not in of and "_cross/" not in of and "_sector/" not in of:
+        err(f"ctx-gate-identity: {rel(sk)}: ## Output File does not reference the skill's own name '{name}'")
+
+# Gate 9 (T064): no double-brace literal placeholders in skills or commands
+for f in list(SKILL_FILES) + list(COMMAND_FILES):
+    if _re.search(r"\{\{[^}\n]+\}\}", f.read_text()):
+        err(f"ctx-gate-placeholder: {rel(f)}: contains {{double-brace}} literal placeholder")
+
+# Gate 10 (T065): citation surfacing — no weak tokens, Final Summary (TUI) present
+for sk in SKILL_FILES:
+    t = sk.read_text()
+    if "{Citations}" in t or "{Source(s)}" in t:
+        err(f"ctx-gate-citation-surface: {rel(sk)}: bare {{Citations}}/{{Source(s)}} placeholder in output template")
+    if "cite source filing in standard agentii citation format at runtime" in t:
+        err(f"ctx-gate-citation-surface: {rel(sk)}: vague _(cite … at runtime)_ hint in output template")
+    if "## Final Summary (TUI)" not in t:
+        err(f"ctx-gate-citation-surface: {rel(sk)}: missing '## Final Summary (TUI)' Key-Citations instruction")
+
+# Gate 11 (T083): office-output format consistency
+for sk in SKILL_FILES:
+    t = sk.read_text()
+    of = _section(t, "## Output File")
+    os_sec = _section(t, "## Output Structure")
+    if sk.parent.name == "xlsx-financials" and ".xlsx" not in of:
+        err(f"ctx-gate-office-format: {rel(sk)}: xlsx-financials ## Output File must specify a .xlsx primary deliverable")
+    if "deliverable is an `.xlsx`" in os_sec and ".xlsx" not in of:
+        err(f"ctx-gate-office-format: {rel(sk)}: ## Output Structure claims .xlsx but ## Output File is not .xlsx")
+
+# Gate 12 (T084): no stale abstract office tools in any body
+for sk in SKILL_FILES:
+    if _re.search(r"xlsx\.build|pptx\.build|pptx\.edit|pptx\.refresh", sk.read_text()):
+        err(f"ctx-gate-office-tools: {rel(sk)}: stale abstract office tool (use contracts/office-tooling.md concrete path)")
 
 # --- report ----------------------------------------------------------------
 if errors:

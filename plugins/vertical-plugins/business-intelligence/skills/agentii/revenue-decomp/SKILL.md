@@ -18,7 +18,6 @@ min_tool_diversity: 7
 
 # revenue-decomp
 
-
 ## Triggers
 
 - Revenue decomposition
@@ -47,7 +46,7 @@ This skill operates with `retrieval_scope: structured_only`. It performs structu
 
 ### 2. Retrieval Strategy
 
-Follows the retrieval strategy decision tree in `retrieval.md`. Primary branch: **(a) Structured Data Query**. Resolve the canonical ticker first (exact → fuzzy alias → share-class) before any data call.
+Follows the retrieval strategy decision tree in `contracts/retrieval.md`. Primary branch: **(a) Structured Data Query**. Resolve the canonical ticker first (exact → fuzzy alias → share-class) before any data call.
 
 ### 3. Temporal Scope
 
@@ -73,11 +72,9 @@ Per frontmatter `allowed_tools`:
 
 ## Output File
 
-Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_revenue-decomp_{{affix}}.md` .
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_revenue-decomp_{affix}.md` .
 
 ## Output Structure
-
-Write to `{ticker}/{YYYY-MM-DD_HHMM}_revenue-decomp_{affix}.md` (see `## Output File`).
 
 1. **Executive Summary** (≤200 words) — headline conclusions for the analysis.
 2. **Data Sources** — filings + structured endpoints used, with `{ticker} {citation_id} page<N>` citations.
@@ -85,13 +82,24 @@ Write to `{ticker}/{YYYY-MM-DD_HHMM}_revenue-decomp_{affix}.md` (see `## Output 
 4. **Key Metrics** — the quantitative results with QoQ/YoY context where relevant.
 5. **Coverage Gaps & Citations** — data not retrievable + citation index.
 
-**Citation density**: ≥1 citation per 200 words; bare `page_no` integers are forbidden — always cite as `{ticker} {citation_id} page<N>`. After writing, append a YAML block to `agentii.md` per `contracts/agentii-md-schema.md`.
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

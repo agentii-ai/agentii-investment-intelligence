@@ -11,6 +11,7 @@ allowed_tools:
  - get_statement
  - get_statement_structure
  - list_xbrl_concepts
+ - Bash
 retrieval_scope: structured_only
 min_tool_diversity: 2
 ---
@@ -18,7 +19,6 @@ min_tool_diversity: 2
 # xlsx-financials
 
 Shared skill for producing formatted Excel workbooks from XBRL financial statement data. Invoked as a sub-skill by financial modeling and analysis skills. Centralizes formatting, formula auditing, and calculation arc cross-validation in one place.
-
 
 ## Triggers
 
@@ -49,10 +49,7 @@ Shared skill for producing formatted Excel workbooks from XBRL financial stateme
 
 ### Retrieval Strategy
 
-1. **Fetch statement structure**: call `get_statement_structure/{ticker}?statement_type=<type>&fiscal_year=<YYYY>&include_calculations=true` to retrieve the hierarchical concept tree from `gold.xbrl_presentation` (3.8M rows) with `order_in_parent` and calculation arc weights .
-2. **Fetch rendered statement**: call `get_statement/{ticker}?statement_type=<type>&fiscal_year=<YYYY>` for the period-column-formatted financial data.
-3. **Structure for Excel**: map the hierarchical concept tree to Excel rows with proper indentation levels, parent-child grouping, and subtotal rows.
-4. **Build workbook**: write a Python script using `openpyxl` (following Anthropic FSI xlsx-author conventions) and execute via Bash.
+See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
 ### Temporal Scope
 
@@ -68,61 +65,39 @@ Default: latest fiscal year (max 12). Users can request specific fiscal years fo
 
 ### Protocol
 
-1. **Receive request from parent skill**: parent skill (dcf, comps, 3-statement, recent-quarter, earnings-preview) invokes this skill with `ticker`, `statement_type`, and `fiscal_year`.
-2. **Fetch statement structure** via `get_statement_structure` — get the hierarchical concept tree with indentation levels.
-3. **Fetch statement data** via `get_statement` — get the period-column financial values.
-4. **Apply formatting rules** per `style.md`:
- - Currency: $#,##0.0 with B/M/K auto-detection
- - Percentages: 0.0%
- - Frozen header row (row 1)
- - Parent concepts: **bold**
- - Child concepts: indented 2 spaces per level
- - Subtotal rows: bold with top border
-5. **Inject calculation arcs**: when `include_calculations=true`, add a hidden "Validation" sheet with the calculation arc cross-check: parent expected value vs sum of weighted children .
-6. **Write workbook** via `Bash` executing a Python `openpyxl` script: write a self-contained `.py` script, execute with `python3`, output to the path specified by the parent skill. Follow Anthropic FSI conventions: blue=hardcoded input, black=formula, green=cross-sheet link, named ranges, Checks tab.
+Step-by-step execution detail is in `references/methodology.md`.
 
 ## Deliverable Chain
 
 **Inputs** → **Build** → **Validate** → **Output** → **Next**
 
 1. **Inputs**: resolved ticker + structured facts (`search_xbrl_facts`, `get_company_financials`) and any filing pages from the three-layer protocol.
-2. **Build**: assemble the workbook/deck spec and call `xlsx.build` / `pptx.build` (office plane).
-3. **Validate**: run `xlsx.audit` (or recalc) and the `## Validation Gates` below.
+2. **Build**: write a self-contained Python script using `openpyxl` that creates the workbook per `## Output Structure`; execute via `Bash: python3 script.py`; verify the `.xlsx` exists at the output path. If `import openpyxl` fails, fall back to the `.md` summary with `data_availability: degraded` (see `contracts/office-tooling.md`).
+3. **Validate**: run the calculation-arc cross-check in the workbook Checks tab and the `## Validation Gates` below.
 4. **Output**: write the artifact path per `## Output File`.
 5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
 
 ## Output File
 
-Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_xlsx-financials_{affix}.md` .
+Primary deliverable: `{ticker}/{YYYY-MM-DD_HHMM}_statement-{type}.xlsx` — the formatted Excel workbook (the primary artifact).
+
+Companion summary: `{ticker}/{YYYY-MM-DD_HHMM}_xlsx-financials_summary.md` — validation report with calculation-arc results, coverage gaps, and key citations. The `.md` summary is a companion, NOT a substitute for the `.xlsx`.
 
 ## Output Structure
 
-The final deliverable is an `.xlsx` workbook with proper number formatting, frozen headers, and calculation arc cross-validation. Output conventions follow the Anthropic FSI xlsx-author standard (blue font = hardcoded inputs, black font = formulas).
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-### Single-Ticker
-```
-{ticker}/{YYYY-MM-DD_HHMM}_statement-{type}.xlsx
-```
-Example: `LLY/2026-06-03_1430_statement-income.xlsx`
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
 
-### Multi-Ticker
-```
-_cross/{slug}_{YYYY-MM-DD_HHMM}_statement-{type}.xlsx
-```
-Example: `_cross/LLY-vs-peers_2026-06-03_1430_statement-income.xlsx`
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
 ## xlsx-author Conventions
 
-Following Anthropic FSI `xlsx-author` conventions:
-
-- **Blue font** = hardcoded input values (statement data fetched from API)
-- **Black font** = formulas (subtotals, growth rates, validation checks)
-- **Green font** = links/references to other sheets
-- **Named ranges** for key metrics (Revenue, NetIncome, TotalAssets) to enable cross-sheet references
-- **Checks tab**: include a "Checks" sheet with TRUE/FALSE validation:
- - BS balance: Assets = Liabilities + Equity
- - Subtotal tie-out: parent = sum of children per calculation arcs
- - Period consistency: all periods have matching concept coverage
+Excel formatting conventions are in `references/methodology.md` and `contracts/office-tooling.md`.
 
 ## Validation Gates
 
@@ -132,17 +107,24 @@ Following Anthropic FSI `xlsx-author` conventions:
 
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action | Coverage Annotation |
-|------|-------------|-----------------|---------------------|
-| `get_statement` | Endpoint unavailable | Use `search_xbrl_facts` with individual concept queries; structure manually from `get_statement_structure` tree | "Statement endpoint unavailable; built from individual XBRL facts" |
-| `get_statement_structure` | Timeout | Use `list_xbrl_concepts` for concept discovery; flat structure without hierarchy | "Statement tree unavailable; flat concept list used" |
-| `Bash` / openpyxl | Python/openpyxl not installed | Output markdown table as fallback; annotate output with "Excel generation failed; markdown table provided" | "openpyxl unavailable; markdown table provided" |
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
 
 ## Preflight
 
-!curl -s -o /dev/null -w "%{http_code}" --max-time 2 https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 

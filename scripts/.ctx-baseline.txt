@@ -1,0 +1,93 @@
+=== SKILL.md word counts (sorted) ===
+     563 plugins/vertical-plugins/business-intelligence/skills/agentii/operational-kpi/SKILL.md
+     567 plugins/vertical-plugins/business-intelligence/skills/agentii/unit-economics/SKILL.md
+     569 plugins/vertical-plugins/business-intelligence/skills/agentii/revenue-decomp/SKILL.md
+     593 plugins/vertical-plugins/business-intelligence/skills/agentii/what-if/SKILL.md
+     655 plugins/vertical-plugins/models-and-pitches/skills/agentii/pitch-deck/SKILL.md
+     685 plugins/vertical-plugins/industry-analysis/skills/agentii/supply-chain/SKILL.md
+     696 plugins/vertical-plugins/industry-analysis/skills/agentii/sector-overview/SKILL.md
+     700 plugins/vertical-plugins/industry-analysis/skills/agentii/competitive-positioning/SKILL.md
+     706 plugins/vertical-plugins/industry-analysis/skills/agentii/peer-bench/SKILL.md
+     739 plugins/vertical-plugins/models-and-pitches/skills/agentii/audit-xls/SKILL.md
+     822 plugins/vertical-plugins/quantitative-analysis/skills/agentii/reverse-dcf/SKILL.md
+     934 plugins/vertical-plugins/quantitative-analysis/skills/agentii/ddm-valuation/SKILL.md
+     983 plugins/vertical-plugins/quantitative-analysis/skills/agentii/residual-income/SKILL.md
+    1008 plugins/vertical-plugins/quantitative-analysis/skills/agentii/peg-valuation/SKILL.md
+    1028 plugins/vertical-plugins/models-and-pitches/skills/agentii/sotp-valuation/SKILL.md
+    1160 plugins/vertical-plugins/models-and-pitches/skills/agentii/xlsx-financials/SKILL.md
+    1190 plugins/vertical-plugins/models-and-pitches/skills/agentii/comps/SKILL.md
+    1191 plugins/vertical-plugins/models-and-pitches/skills/agentii/lbo/SKILL.md
+    1252 plugins/agent-plugins/agentii-equity-agent/skills/agentii/recent-quarter/SKILL.md
+    1252 plugins/vertical-plugins/equity-research-core/skills/agentii/recent-quarter/SKILL.md
+    1259 plugins/agent-plugins/agentii-equity-agent/skills/agentii/risk/SKILL.md
+    1259 plugins/vertical-plugins/equity-research-core/skills/agentii/risk/SKILL.md
+    1287 plugins/agent-plugins/agentii-equity-agent/skills/agentii/valuation-methods/SKILL.md
+    1287 plugins/vertical-plugins/equity-research-core/skills/agentii/valuation-methods/SKILL.md
+    1297 plugins/vertical-plugins/models-and-pitches/skills/agentii/earnings-preview/SKILL.md
+    1311 plugins/vertical-plugins/models-and-pitches/skills/agentii/dcf/SKILL.md
+    1336 plugins/vertical-plugins/models-and-pitches/skills/agentii/3-statement/SKILL.md
+    1380 plugins/agent-plugins/agentii-equity-agent/skills/agentii/competitive/SKILL.md
+    1380 plugins/vertical-plugins/equity-research-core/skills/agentii/competitive/SKILL.md
+    1382 plugins/agent-plugins/agentii-equity-agent/skills/agentii/turnaround/SKILL.md
+    1382 plugins/vertical-plugins/equity-research-core/skills/agentii/turnaround/SKILL.md
+    1473 plugins/vertical-plugins/quantitative-analysis/skills/agentii/ratio-analysis/SKILL.md
+    1478 plugins/agent-plugins/agentii-equity-agent/skills/agentii/secular-trends/SKILL.md
+    1478 plugins/vertical-plugins/equity-research-core/skills/agentii/secular-trends/SKILL.md
+    2309 plugins/agent-plugins/agentii-equity-agent/skills/agentii/business-model/SKILL.md
+    2309 plugins/vertical-plugins/equity-research-core/skills/agentii/business-model/SKILL.md
+    2541 plugins/agent-plugins/agentii-equity-agent/skills/agentii/earnings-sentiment/SKILL.md
+    2541 plugins/vertical-plugins/equity-research-core/skills/agentii/earnings-sentiment/SKILL.md
+    2720 plugins/agent-plugins/agentii-equity-agent/skills/agentii/growth-strategy/SKILL.md
+    2720 plugins/vertical-plugins/equity-research-core/skills/agentii/growth-strategy/SKILL.md
+   51422 total
+
+=== Agent Call Tracing block counts per file ===
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/business-model/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/competitive/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/earnings-sentiment/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/growth-strategy/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/recent-quarter/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/risk/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/secular-trends/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/turnaround/SKILL.md:1
+plugins/agent-plugins/agentii-equity-agent/skills/agentii/valuation-methods/SKILL.md:1
+plugins/vertical-plugins/business-intelligence/skills/agentii/operational-kpi/SKILL.md:1
+plugins/vertical-plugins/business-intelligence/skills/agentii/revenue-decomp/SKILL.md:1
+plugins/vertical-plugins/business-intelligence/skills/agentii/unit-economics/SKILL.md:1
+plugins/vertical-plugins/business-intelligence/skills/agentii/what-if/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/business-model/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/competitive/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/earnings-sentiment/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/growth-strategy/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/recent-quarter/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/risk/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/secular-trends/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/turnaround/SKILL.md:1
+plugins/vertical-plugins/equity-research-core/skills/agentii/valuation-methods/SKILL.md:1
+plugins/vertical-plugins/industry-analysis/skills/agentii/competitive-positioning/SKILL.md:1
+plugins/vertical-plugins/industry-analysis/skills/agentii/peer-bench/SKILL.md:1
+plugins/vertical-plugins/industry-analysis/skills/agentii/sector-overview/SKILL.md:1
+plugins/vertical-plugins/industry-analysis/skills/agentii/supply-chain/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/3-statement/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/audit-xls/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/comps/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/dcf/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/earnings-preview/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/lbo/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/pitch-deck/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/sotp-valuation/SKILL.md:1
+plugins/vertical-plugins/models-and-pitches/skills/agentii/xlsx-financials/SKILL.md:1
+plugins/vertical-plugins/quantitative-analysis/skills/agentii/ddm-valuation/SKILL.md:1
+plugins/vertical-plugins/quantitative-analysis/skills/agentii/peg-valuation/SKILL.md:1
+plugins/vertical-plugins/quantitative-analysis/skills/agentii/ratio-analysis/SKILL.md:1
+plugins/vertical-plugins/quantitative-analysis/skills/agentii/residual-income/SKILL.md:1
+plugins/vertical-plugins/quantitative-analysis/skills/agentii/reverse-dcf/SKILL.md:1
+
+=== preflight curl probe counts ===
+      40
+
+=== double-brace literal offenders ===
+      31
+
+=== Write to {ticker} stray-line offenders ===
+      15

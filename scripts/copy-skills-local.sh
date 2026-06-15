@@ -71,9 +71,11 @@ for vertical in "${VERTICALS[@]}"; do
     done
   fi
 
-  # Also copy commands/ for backward compatibility
+  # Copy commands/ into the agentii-namespaced subdir so they invoke as
+  # /agentii:<name> (NOT bare /<name>). This keeps a single unified namespace —
+  # no per-vertical or unnamespaced command surface.
   COMMANDS_SRC="$SKILLS_SRC/vertical-plugins/$vertical/commands"
-  COMMANDS_DST="$TARGET/.claude/commands"
+  COMMANDS_DST="$TARGET/.claude/commands/agentii"
   if [[ -d "$COMMANDS_SRC" ]]; then
     mkdir -p "$COMMANDS_DST"
     cp "$COMMANDS_SRC"/*.md "$COMMANDS_DST/" 2>/dev/null || true
@@ -83,7 +85,8 @@ done
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Copied $TOTAL skills to $SKILLS_DST"
-echo "   Namespace: /agentii:<skill-name>"
+echo "   Commands namespaced under $TARGET/.claude/commands/agentii/"
+echo "   Single unified namespace: /agentii:<skill-name>"
 echo "   Type / in Claude Code to see the auto-complete menu"
 echo ""
 echo "   Restart Claude Code for changes to take effect."

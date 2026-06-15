@@ -19,6 +19,8 @@ min_tool_diversity: 5
 
 ## Preflight
 
+Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
+
 ```bash
 # Tier 1: agentii-office MCP (recommended)
 OFFICE_BACKEND="mcp"
@@ -40,8 +42,7 @@ if [ "$OFFICE_BACKEND" = "unreachable" ]; then
 fi
 ```
 
-
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
 - generate earnings preview deck
@@ -73,9 +74,7 @@ This skill performs structured data retrieval (earnings calendar, XBRL facts, co
 
 ### Retrieval Strategy
 
-Follow the retrieval strategy decision tree in `retrieval.md`. This skill uses:
-- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts.
-- Branch (d) for simple lookups via `search_earnings_calendar` / `get_company_profile` / `search_companies`.
+See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
 ### Temporal Scope
 
@@ -83,24 +82,22 @@ Default: 4 fiscal quarters (max 8). Trailing 4 quarters captures current estimat
 
 ### Tool Allowlist
 
-See frontmatter `allowed_tools` — 8 tools declared. All office tools (`pptx.build`, `pptx.edit`, `pptx.refresh`) resolve via the abstract tool layer (the office tools resolve via your available backend); concrete backend determined by Preflight probe.
+See frontmatter `allowed_tools`. This skill produces a polished `.md` slide-deck specification; `.pptx` rendering is available via the companion `financial-analysis:pptx-author` skill (separate install; see `contracts/office-tooling.md`).
 
 ### Protocol
 
-1. **Earnings calendar lookup**: call `search_earnings_calendar(ticker, fiscal_year=current)` to get the most recent reported quarter, next earnings date, and consensus estimates.
-2. **Financial highlights**: call `search_xbrl_facts(ticker, concept=["Revenues","NetIncomeLoss","OperatingIncomeLoss","DilutedEPS"], fiscal_period=["Q1","Q2","Q3","Q4","FY"], fiscal_year=[current, current-1])` for trailing data.
-3. **Company context**: call `get_company_profile(ticker)` for company name, sector, industry.
-4. **Peer discovery**: call `search_companies(sector=<sector>, limit=5)` for peer comparison slide.
-5. **PPT construction**: construct `pptx_spec` per `contracts/pptx_spec.schema.json` with 4–6 slides.
-6. **Build**: call `pptx.build(pptx_spec)` to render the .pptx.
-7. **Review**: call `pptx.edit` for content review if needed.
-8. **Output**: presigned URL to the .pptx file.
+Step-by-step execution detail is in `references/methodology.md`.
 
 ## Deliverable Chain
 
-```
-[search_earnings_calendar + search_xbrl_facts + search_companies + get_company_profile] → pptx_build → pptx.edit(review) → [.pptx output]
-```
+**Inputs** → **Build** → **Validate** → **Output** → **Next**
+
+1. **Inputs**: resolved ticker + earnings calendar, consensus estimates, and trailing XBRL facts (`search_earnings_calendar`, `search_xbrl_facts`, `search_companies`, `get_company_profile`).
+2. **Build**: write the polished 4–6 slide `.md` slide-deck specification per `## Output Structure`. `.pptx` rendering is available via the companion `financial-analysis:pptx-author` skill (see `contracts/office-tooling.md`).
+3. **Validate**: run the `## Validation Gates` below.
+4. **Output**: write the artifact path per `## Output File`.
+5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
+
 ## Validation Gates
 
 1. **slide count**: between 4 and 6. *If failed*: If outside range: refuse delivery.
@@ -109,34 +106,34 @@ See frontmatter `allowed_tools` — 8 tools declared. All office tools (`pptx.bu
 4. **peer comparison**: has >= 3 peers. *If failed*: If < 3: flag in Coverage Gaps.
 ## Tool Fallbacks
 
-| Tool | Failure Mode | Fallback Action | Coverage Annotation |
-|------|-------------|-----------------|---------------------|
-| `read_source_pages` | SQL error / PROXY_ERROR | Use `search_keyword_in_source(document_id, keyword)` if document_id known; otherwise `search_documents` with same query | "source file unavailable; used keyword search instead" |
-| `read_source_deep_outline` | PROXY_ERROR / 404 | Use lightweight `read_source_outline` and flag `deep_outline_degraded: true` | "deep outline unavailable; used lightweight page map instead" |
-| `read_source_outline` | PROXY_ERROR / 404 | Use `list_sources` for document-level metadata | "page map unavailable; used document listing instead" |
-| `list_xbrl_concepts` | Timeout / 503 | Use direct `search_xbrl_facts` with standard US-GAAP concepts (Revenues, NetIncomeLoss, EarningsPerShareDiluted, OperatingIncomeLoss, Assets) | "concept discovery skipped due to timeout; using standard US-GAAP concepts" |
-| `get_company_fiscal_calendar` | Cross-validation failed | Use XBRL-derived period grid from `search_xbrl_facts` `period_end` dates | "fiscal calendar mismatch; using XBRL-derived period grid" |
-| `search_unified` | Intermittent error | Use parallel `search_documents` + `search_xbrl_facts` with the same query | "unified search unavailable; used parallel document + XBRL search" |
-| `batch_search` | PROXY_ERROR | Use sequential individual calls (one per sub-query) | "batch search unavailable; used sequential calls" |
-
-Tool errors are retried ONCE with the fallback action before escalating to the retrieval gaps failure policy. If both Layer 2 and Layer 3 tools are unavailable, enter document access degradation mode (structured data + metadata only, flag output as degraded).
-
-11. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
+Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
 
 ## Output File
 
-Write the final deliverable to `{ticker}/{{YYYY-MM-DD_HHMM}}_earnings-preview_{{affix}}.md` .
+Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_earnings-preview_{affix}.md` .
 
 ## Output Structure
 
-1. **Slide 1 — Title**: Company name, ticker, "Earnings Preview — Q<N> FY<YYYY>", report date
-2. **Slide 2 — Company Overview**: Business description, sector, market cap, key products/segments (from `get_company_profile`)
-3. **Slide 3 — Consensus Estimates**: Table with consensus/high/low for Revenue, EPS, EBITDA; YoY comparison; estimate count (from `search_earnings_calendar`)
-4. **Slide 4 — Historical Surprises**: Table of last 4 quarters: estimate vs actual, surprise %, direction (from `search_earnings_calendar` + `search_xbrl_facts`)
-5. **Slide 5 — Peer Comparison**: Peer table with ticker, EV/EBITDA, P/E, Revenue growth (from `search_companies` + `search_xbrl_facts`)
-6. **Slide 6 — Catalysts & Outlook**: Forward catalysts from earnings transcript, upcoming events, guidance summary (from `search_earnings_calendar`)
+The deliverable is a structured markdown report written to the path in `## Output File`. Full section-by-section template (headings, tables, and field definitions) lives in `references/output-structure.md`. Required elements:
 
-Slide 6 is optional (4–6 range). If peer data or catalyst data is unavailable, merge into fewer slides.
+1. **Executive Summary** — headline conclusions (≤200 words).
+2. **Core analysis sections** — per this skill's methodology and analyst modes.
+3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
+4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
+
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
+
+## Memory & Snapshot
+
+- **Memory load** (pre-flight): load prior workspace context for the ticker before retrieval — see `contracts/memory-load.md`.
+- **Structured output frontmatter**: emit the FR-090 block (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`) per `contracts/output-frontmatter-schema.md`.
+- **Snapshot synthesis**: after writing the deliverable, update the two-tier snapshot and classify findings as `[FACT]`/`[DEDUCTED]`/`[VIEW]` — see `contracts/snapshot-synthesis.md`.
+- **Session archival**: record the run under `sessions/{YYYY-MM-DD}/` and update `sessions/INDEX.md` per `contracts/session-format.md`.
+
+## Final Summary (TUI)
+
+End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
 
 ## Error Handling
 
