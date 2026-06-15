@@ -13,6 +13,7 @@ allowed_tools:
  - get_company_financials
  - get_company_profile
  - list_xbrl_concepts
+ - Bash
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -93,7 +94,7 @@ Step-by-step execution detail is in `references/methodology.md`.
 **Inputs** → **Build** → **Validate** → **Output** → **Next**
 
 1. **Inputs**: resolved ticker + earnings calendar, consensus estimates, and trailing XBRL facts (`search_earnings_calendar`, `search_xbrl_facts`, `search_companies`, `get_company_profile`).
-2. **Build**: write the polished 4–6 slide `.md` slide-deck specification per `## Output Structure`. `.pptx` rendering is available via the companion `financial-analysis:pptx-author` skill (see `contracts/office-tooling.md`).
+2. **Build**: write a self-contained Python script using `python-pptx` that creates the 4–6 slide `.pptx` deck per `## Output Structure`. Execute via `Bash: python3 script.py`. Verify the `.pptx` file exists. If `python-pptx` is absent, fall back to `.md` slide spec per `contracts/office-tooling.md`.
 3. **Validate**: run the `## Validation Gates` below.
 4. **Output**: write the artifact path per `## Output File`.
 5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
@@ -110,7 +111,7 @@ Per-tool failure modes and fallback actions are tabulated in `references/tool-fa
 
 ## Output File
 
-Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_earnings-preview_{affix}.md` .
+Primary deliverable: `{ticker}/{YYYY-MM-DD_HHMM}_earnings-preview_{affix}.pptx` — real PowerPoint binary via `Bash` + `python-pptx` per `contracts/office-tooling.md`. Degraded fallback: `{ticker}/{YYYY-MM-DD_HHMM}_earnings-preview_{affix}.md` when `python-pptx` is absent (FR-044).
 
 ## Output Structure
 

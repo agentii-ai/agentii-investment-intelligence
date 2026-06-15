@@ -13,6 +13,7 @@ allowed_tools:
  - get_company_profile
  - search_earnings_calendar
  - list_xbrl_concepts
+ - Bash
 retrieval_scope: structured_only
 min_tool_diversity: 5
 ---
@@ -77,14 +78,14 @@ Per frontmatter `allowed_tools`:
 **Inputs** → **Build** → **Validate** → **Output** → **Next**
 
 1. **Inputs**: resolved ticker + structured facts (`search_xbrl_facts`, `get_company_financials`) and any filing pages from the three-layer protocol.
-2. **Build**: write the polished `.md` slide-deck specification per `## Output Structure`. To render it as a `.pptx`, use the companion `financial-analysis:pptx-author` skill (separate install; see `contracts/office-tooling.md`).
+2. **Build**: write a self-contained Python script using `python-pptx` that creates the `.pptx` deck per `## Output Structure`. Execute via `Bash: python3 script.py`. Verify the `.pptx` file exists at the output path. If `python-pptx` is absent, fall back to `.md` slide spec per `contracts/office-tooling.md`.
 3. **Validate**: run the `## Validation Gates` below.
 4. **Output**: write the artifact path per `## Output File`.
 5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
 
 ## Output File
 
-Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_pitch-deck_{affix}.md` .
+Primary deliverable: `{ticker}/{YYYY-MM-DD_HHMM}_pitch-deck_{affix}.pptx` — real PowerPoint binary via `Bash` + `python-pptx` per `contracts/office-tooling.md`. Degraded fallback: `{ticker}/{YYYY-MM-DD_HHMM}_pitch-deck_{affix}.md` when `python-pptx` is absent (FR-044).
 
 ## Output Structure
 

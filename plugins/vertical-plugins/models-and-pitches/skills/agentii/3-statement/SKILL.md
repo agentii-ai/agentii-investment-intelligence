@@ -79,7 +79,7 @@ Step-by-step execution detail is in `references/methodology.md`.
 ## Deliverable Chain
 
 ```
-[search_xbrl_facts × 3 years] → xlsx_build(spec: 3-statement) → xlsx_recalc → xlsx_audit(cross-statement checks: BS balances, CF ties to BS, IS flows to CF) → [.xlsx output]
+[search_xbrl_facts × 3 years] → Bash+openpyxl(spec: 3-statement) → LibreOffice recalc → audit(cross-statement checks: BS balances, CF ties to BS, IS flows to CF) → [.xlsx output]
 ```
 
 ## Validation Gates

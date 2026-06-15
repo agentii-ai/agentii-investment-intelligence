@@ -79,7 +79,7 @@ Step-by-step execution detail is in `references/methodology.md`.
 ## Deliverable Chain
 
 ```
-[search_companies + search_xbrl_facts] → xlsx_build(spec: comps) → xlsx_recalc → xlsx_audit → [.xlsx output]
+[search_companies + search_xbrl_facts] → Bash+openpyxl(spec: comps) → LibreOffice recalc → audit → [.xlsx output]
 ```
 
 ## Validation Gates

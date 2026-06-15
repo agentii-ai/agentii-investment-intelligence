@@ -79,7 +79,7 @@ Step-by-step execution detail is in `references/methodology.md`.
 ## Deliverable Chain
 
 ```
-[search_xbrl_facts + get_company_financials] → xlsx_build(spec: dcf) → xlsx_recalc → xlsx_audit(hardcoded_count==0) → [.xlsx output] → (optional) pptx_build(executive-summary) → xlsx_convert(pdf)
+[search_xbrl_facts + get_company_financials] → Bash+openpyxl(spec: dcf) → LibreOffice recalc → audit(hardcoded_count==0) → [.xlsx output] → (optional) Bash+python-pptx(executive-summary) → LibreOffice convert(pdf)
 ```
 
 ## Validation Gates
