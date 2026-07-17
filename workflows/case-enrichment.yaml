@@ -1,0 +1,19 @@
+name: case-enrichment
+description: Inject spec 037 investment cases and a runtime search_by_analogue step into a skill
+version: 1.0.0
+applies_to:
+  min_quality_score: 0
+stages:
+  - name: discover-cases
+    type: reference_injection
+    prompt: |
+      Query search_investment_cases filtered by the skill's layer_tags +
+      sectors_focus. Select the top 3 by relevance. Emit one Referenced-Cases
+      row per result (Block-A summary) with a /v/ citation. Dedupe by citation_id.
+    uses_history: false
+  - name: patch-methodology
+    type: methodology_patch
+    prompt: |
+      Inject the runtime analogue-retrieval step (contracts/analogue-retrieval-pattern.md)
+      into ## Methodology with domain-based axis selection and graceful empty handling.
+    uses_history: true

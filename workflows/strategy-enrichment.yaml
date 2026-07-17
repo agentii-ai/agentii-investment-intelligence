@@ -1,0 +1,13 @@
+name: strategy-enrichment
+description: Discover and inject spec 037 investment strategies into a skill's knowledge-frameworks.md
+version: 1.0.0
+applies_to:
+  min_quality_score: 0
+stages:
+  - name: discover-strategies
+    type: reference_injection
+    prompt: |
+      Query search_investment_strategies filtered by the skill's layer_tags +
+      category_tags. Select the top 5 by relevance. Emit one Referenced-Strategies
+      row per result with a /v/ citation pointer. Dedupe by citation_id.
+    uses_history: false

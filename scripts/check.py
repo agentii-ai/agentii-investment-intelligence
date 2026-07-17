@@ -222,7 +222,7 @@ SKILL_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/agentii/*/SKILL.md"
 
 # Self-test: the gate must never silently match zero skills again. If this
 # fires, the namespace layout changed and the globs above need updating.
-MIN_EXPECTED_SKILLS = 29
+MIN_EXPECTED_SKILLS = 48
 if len(SKILL_FILES) < MIN_EXPECTED_SKILLS:
     err(
         f"check-config: SKILL_FILES glob matched {len(SKILL_FILES)} files "
@@ -420,9 +420,16 @@ FR011_TOOLS = {
 # Claude Code built-in tools usable by skills (e.g. xlsx-financials runs an
 # openpyxl script via Bash per contracts/office-tooling.md).
 BUILTIN_TOOLS = {"Bash"}
+# Spec 037 tools — knowledge entries + investment cases + cross-cutting analogue
+KNOWLEDGE_CASE_TOOLS = {
+    "search_knowledge_entries", "get_knowledge_entry", "list_related_entries",
+    "search_investment_cases", "get_investment_case",
+    "search_by_analogue",
+}
 CANONICAL_TOOLS.update(FR011_TOOLS)
 CANONICAL_TOOLS.update(OFFICE_TOOLS)
 CANONICAL_TOOLS.update(DOCUMENT_TOOLS)
+CANONICAL_TOOLS.update(KNOWLEDGE_CASE_TOOLS)
 CANONICAL_TOOLS.update(BUILTIN_TOOLS)
 # Also load from tool-name-map for any missing
 tnm_path = CONTRACTS / "tool-name-map.json"
@@ -755,6 +762,68 @@ for sk in SKILL_FILES:
 for sk in SKILL_FILES:
     if _re.search(r"xlsx\.build|pptx\.build|pptx\.edit|pptx\.refresh", sk.read_text()):
         err(f"ctx-gate-office-tools: {rel(sk)}: stale abstract office tool (use contracts/office-tooling.md concrete path)")
+
+# --- Check 30: Registry Sync — bijection on-disk skills <-> skill-registry.yaml
+#     (spec 039 Part I, FR-011/FR-012). A skill = a skills/agentii/<name>/ dir that
+#     contains a SKILL.md (shared dirs like .../agentii/references/ are NOT skills).
+REGISTRY_PATH = ROOT / "skill-registry.yaml"
+# self-test guard mirroring MIN_EXPECTED_SKILLS (baseline = 41 skills with SKILL.md)
+MIN_EXPECTED_REGISTRY = 48
+if REGISTRY_PATH.exists():
+    checked += 1
+    try:
+        reg_doc = yaml.safe_load(REGISTRY_PATH.read_text()) or {}
+        reg_entries = reg_doc.get("skills", [])
+    except yaml.YAMLError as e:
+        err(f"registry-sync: skill-registry.yaml: invalid YAML: {e}")
+        reg_entries = None
+    if reg_entries is not None:
+        # schema validation (best-effort; jsonschema already a dependency)
+        reg_schema_path = CONTRACTS / "skill-registry.schema.json"
+        if reg_schema_path.exists():
+            try:
+                import jsonschema
+
+                jsonschema.validate(reg_doc, json.loads(reg_schema_path.read_text()))
+            except ImportError:
+                pass
+            except Exception as e:  # noqa: BLE001 - surface schema errors as check failures
+                err(f"registry-sync: skill-registry.yaml: schema validation failed: {e}")
+
+        on_disk = {
+            sk.parent.name
+            for sk in PLUGINS.glob("vertical-plugins/*/skills/agentii/*/SKILL.md")
+        }
+        registered = {e.get("skill_name") for e in reg_entries}
+
+        if len(registered) < MIN_EXPECTED_REGISTRY:
+            err(
+                f"check-config: skill-registry.yaml has {len(registered)} entries "
+                f"(expected >= {MIN_EXPECTED_REGISTRY}) — Check 30 would be a no-op. "
+                f"Run scripts/sync-registry.sh."
+            )
+        for name in sorted(on_disk - registered):
+            err(f"registry-sync: on-disk skill '{name}' has no skill-registry.yaml entry (FR-012); run sync-registry.sh")
+        for name in sorted(registered - on_disk):
+            err(f"registry-sync: registry entry '{name}' has no skills/agentii/{name}/ dir with SKILL.md (FR-011)")
+else:
+    err("registry-sync: skill-registry.yaml missing — run scripts/sync-registry.sh (FR-008)")
+
+# --- Check 30b: License boundary — MIT core must not import copyleft (Constitution VIII)
+#     Scans data-tools/*.py imports against an AGPL/GPL denylist (see contracts/SOURCES.md).
+#     Copyleft sources (OpenBB, wbdata, ...) are reached out-of-process only.
+COPYLEFT_DENYLIST = {"openbb", "openbb_terminal", "wbdata"}
+DATA_TOOLS = ROOT / "data-tools"
+if DATA_TOOLS.exists():
+    _import_re = re.compile(r"^\s*(?:import|from)\s+([a-zA-Z0-9_]+)", re.MULTILINE)
+    for py in sorted(DATA_TOOLS.glob("*.py")):
+        checked += 1
+        for mod in set(_import_re.findall(py.read_text(encoding="utf-8"))):
+            if mod in COPYLEFT_DENYLIST:
+                err(
+                    f"license-boundary: {rel(py)}: imports copyleft package '{mod}' into MIT core "
+                    f"(Constitution VIII) — invoke it via subprocess/MCP instead (see contracts/SOURCES.md)"
+                )
 
 # --- report ----------------------------------------------------------------
 if errors:

@@ -31,8 +31,8 @@ Run the canonical pre-flight sequence — MCP health probe, ticker resolution, w
    slide spec with `data_availability: degraded` + `python_pptx_missing: true`.
 3. **LibreOffice**: `Bash: which soffice` for structural validation and PDF export.
 
-If the Python library is absent, report the exact remediation:
-`pip install python-pptx` and produce the `.md` degraded fallback per
+If the Python library is absent, report the exact remediation (install the
+python-pptx package) and produce the `.md` degraded fallback per
 `contracts/office-tooling.md`.
 
 Include the `X-Agentii-Trace` header on every tool call per

@@ -1,0 +1,30 @@
+name: comprehensive-enrichment
+description: Full enrichment chain — strategies, then cases + analogue step, then a quality audit
+version: 1.0.0
+applies_to:
+  min_quality_score: 0
+stages:
+  - name: strategies
+    type: reference_injection
+    prompt: |
+      Query search_investment_strategies filtered by layer_tags + category_tags;
+      inject the top 5 as Referenced-Strategies rows with /v/ citations. Dedupe by citation_id.
+    uses_history: false
+  - name: cases
+    type: reference_injection
+    prompt: |
+      Query search_investment_cases filtered by layer_tags + sectors_focus; inject the
+      top 3 as Referenced-Cases rows with /v/ citations. Dedupe by citation_id.
+    uses_history: true
+  - name: patch-methodology
+    type: methodology_patch
+    prompt: |
+      Inject the runtime analogue-retrieval step (contracts/analogue-retrieval-pattern.md)
+      into ## Methodology with domain-based axis selection and graceful empty handling.
+    uses_history: true
+  - name: audit
+    type: quality_audit
+    prompt: |
+      Run the 5-dimension quality scan; report the score, per-dimension breakdown,
+      failing dimensions, and deltas vs the prior score.
+    uses_history: true

@@ -14,7 +14,10 @@ set -eu
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 META_SKILLS_DIR="${REPO_ROOT}/plugins/agentii-plugin/skills/agentii"
-VERTICALS="equity-research-core business-intelligence industry-analysis models-and-pitches quantitative-analysis"
+# spec 039 US6 (T077): all 12 verticals — original 5 + 3 pre-existing (macro-strategy,
+# options-derivatives, portfolio-strategy; previously omitted from assembly) + 4 new course
+# verticals (idea-generation, risk-and-psychology, trading-as-business, technical-analysis).
+VERTICALS="equity-research-core business-intelligence industry-analysis models-and-pitches quantitative-analysis macro-strategy options-derivatives portfolio-strategy idea-generation risk-and-psychology trading-as-business technical-analysis"
 TMPFILE="$(mktemp)"
 trap "rm -f $TMPFILE" EXIT
 
@@ -23,12 +26,14 @@ echo "=== agentii namespace assembly ==="
 # Step 1: Enumerate all vertical skills into a flat list
 echo "--- Enumerating skills ---"
 count=0
+vert_count=0
 for vertical in $VERTICALS; do
   vertical_skills_dir="${REPO_ROOT}/plugins/vertical-plugins/${vertical}/skills/agentii"
   if [ ! -d "$vertical_skills_dir" ]; then
     echo "WARNING: ${vertical}/skills/agentii/ not found, skipping."
     continue
   fi
+  vert_count=$((vert_count + 1))
   for skill_dir in "$vertical_skills_dir"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name="$(basename "$skill_dir")"
@@ -48,7 +53,7 @@ for vertical in $VERTICALS; do
   done
 done
 
-echo "Found $count skills across 5 verticals."
+echo "Found $count skills across $vert_count verticals."
 
 # Step 2: Validate each skill
 echo "--- Validating skills ---"

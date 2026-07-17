@@ -2,6 +2,21 @@
 
 All notable changes to `agentii-investment-intelligence`.
 
+## [2.4.0] — 2026-07-17 — spec 039 Enhance Skills
+
+### Added
+- **Skill registry + quality system** (Part I): `skill-registry.yaml` (48 entries) with `scripts/_registry.py` atomic API, `scripts/sync-registry.sh` bootstrap, `check.py` **Check 30** (registry↔disk bijection) + license-boundary sub-check (AGPL/GPL denylist for the MIT core). (FR-008–FR-012)
+- **Workflow-driven enrichment**: `scripts/enhance-skill.py` runs YAML presets (`workflows/*.yaml`: strategy/case/setup/quality-audit/comprehensive), idempotent knowledge-frameworks writer (dedupe by `citation_id`), chaining with history threading, `--from-registry` batch, contract-preservation guard, rollback-on-score-regression. (FR-001–FR-007, FR-024, FR-025)
+- **5-dimension quality score**: `scripts/quality-scan.py` → registry; `--threshold` CI gate (warn-only until spec-037 enrichment), `--fix` remediation. (FR-013–FR-017)
+- **spec-037 knowledge bridge**: `scripts/knowledge_bridge.py` — preset→query mapping, runtime `search_by_analogue` axis selection, graceful `coverage_gap`. (FR-018–FR-023)
+- **Instant financial/macro data** (Part II): `data-tools/` — `macro_data.py`/`market_data.py`/`earnings_data.py` (`~~macro_data`/`~~market_data`/`~~earnings_data`), envelope-first + zero-key-first (`_envelope.py`/`_cache.py`/`_sources.py`), opt-in `setup_credentials.py` wizard, `mcp_adapters.py` 4-tool surface. OpenBB/wbdata out-of-process only (Constitution VIII).
+- **Course-derived skills** (Part III): `scripts/srt-to-skill.py` (IP-safe SRT→SKILL.md, paraphrase-guard + attribution) + `scripts/scaffold_vertical.py`. 4 new verticals + 3 existing-vertical skills — **48 skills total**.
+- **Multi-platform packaging** (Part IV): `packaging/export.py`/`export.sh` + `skillseekers.config.yaml` emit codex/cowork/generic-cli variants from canonical SKILL.md, diff-clean, placeholders preserved.
+
+### Fixed
+- `assemble-agentii-namespace.sh` hardcoded only 5 verticals — 3 pre-existing verticals (macro-strategy, options-derivatives, portfolio-strategy) were never assembled into the meta-plugin. Now enumerates all 12.
+- `run-existing-validators.sh` failed on macOS (no `timeout` binary) — added portable `timeout`/`gtimeout`/none fallback.
+
 ## [2.3.0] — 2026-06-15
 
 ### Added

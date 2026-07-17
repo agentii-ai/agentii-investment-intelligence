@@ -1,0 +1,14 @@
+name: setup-enrichment
+description: Inject spec 037 technical setups into L4 (technical/price-action) skills only
+version: 1.0.0
+applies_to:
+  layer_tags: [L4]
+  min_quality_score: 0
+stages:
+  - name: discover-setups
+    type: reference_injection
+    prompt: |
+      Query search_technical_setups filtered by the skill's pattern_type. Select the
+      most relevant setups. Emit one Referenced-Setups row per result with a /v/
+      citation pointer. Dedupe by citation_id. L4 skills only.
+    uses_history: false

@@ -1,0 +1,31 @@
+# skillseekers.config.yaml — multi-platform export mapping (spec 039 US7, T082).
+# Layout mirrors Skill Seekers so an external run can substitute for export.py.
+# Claude Code is the canonical source; others are derived without regressing it.
+
+version: 1.0.0
+source:
+  format: spec-023-skill        # canonical SKILL.md + frontmatter + references/ + .mcp.json
+  root: plugins/vertical-plugins/*/skills/agentii/*
+
+invariants:
+  preserve_placeholders: true   # ~~macro_data / ~~market_data / ~~earnings_data verbatim (C1)
+  preserve_envelope: true       # AGENT_CONTRACT semantics untouched
+  reproducible: true            # sorted keys, no timestamps → diff-clean re-runs
+
+targets:
+  claude-code:
+    description: Canonical host — SKILL.md is the artifact (no transform).
+    emit: [SKILL.md]
+  codex:
+    description: Codex plugin — SKILL.md + plugin.json manifest.
+    emit: [SKILL.md, plugin.json]
+    manifest_fields: [name, description, entrypoint, tools]
+  cowork:
+    description: Cowork — SKILL.md + metadata.json sidecar.
+    emit: [SKILL.md, metadata.json]
+    manifest_fields: [name, description, retrieval_scope]
+  generic-cli:
+    description: Generic CLI agents — SKILL.md alone.
+    emit: [SKILL.md]
+
+output_root: packaging/targets

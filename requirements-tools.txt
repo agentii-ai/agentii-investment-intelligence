@@ -1,0 +1,20 @@
+# Spec 039 Part II — optional data-source dependencies (zero-key-first: all import-guarded)
+# Install only what you use. Every data-tools/*.py has a no-dependency / no-API-key fallback path.
+# NOTE: OpenBB (AGPL) is intentionally NOT listed here — it is invoked out-of-process
+#       (subprocess/MCP) per Constitution VIII license boundary, never imported into MIT core.
+
+# --- Phase A (MVP) sources: macro / market / earnings ---
+fredapi==0.5.2          # macro_data.py — FRED (free key)
+yfinance==0.2.65        # market_data.py — quotes/fundamentals (zero-key)
+investpy==1.0.8         # market_data.py — global stocks (zero-key)
+secfin==0.1.6           # market_data.py — US financials from SEC (zero-key)
+defeatbeta-api==0.1.6   # earnings_data.py — transcripts + fundamentals (zero-key)
+fmpsdk==20240622.0      # earnings_data.py — analyst estimates (free key)
+finnhub-python==2.4.24  # market_data.py / economic_calendar.py — quotes, calendar (free key)
+
+# --- Phase 2 tier (alternative / calendar / global) — commented until Phase 2 ships ---
+# wbdata==1.0.0         # macro_data.py — World Bank (zero-key)
+# baostock==0.8.9       # global_market_data.py — CN market (zero-key)
+# akshare==1.14.0       # global_market_data.py — CN/global (zero-key)
+# requests==2.32.3      # scrapers (Earnings Whispers, Fool.com) — lowest-priority fallback
+# httpx==0.27.2         # async HTTP for scrapers

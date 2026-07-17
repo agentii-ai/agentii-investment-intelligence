@@ -13,6 +13,9 @@ venv/
 # Node (MCP server under tools/)
 node_modules/
 dist/
+
+# Spec 039 — build output & runtime artifacts (not source)
+packaging/targets/
 *.tsbuildinfo
 npm-debug.log*
 yarn-error.log

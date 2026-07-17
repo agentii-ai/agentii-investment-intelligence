@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentii.ai/contracts/envelope.schema.json",
+  "title": "Part II Data Tool Response Envelope",
+  "description": "Normative envelope for all data-tools/*.py scripts and unified agentii MCP tools (spec 039 Part II, AGENT_CONTRACT.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "data", "source", "cache_hit", "rate_limit_remaining", "error"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "degraded", "error"]
+    },
+    "data": {
+      "type": ["object", "array", "null"]
+    },
+    "source": {
+      "type": ["string", "null"],
+      "description": "Concrete provider used behind the ~~category placeholder; null only allowed on error."
+    },
+    "cache_hit": {
+      "type": "boolean"
+    },
+    "rate_limit_remaining": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "error": {
+      "type": ["string", "null"]
+    }
+  },
+  "allOf": [
+    {
+      "description": "Invariant 1: status=ok => data != null",
+      "if": { "properties": { "status": { "const": "ok" } } },
+      "then": { "properties": { "data": { "not": { "type": "null" } } } }
+    },
+    {
+      "description": "Invariant 2: status=error => data=null AND error!=null",
+      "if": { "properties": { "status": { "const": "error" } } },
+      "then": {
+        "properties": {
+          "data": { "type": "null" },
+          "error": { "type": "string" }
+        }
+      }
+    },
+    {
+      "description": "Invariant 3: status=degraded => error explains why",
+      "if": { "properties": { "status": { "const": "degraded" } } },
+      "then": { "properties": { "error": { "type": "string" } } }
+    },
+    {
+      "description": "Invariant 4 (partial): source required unless status=error",
+      "if": { "properties": { "status": { "enum": ["ok", "degraded"] } } },
+      "then": { "properties": { "source": { "type": "string", "minLength": 1 } } }
+    }
+  ]
+}

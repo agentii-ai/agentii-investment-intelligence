@@ -1,0 +1,13 @@
+name: quality-audit
+description: Run the 5-dimension quality scan and report scored deltas + fix suggestions
+version: 1.0.0
+applies_to:
+  min_quality_score: 0
+stages:
+  - name: scan
+    type: quality_audit
+    prompt: |
+      Run the 5-dimension quality scan (Completeness, Knowledge Density,
+      Citation Integrity, Methodology Depth, Output Structure). Report the 0-10
+      score, per-dimension breakdown, failing dimensions, and suggested workflows.
+    uses_history: false

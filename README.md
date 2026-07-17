@@ -7,7 +7,7 @@
 <p align="center">
   <strong>The financial data layer for AI agents.</strong><br>
   Open-source alternative to FactSet / Daloopa / S&P Global for AI agents.<br>
-  165+ US equities with full SEC filing history. 31 Claude-type skills. 20+ MCP tools.<br>
+  165+ US equities with full SEC filing history. 48 Claude-type skills. 20+ MCP tools.<br>
   One API key. Zero infrastructure. Single entrance: <code>/agentii:skill-name</code>.
 </p>
 
@@ -52,10 +52,10 @@ Writes to `~/.claude.json`. Restart Claude Code — 30+ tools auto-discover on e
 ### 3. Install Skills (Primary: Local Copy)
 
 ```bash
-bash scripts/copy-skills-local.sh   # Copies all 31 skills + commands to ~/.claude/
+bash scripts/copy-skills-local.sh   # Copies all 48 skills + commands to ~/.claude/
 ```
 
-Restart Claude Code — all 31 skills register under a **single unified namespace, `/agentii:skill-name`** (skills land in `~/.claude/skills/agentii/`, commands in `~/.claude/commands/agentii/`). This is the **recommended install method** — one namespace, no per-vertical prefixes, and it works reliably on all Claude Code versions.
+Restart Claude Code — all 48 skills register under a **single unified namespace, `/agentii:skill-name`** (skills land in `~/.claude/skills/agentii/`, commands in `~/.claude/commands/agentii/`). This is the **recommended install method** — one namespace, no per-vertical prefixes, and it works reliably on all Claude Code versions.
 
 > **Single namespace by design**: the local-copy path exposes *only* `/agentii:*`. There is no `/equity-research-core:*` or `/models-and-pitches:*` surface — every skill is reached the same way regardless of which vertical authored it.
 
@@ -88,14 +88,17 @@ Expected: structured, citation-backed report with real SEC filing data and click
 
 | Component | Description |
 |-----------|-------------|
-| **Skills** | 31 Claude-type skills across 5 verticals — trigger-phrase auto-activation + `/agentii:skill-name` single entrance |
-| **Meta-Plugin** | `plugins/agentii-plugin/` — unified install bundles all 31 skills under `/agentii:*` namespace (symlinked from verticals) |
+| **Skills** | 48 Claude-type skills across 12 verticals — trigger-phrase auto-activation + `/agentii:skill-name` single entrance |
+| **Meta-Plugin** | `plugins/agentii-plugin/` — unified install bundles all 48 skills under `/agentii:*` namespace (symlinked from verticals) |
 | **Agent Plugin** | `agentii-equity-agent` — managed agent with the `system_v2_7`-ported system prompt, three-layer retrieval protocol, and citation discipline |
 | **MCP Tools** | 30+ tools at `mcp.agentii.ai/mcp` — SEC filings, XBRL financials, entity search, earnings calendar, two-tier page outline, real-time quotes |
 | **Office Output** | Code-mode: `openpyxl` (Excel .xlsx), `python-pptx` (PowerPoint .pptx), `python-docx` (Word .docx) + LibreOffice headless recalc — no office MCP server |
 | **Citations** | Every fact links to `agentii.ai/v/{ticker}/{citation_id}/{page}` — clickable, verifiable, inline-after-fact + TUI Key Citations block |
 | **Workspace Memory** | `agentii.md` index, per-ticker outputs with YAML frontmatter, `snapshots/` thesis synthesis with `[FACT]`/`[DEDUCTED]`/`[VIEW]` taxonomy, `sessions/` archive |
 | **Contracts** | 21 shared contracts in `contracts/` — single source of truth for retrieval protocol, citations, office tooling, preflight, memory, and tracing |
+| **Instant Data** (spec 039) | `data-tools/` — zero-key-first macro/market/earnings tools behind `~~category` placeholders, AGENT_CONTRACT envelope, file cache + failover; opt-in `setup_credentials.py` wizard for free API keys |
+| **Enrichment & Quality** (spec 039) | `skill-registry.yaml` + `scripts/enhance-skill.py` (YAML workflow presets) + `scripts/quality-scan.py` (5-dimension 0–10 score, CI gate) |
+| **Packaging** (spec 039) | `packaging/export.py` emits codex/cowork/generic-cli variants from canonical SKILL.md (diff-clean, placeholders preserved) |
 
 ---
 
@@ -314,7 +317,7 @@ One MCP server. One API key. Zero infrastructure.
 
 ### OpenCode / Codex / Goose / OpenClaw
 
-All 31 skills use the open Agent Skills standard (`skills/agentii/<name>/SKILL.md`) — works identically across all 6 CLI hosts. The `agentii` MCP entry is replicated in each vertical's `.mcp.json` — host CLIs deduplicate by server name.
+All 48 skills use the open Agent Skills standard (`skills/agentii/<name>/SKILL.md`) — works identically across all 6 CLI hosts. The `agentii` MCP entry is replicated in each vertical's `.mcp.json` — host CLIs deduplicate by server name.
 
 ```bash
 # Recommended: install the full agentii namespace
@@ -367,7 +370,7 @@ See [`adapters/`](./adapters/) for per-CLI configuration files. All agents benef
 ```
 agentii-investment-intelligence/
 ├── plugins/
-│   ├── agentii-plugin/                  # Meta-plugin: /agentii:* surface (31 symlinked skills)
+│   ├── agentii-plugin/                  # Meta-plugin: /agentii:* surface (48 symlinked skills)
 │   ├── vertical-plugins/
 │   │   ├── equity-research-core/        # 9 skills
 │   │   ├── business-intelligence/       # 4 skills

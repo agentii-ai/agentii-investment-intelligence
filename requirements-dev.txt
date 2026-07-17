@@ -1,0 +1,6 @@
+# Spec 039 — dev/test dependencies (deterministic CI, key-free fixtures)
+pyyaml>=6.0            # workflow presets, skill-registry.yaml (also used by check.py)
+jsonschema>=4.21       # envelope / registry / workflow schema validation
+pytest>=8.0
+responses>=0.25        # HTTP fixture recording/mocking for data-tools tests
+vcrpy>=6.0             # cassette-based recording for live-source adapters
