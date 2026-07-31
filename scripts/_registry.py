@@ -25,6 +25,16 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REGISTRY_PATH = REPO_ROOT / "skill-registry.yaml"
 
 
+class _NoAliasDumper(yaml.SafeDumper):
+    """Emit every entry expanded. PyYAML de-duplicates repeated objects into
+    anchors/aliases (&id001 / *id001), which would make several skills share one
+    mutable list — editing one entry's layer_tags would silently edit the others.
+    """
+
+    def ignore_aliases(self, data: Any) -> bool:  # noqa: D102
+        return True
+
+
 def _resolve(path: Optional[Path | str]) -> Path:
     return Path(path) if path is not None else DEFAULT_REGISTRY_PATH
 
@@ -46,7 +56,10 @@ def save_registry(doc: dict[str, Any], path: Optional[Path | str] = None) -> Non
     """
     p = _resolve(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    text = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=100)
+    text = yaml.dump(
+        doc, Dumper=_NoAliasDumper, sort_keys=False, allow_unicode=True, width=100,
+        default_flow_style=False,
+    )
     fd, tmp_name = tempfile.mkstemp(dir=str(p.parent), prefix=".skill-registry.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:

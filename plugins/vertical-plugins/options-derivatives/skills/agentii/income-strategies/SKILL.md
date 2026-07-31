@@ -41,7 +41,7 @@ See ## Protocol section below.
 
 
 
-# income-strategies | sed 's/-/ /g; s/\b\(.\)/\u\1/g'
+# Income Strategies
 
 Options analysis powered by spec 037 L3/L4 knowledge base (K7).
 

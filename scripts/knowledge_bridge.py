@@ -31,6 +31,29 @@ def select_analogue_axis(domain: str) -> str:
     return "strategy"  # safe default
 
 
+def axes_for(skill_entry: dict) -> dict[str, Any]:
+    """Normalised ``enrichment_axes`` for a registry entry (FR-008).
+
+    FR-020/FR-021 require enrichment queries to filter by *enrichment_axes*
+    (domains / sectors_focus / instrument_scope / analogue_tags) and explicitly
+    NOT by ``layer_tags`` — layer tags are descriptive metadata, never a
+    retrieval gate (FR-029). Entries written before the axes field existed fall
+    back to a permissive equity/fundamental default rather than failing.
+    """
+    raw = skill_entry.get("enrichment_axes") or {}
+    tags = raw.get("analogue_tags") or {}
+    return {
+        "sectors_focus": list(raw.get("sectors_focus") or []),
+        "domains": list(raw.get("domains") or []),
+        "instrument_scope": list(raw.get("instrument_scope") or ["equity"]),
+        "analogue_tags": {
+            "market_regime": list(tags.get("market_regime") or []),
+            "event_type": list(tags.get("event_type") or []),
+            "company_situation": list(tags.get("company_situation") or []),
+        },
+    }
+
+
 def _cite(row: dict) -> str:
     return CITATION_TMPL.format(
         ticker=row.get("ticker", "MKT"),
@@ -77,24 +100,44 @@ def fetch_enrichment(client: Any, workflow_name: str, skill_entry: dict) -> dict
 
     records maps knowledge-frameworks table name -> list[{citation_id, columns}].
     """
+    # layer_tags gate ONLY the L4-only setup preset (FR-022). Strategy/case
+    # selection is driven by enrichment_axes (FR-020/FR-021), never by layer.
     layers = set(skill_entry.get("layer_tags") or [])
-    cats = skill_entry.get("category_tags") or []
+    axes = axes_for(skill_entry)
 
     try:
         if workflow_name in ("strategy-enrichment", "comprehensive-enrichment"):
-            raw = client.search_investment_strategies(layer_tags=list(layers), category_tags=cats, top_k=5)
+            # FR-020: top-5 strategies by domain + sector + instrument scope.
+            raw = client.search_investment_strategies(
+                domains=axes["domains"],
+                sectors_focus=axes["sectors_focus"],
+                instrument_scope=axes["instrument_scope"],
+                analogue_tags=axes["analogue_tags"],
+                top_k=5,
+            )
             rows = _strategy_rows(raw)
             table = "strategies"
         elif workflow_name == "case-enrichment":
-            raw = client.search_investment_cases(layer_tags=list(layers),
-                                                 sectors_focus=skill_entry.get("sectors_focus", []), top_k=3)
+            # FR-021: top-3 cases by the same axes.
+            raw = client.search_investment_cases(
+                domains=axes["domains"],
+                sectors_focus=axes["sectors_focus"],
+                instrument_scope=axes["instrument_scope"],
+                analogue_tags=axes["analogue_tags"],
+                top_k=3,
+            )
             rows = _case_rows(raw)
             table = "cases"
         elif workflow_name == "setup-enrichment":
             if "L4" not in layers:
                 return {"status": "skipped", "records": {},
                         "reason": "setup-enrichment is L4-only"}
-            raw = client.search_technical_setups(pattern_type=skill_entry.get("pattern_type"))
+            # FR-022: setups are the execution layer — reachable only here, never
+            # via search_by_analogue (FR-032).
+            raw = client.search_technical_setups(
+                pattern_type=skill_entry.get("pattern_type"),
+                instrument_scope=axes["instrument_scope"],
+            )
             rows = _setup_rows(raw)
             table = "setups"
         else:

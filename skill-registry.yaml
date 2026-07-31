@@ -3,10 +3,20 @@ generated_by: scripts/sync-registry.sh
 skills:
 - skill_name: operational-kpi
   vertical: business-intelligence
-  layer_tags: &id001
+  layer_tags:
   - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -15,9 +25,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: revenue-decomp
   vertical: business-intelligence
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -26,9 +47,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: unit-economics
   vertical: business-intelligence
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -37,9 +69,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: what-if
   vertical: business-intelligence
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -48,10 +91,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: business-model
   vertical: equity-research-core
-  layer_tags: &id002
+  layer_tags:
   - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -60,9 +113,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: competitive
   vertical: equity-research-core
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -71,9 +135,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: earnings-sentiment
   vertical: equity-research-core
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -82,9 +157,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: growth-strategy
   vertical: equity-research-core
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -93,9 +179,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: recent-quarter
   vertical: equity-research-core
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -104,9 +201,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: risk
   vertical: equity-research-core
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -115,9 +223,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: secular-trends
   vertical: equity-research-core
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -126,9 +245,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: turnaround
   vertical: equity-research-core
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -137,31 +267,161 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: valuation-methods
   vertical: equity-research-core
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
   quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []
-- skill_name: trade-idea-generation
+- skill_name: macro-idea-generation
   vertical: idea-generation
-  layer_tags: *id001
+  layer_tags:
+  - L1
+  - L2
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    - event-driven
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: qualitative-filtering
+  vertical: idea-generation
+  layer_tags:
+  - L2
+  - L3
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    - event-driven
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: quantitative-screening
+  vertical: idea-generation
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    - event-driven
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: trade-idea-generation
+  vertical: idea-generation
+  layer_tags:
+  - L2
+  - L3
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    - event-driven
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
+- skill_name: trade-template
+  vertical: idea-generation
+  layer_tags:
+  - L2
+  - L3
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    - event-driven
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
 - skill_name: competitive-positioning
   vertical: industry-analysis
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -170,9 +430,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: peer-bench
   vertical: industry-analysis
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -181,9 +452,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: sector-overview
   vertical: industry-analysis
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -192,9 +474,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: supply-chain
   vertical: industry-analysis
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -203,9 +496,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: currency-analysis
   vertical: macro-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - macro
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -214,9 +518,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: leading-indicators
   vertical: macro-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - macro
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -225,9 +540,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: macro-regime
   vertical: macro-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - macro
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -236,9 +562,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: rate-cycle
   vertical: macro-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - macro
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -247,9 +584,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: 3-statement
   vertical: models-and-pitches
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -262,6 +610,16 @@ skills:
   - L1
   category_tags: []
   retrieval_scope: simple_lookup
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -270,9 +628,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: comps
   vertical: models-and-pitches
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -281,9 +650,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: dcf
   vertical: models-and-pitches
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -292,9 +672,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: earnings-preview
   vertical: models-and-pitches
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -303,9 +694,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: lbo
   vertical: models-and-pitches
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -314,9 +716,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: pitch-deck
   vertical: models-and-pitches
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -325,9 +738,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: sotp-valuation
   vertical: models-and-pitches
-  layer_tags: *id002
+  layer_tags:
+  - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -336,9 +760,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: xlsx-financials
   vertical: models-and-pitches
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -347,9 +782,21 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: income-strategies
   vertical: options-derivatives
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    - option
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -358,9 +805,21 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: options-foundations
   vertical: options-derivatives
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    - option
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -369,9 +828,21 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: price-action-options
   vertical: options-derivatives
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    - option
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -380,9 +851,21 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: technical-execution
   vertical: options-derivatives
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    - option
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -391,9 +874,21 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: volatility-trading
   vertical: options-derivatives
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    - option
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -402,9 +897,22 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: long-short-construction
   vertical: portfolio-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L3
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    - option
+    - etf
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -413,9 +921,22 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: long-short-equity
   vertical: portfolio-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L3
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    - option
+    - etf
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -424,9 +945,22 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: portfolio-hedging
   vertical: portfolio-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    - option
+    - etf
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -435,9 +969,22 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: position-sizing
   vertical: portfolio-strategy
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    - option
+    - etf
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
   quality_score: 6.0
@@ -446,9 +993,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: ddm-valuation
   vertical: quantitative-analysis
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -457,9 +1015,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: peg-valuation
   vertical: quantitative-analysis
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -468,9 +1037,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: ratio-analysis
   vertical: quantitative-analysis
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -479,9 +1059,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: residual-income
   vertical: quantitative-analysis
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -490,9 +1081,20 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: reverse-dcf
   vertical: quantitative-analysis
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
@@ -501,31 +1103,130 @@ skills:
   enrichment_workflows_applied: []
 - skill_name: risk-and-psychology
   vertical: risk-and-psychology
-  layer_tags: *id001
+  layer_tags:
+  - L1
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: chart-patterns
+  vertical: technical-analysis
+  layer_tags:
+  - L4
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: options-execution
+  vertical: technical-analysis
+  layer_tags:
+  - L4
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  quality_score: null
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
 - skill_name: price-action
   vertical: technical-analysis
-  layer_tags: *id001
+  layer_tags:
+  - L4
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
-- skill_name: trading-as-business
-  vertical: trading-as-business
-  layer_tags: *id001
+- skill_name: trade-execution
+  vertical: technical-analysis
+  layer_tags:
+  - L4
   category_tags: []
   retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - hybrid
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: trading-as-business
+  vertical: trading-as-business
+  layer_tags:
+  - L1
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0

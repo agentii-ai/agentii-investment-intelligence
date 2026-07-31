@@ -13,9 +13,12 @@ Invoked by sync-registry.sh. Derivations:
   defaults to [L2]. Explicit frontmatter layer_tags/category_tags win when present.
 - has_knowledge_frameworks: references/knowledge-frameworks.md existence
 - spec_037_references: count of citation_id-bearing rows in that file (0 if absent)
+- enrichment_axes: seeded per-vertical (see VERTICAL_AXES) on first sync, then
+  PRESERVED verbatim — sectors_focus / analogue_tags are curator-authored (FR-008).
 """
 from __future__ import annotations
 
+import copy
 import re
 import sys
 from pathlib import Path
@@ -36,6 +39,47 @@ LAYER_BY_SCOPE = {
     "single_document": ["L2"],
     "unstructured_document_search": ["L2"],
 }
+# --- enrichment_axes seeding (FR-008; spec 039 Session 2026-07-19 Q5/Q8) ------
+# enhance-skill.py queries spec-037 by these axes, NOT by layer_tags (FR-020).
+# `domains` uses the spec-037 domain enum {fundamental, macro, event-driven, hybrid};
+# `instrument_scope` defaults to ['equity'] and widens only where the spec says so.
+# `sectors_focus` + `analogue_tags` start empty — they are curator-authored and are
+# never overwritten by a re-sync.
+DEFAULT_INSTRUMENT_SCOPE = ["equity"]
+VERTICAL_AXES = {
+    "macro-strategy":        {"domains": ["macro"]},
+    "equity-research-core":  {"domains": ["fundamental"]},
+    "industry-analysis":     {"domains": ["fundamental"]},
+    "business-intelligence": {"domains": ["fundamental"]},
+    "models-and-pitches":    {"domains": ["fundamental"]},
+    "quantitative-analysis": {"domains": ["fundamental"]},
+    "idea-generation":       {"domains": ["fundamental", "event-driven"]},
+    "risk-and-psychology":   {"domains": ["fundamental"]},
+    "trading-as-business":   {"domains": ["fundamental"]},
+    "technical-analysis":    {"domains": ["hybrid"]},
+    # instrument_scope widened per spec clarification (Session 2026-07-19, Q8)
+    "options-derivatives":   {"domains": ["hybrid"], "instrument_scope": ["equity", "option"]},
+    "portfolio-strategy":    {"domains": ["fundamental"],
+                              "instrument_scope": ["equity", "option", "etf"]},
+}
+
+
+def default_axes(vertical: str) -> dict:
+    """Seed enrichment_axes for a vertical. Returns a fresh, unshared structure so
+    the emitted YAML never aliases one skill's axes onto another's."""
+    seed = VERTICAL_AXES.get(vertical, {})
+    return {
+        "sectors_focus": [],
+        "domains": list(seed.get("domains", ["fundamental"])),
+        "instrument_scope": list(seed.get("instrument_scope", DEFAULT_INSTRUMENT_SCOPE)),
+        "analogue_tags": {
+            "market_regime": [],
+            "event_type": [],
+            "company_situation": [],
+        },
+    }
+
+
 # /v/ citation links carry a citation_id path segment; count rows that reference one.
 _CITATION_RE = re.compile(r"/v/[^/\s)]+/[A-Za-z0-9_-]+/")
 
@@ -66,15 +110,19 @@ def build_entries() -> list[dict]:
         meta = _parse_frontmatter(sk.read_text(encoding="utf-8"))
         name = meta.get("name", skill_dir.name)
         scope = meta.get("retrieval_scope")
-        layer_tags = meta.get("layer_tags") or LAYER_BY_SCOPE.get(scope, ["L2"])
+        # list(...) is load-bearing: LAYER_BY_SCOPE returns a shared list object, and
+        # emitting it for N skills would produce YAML anchors/aliases (&id001/*id001),
+        # so an in-memory edit to one entry would mutate every aliased entry.
+        layer_tags = list(meta.get("layer_tags") or LAYER_BY_SCOPE.get(scope, ["L2"]))
         kf_exists = (skill_dir / "references" / "knowledge-frameworks.md").is_file()
         entries.append(
             {
                 "skill_name": name,
                 "vertical": vertical,
                 "layer_tags": layer_tags,
-                "category_tags": meta.get("category_tags") or [],
+                "category_tags": list(meta.get("category_tags") or []),
                 "retrieval_scope": scope,
+                "enrichment_axes": default_axes(vertical),
                 "has_knowledge_frameworks": kf_exists,
                 "spec_037_references": _count_spec037_refs(skill_dir),
             }
@@ -92,7 +140,19 @@ def sync(path: Path | None = None) -> int:
         e["quality_score"] = old.get("quality_score")
         e["quality_score_prev"] = old.get("quality_score_prev")
         e["last_enriched"] = old.get("last_enriched")
-        e["enrichment_workflows_applied"] = old.get("enrichment_workflows_applied", [])
+        e["enrichment_workflows_applied"] = copy.deepcopy(
+            old.get("enrichment_workflows_applied", [])
+        )
+        # enrichment_axes is curator-authored (FR-008): once present, never clobbered
+        # by a re-sync. Missing sub-keys are backfilled from the vertical seed so a
+        # schema addition never leaves an entry half-populated.
+        if old.get("enrichment_axes"):
+            merged = e["enrichment_axes"]
+            merged.update(copy.deepcopy(old["enrichment_axes"]))
+            tags = merged.setdefault("analogue_tags", {})
+            for axis in ("market_regime", "event_type", "company_situation"):
+                tags.setdefault(axis, [])
+            e["enrichment_axes"] = merged
     doc = {
         "version": "1.0.0",
         "generated_by": "scripts/sync-registry.sh",

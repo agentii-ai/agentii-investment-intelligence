@@ -65,11 +65,18 @@ MANAGED = ROOT / "managed-agent-cookbooks"
 CONTRACTS = ROOT / "contracts"
 
 errors: list[str] = []
+notices: list[str] = []
 checked = 0
 
 
 def err(msg: str) -> None:
     errors.append(msg)
+
+
+def warn(msg: str) -> None:
+    """Non-fatal notice. Used for phased migrations where the target state is not
+    yet reachable (e.g. the spec-039 FR-034 allowed_tools migration)."""
+    notices.append(msg)
 
 
 def rel(p: Path) -> str:
@@ -222,7 +229,7 @@ SKILL_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/agentii/*/SKILL.md"
 
 # Self-test: the gate must never silently match zero skills again. If this
 # fires, the namespace layout changed and the globs above need updating.
-MIN_EXPECTED_SKILLS = 48
+MIN_EXPECTED_SKILLS = 55
 if len(SKILL_FILES) < MIN_EXPECTED_SKILLS:
     err(
         f"check-config: SKILL_FILES glob matched {len(SKILL_FILES)} files "
@@ -420,12 +427,28 @@ FR011_TOOLS = {
 # Claude Code built-in tools usable by skills (e.g. xlsx-financials runs an
 # openpyxl script via Bash per contracts/office-tooling.md).
 BUILTIN_TOOLS = {"Bash"}
-# Spec 037 tools — knowledge entries + investment cases + cross-cutting analogue
+# Spec 037 knowledge-plane tools. This set MUST stay in sync with the tools
+# deployed in the MCP proxy (agentii-ai/apps/mcp/api/mcp.js P0_TOOLS) — spec 039
+# FR-034 requires each skill's allowed_tools to be a subset of the live surface.
 KNOWLEDGE_CASE_TOOLS = {
-    "search_knowledge_entries", "get_knowledge_entry", "list_related_entries",
+    # cases
     "search_investment_cases", "get_investment_case",
+    # strategies (spec 039 FR-034 migration target)
+    "search_investment_strategies", "get_investment_strategy",
+    # technical setups (L4 / execution layer)
+    "search_technical_setups", "get_technical_setup",
+    # cross-cutting analogue bridge (returns {cases, strategies} only — FR-032)
     "search_by_analogue",
 }
+# Superseded by the spec-037 family above (spec 039 FR-034). Still accepted so the
+# 35 un-migrated skills keep passing, but every use is reported as a notice.
+# tasks.md T108 removes the last usage; T118 then promotes this to a hard error.
+DEPRECATED_KNOWLEDGE_TOOLS = {
+    "search_knowledge_entries": "search_investment_strategies",
+    "get_knowledge_entry": "get_investment_strategy",
+    "list_related_entries": "search_by_analogue",
+}
+KNOWLEDGE_CASE_TOOLS.update(DEPRECATED_KNOWLEDGE_TOOLS)
 CANONICAL_TOOLS.update(FR011_TOOLS)
 CANONICAL_TOOLS.update(OFFICE_TOOLS)
 CANONICAL_TOOLS.update(DOCUMENT_TOOLS)
@@ -462,6 +485,12 @@ for sk in SKILL_FILES:
     is_models = (sk.parent.name in MODELS_SKILL_NAMES)
     rs = meta.get("retrieval_scope", "")
     for tool in at:
+        if tool in DEPRECATED_KNOWLEDGE_TOOLS:
+            warn(
+                f"deprecated-tool: {rel(sk)}: '{tool}' is superseded by "
+                f"'{DEPRECATED_KNOWLEDGE_TOOLS[tool]}' (spec 039 FR-034) — migrate via tasks.md T108"
+            )
+            continue
         if tool in CANONICAL_TOOLS:
             continue
         # Also accept office tools and tools in the MCP canonical + FR-011 list
@@ -768,7 +797,7 @@ for sk in SKILL_FILES:
 #     contains a SKILL.md (shared dirs like .../agentii/references/ are NOT skills).
 REGISTRY_PATH = ROOT / "skill-registry.yaml"
 # self-test guard mirroring MIN_EXPECTED_SKILLS (baseline = 41 skills with SKILL.md)
-MIN_EXPECTED_REGISTRY = 48
+MIN_EXPECTED_REGISTRY = 55
 if REGISTRY_PATH.exists():
     checked += 1
     try:
@@ -826,9 +855,14 @@ if DATA_TOOLS.exists():
                 )
 
 # --- report ----------------------------------------------------------------
+if notices:
+    print(f"NOTICE — {len(notices)} non-fatal item(s):", file=sys.stderr)
+    for n in notices:
+        print(f"  ~ {n}", file=sys.stderr)
+    print("", file=sys.stderr)
 if errors:
     print(f"FAIL — {len(errors)} issue(s) across {checked} file(s):\n", file=sys.stderr)
     for e in errors:
         print(f"  ✗ {e}", file=sys.stderr)
     sys.exit(1)
-print(f"OK — {checked} file(s) checked, 0 issues.")
+print(f"OK — {checked} file(s) checked, 0 issues, {len(notices)} notice(s).")

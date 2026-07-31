@@ -41,7 +41,7 @@ See ## Protocol section below.
 
 
 
-# position-sizing | sed 's/-/ /g; s/\b\(.\)/\u\1/g'
+# Position Sizing
 
 Portfolio strategy analysis powered by spec 037 L3 knowledge base.
 

@@ -18,7 +18,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install pyyaml jsonschema
+        run: pip install pyyaml jsonschema pytest
 
       - name: check.py (manifest lint + skill structure)
         run: python3 scripts/check.py
@@ -45,3 +45,9 @@ jobs:
         # Phase 1 tolerance: skips cookbooks without agent.yaml. Phase 7 (US7)
         # populates cookbooks and removes the skip. Per phase1-analyze.md F3.
         run: bash scripts/test-cookbooks.sh
+
+      - name: pytest (full test suite)
+        run: python3 -m pytest tests/ -v
+
+      - name: quality-scan (spec 039 skill quality)
+        run: python3 scripts/quality-scan.py

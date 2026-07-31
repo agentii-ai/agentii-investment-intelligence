@@ -42,6 +42,7 @@
           "type": ["string", "null"],
           "enum": ["structured_only", "single_document", "simple_lookup", "unstructured_document_search", null]
         },
+        "enrichment_axes": { "$ref": "#/definitions/enrichmentAxes" },
         "has_knowledge_frameworks": { "type": "boolean" },
         "quality_score": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
         "quality_score_prev": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
@@ -59,6 +60,41 @@
           }
         },
         "spec_037_references": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "enrichmentAxes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Which spec-037 strategies/cases match this skill's analytical domain (spec 039 FR-008). enhance-skill.py queries by these axes, NOT by layer_tags (FR-020). sectors_focus and analogue_tags are curator-authored and are preserved verbatim across sync-registry re-runs.",
+      "properties": {
+        "sectors_focus": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Sector boost terms, e.g. biotechnology, technology. Empty = no sector boost."
+        },
+        "domains": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["fundamental", "macro", "event-driven", "hybrid"] }
+        },
+        "instrument_scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["equity", "option", "etf", "futures", "forex", "multi-asset"]
+          },
+          "description": "Default ['equity']. ERC ['equity']; options-derivatives ['equity','option']; portfolio-strategy ['equity','option','etf']."
+        },
+        "analogue_tags": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Axes passed to search_by_analogue. Setups are never returned by that tool (FR-032).",
+          "properties": {
+            "market_regime": { "type": "array", "items": { "type": "string" } },
+            "event_type": { "type": "array", "items": { "type": "string" } },
+            "company_situation": { "type": "array", "items": { "type": "string" } }
+          }
+        }
       }
     }
   }

@@ -41,7 +41,7 @@ See ## Protocol section below.
 
 
 
-# portfolio-hedging | sed 's/-/ /g; s/\b\(.\)/\u\1/g'
+# Portfolio Hedging
 
 Portfolio strategy analysis powered by spec 037 L3 knowledge base.
 

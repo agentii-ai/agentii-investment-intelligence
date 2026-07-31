@@ -20,7 +20,7 @@ min_tool_diversity: 7
 
 # Financial Ratio Analysis
 
-Quantitative skill computing 6 categories of financial ratios from XBRL financial data. Cross-company comparison within sector. References WallStreetPrep and CFI professional ratio interpretation standards.
+Quantitative skill computing 6 categories of financial ratios from XBRL financial data. Cross-company comparison within sector. References professional financial training ratio interpretation standards.
 
 ## Preflight
 
