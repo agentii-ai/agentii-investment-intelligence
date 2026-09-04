@@ -423,6 +423,14 @@ FR011_TOOLS = {
     # XBRL Part B statement/calculation surface (spec 019 P0)
     "get_statement", "get_statement_structure", "get_calculation_tree",
     "validate_calculation", "get_financial_ratios", "get_segment_data",
+    # Spec 052 — med MCP layer (registered in mcp.js P0_TOOLS 2026-09-04)
+    "get_clinical_trial", "search_fda_approvals", "get_fda_approval",
+    "search_adcom_meetings", "get_adcom_meeting",
+    "get_peer_comparison",
+    # Spec 049 — med data surface (PDUFA/device calendars + drug/device universes)
+    "get_upcoming_pdufa", "get_pdufa_decision", "get_device_decision",
+    "search_universe_drugs", "search_universe_devices",
+    "get_company_drugs", "get_company_devices",
 }
 # Claude Code built-in tools usable by skills (e.g. xlsx-financials runs an
 # openpyxl script via Bash per contracts/office-tooling.md).

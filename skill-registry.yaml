@@ -1,6 +1,160 @@
 version: 1.0.0
 generated_by: scripts/sync-registry.sh
 skills:
+- skill_name: earnings-preview
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  quality_score: 6.0
+  quality_score_prev: 6.0
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: fda-catalyst-analysis
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: peer-bench
+  vertical: bio-pharm
+  layer_tags:
+  - L1
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  quality_score: 6.0
+  quality_score_prev: 6.0
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: pipeline-analysis
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: recent-quarter
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  quality_score: 6.0
+  quality_score_prev: 6.0
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: sector-overview
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  quality_score: 6.0
+  quality_score_prev: 6.0
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: trial-readout-analysis
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
 - skill_name: operational-kpi
   vertical: business-intelligence
   layer_tags:
