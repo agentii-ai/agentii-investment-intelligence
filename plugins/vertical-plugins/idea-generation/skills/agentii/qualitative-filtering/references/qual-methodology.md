@@ -48,7 +48,7 @@ Key Performance Indicators are the non-financial and semi-financial metrics that
 Institutional practice follows a specific source hierarchy for KPI discovery:
 
 1. **Investor Relations Websites** — Presentations, shareholder letters, quarterly and annual reports. IR pages are designed for investors and contain the metrics management wants you to track.
-2. **Earnings Call Transcripts** — Management literally tells you what numbers to focus on. CEO/CFO communications are scripted and rehearsed. The technique: scan transcripts, let your eye zoom in on the numbers, pay less attention to narrative flourishes.
+2. **Earnings Call Transcripts** — Management literally tells you what numbers to focus on. CEO/CFO communications are scripted and rehearsed. Retrieve via `search_documents(ticker={T}, form_type="earnings_call_transcript")` → `read_source_pages` (citation prefix `ect<N>`; prepared_remarks pages hold the scripted commentary, qa pages the unscripted answers). The technique: scan the transcript pages, let your eye zoom in on the numbers, pay less attention to narrative flourishes.
 3. **Company Presentations** — Roadshow materials, conference presentations. Often contain updates between earnings calls.
 
 ### KPI Quality Assessment

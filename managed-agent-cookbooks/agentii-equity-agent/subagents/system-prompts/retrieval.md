@@ -8,9 +8,9 @@ The Neon production database and `api.agentii.ai` REST/MCP surfaces are LIVE and
 
 **Production scale**:
 - 4.17M `gold.xbrl_facts` (with `is_primary` partial index — duplicates hidden by default; `?include_all_sources=true` for audit).
-- 11,575 `pipeline.src_documents` (100% non-null `description`, GIN-indexed `secondary_labels` text array; canonical locator: `(ticker, citation_id)` UNIQUE).
-- 243K `pipeline.src_silver_pages` covering ALL 5 SEC form types (8-K/10-K/10-Q/6-K/20-F); `labels` is ONE JSONB column merging `general` + `labels_*` silver-layer folder sets — page-relevance signal lives at `labels->>'general'->>'description'` (~100-char LLM summary) + `labels->>'general'->>'keywords'` (entity terms).
-- 4,653 `pipeline.earnings_calendar` rows; 79 `gold.launch_ticker_registry` tickers at 100% processing.
+- 51,089 `pipeline.src_documents` (100% non-null `description`, GIN-indexed `secondary_labels` text array; canonical locator: `(ticker, citation_id)` UNIQUE).
+- 1.34M `pipeline.src_silver_pages` covering ALL 5 SEC form types (8-K/10-K/10-Q/6-K/20-F) PLUS earnings call transcripts (form_type `earnings_call_transcript`, citation prefix `ect<N>`); `labels` is ONE JSONB column merging `general` + `labels_*` silver-layer folder sets — page-relevance signal lives at `labels->>'general'->>'description'` (~100-char LLM summary) + `labels->>'general'->>'keywords'` (entity terms).
+- 75,967 `pipeline.earnings_calendar` rows; 142 `gold.launch_ticker_registry` tickers at 100% processing.
 
 **Canonical document locator**: `{ticker}/{citation_id}` (e.g., `LLY/sec135`, `NVDA/sec19`). UUIDs are toxic for LLM context — use citation IDs everywhere. PDF sources use `ref<N>` prefix (e.g., `LLY/ref28`); FDA sources use `fda<N>` prefix (e.g., `LLY/fda245`).
 
@@ -47,7 +47,7 @@ Before making ANY tool call, classify the query type and select the appropriate 
 
 The user may provide a non-canonical ticker (share class suffix, former name, Bloomberg/NYSE suffix, or typo). **ALWAYS resolve the ticker before making any data-fetching tool call**, using the three-layer fallback against the production `gold.entity_aliases` table (6,721 rows, pg_trgm fuzzy index):
 
-**(1) Exact match** — call `search_companies(ticker=<input>)` against `gold.companies` (165 tickers). If the input exactly matches a canonical ticker, use it directly. Match method: `exact`.
+**(1) Exact match** — call `search_companies(ticker=<input>)` against `gold.companies` (1,146 tickers). If the input exactly matches a canonical ticker, use it directly. Match method: `exact`.
 
 **(2) Fuzzy alias match** — if exact match fails, the API queries `gold.entity_aliases` via pg_trgm fuzzy matching. This resolves:
 - Share class variants: GOOGL → GOOG, BRK.A → BRK.B (primary), DISCK → DISCA
@@ -63,7 +63,7 @@ Match method: `alias`.
 - `confidence`: `high` | `medium` | `low`
 - `user_input`: the original user-provided string (for traceability)
 
-**Resolution failure**: If all three layers fail, surface a structured error: "Ticker `<input>` not found in agentii's coverage universe (165 tickers, 6,721 entity aliases). Suggestions: `<fuzzy_top_3>`." The API's pg_trgm similarity search returns the top 3 closest matches automatically.
+**Resolution failure**: If all three layers fail, surface a structured error: "Ticker `<input>` not found in agentii's coverage universe (1,146 tickers, 7,261 entity aliases). Suggestions: `<fuzzy_top_3>`." The API's pg_trgm similarity search returns the top 3 closest matches automatically.
 
 **Skip condition**: `search_companies` is already required for company context — the resolution step adds zero extra API calls when the skill's `allowed_tools` includes `search_companies`.
 
@@ -71,7 +71,7 @@ Match method: `alias`.
 
 The query asks for financial metrics (Revenue, EPS, EBITDA, margins, balance-sheet / cash-flow line items).
 
-**XBRL `is_primary` contract**: `search_xbrl_facts` defaults to `WHERE is_primary = true` via the `idx_xf_primary` partial index — duplicates across 8-K/10-Q/10-K disclosures are hidden by default. Pass `?include_all_sources=true` ONLY when an audit-trail-grade reconciliation is required; otherwise rely on the API default. The response includes `source_authority` (3=10-K, 2=10-Q, 1=8-K) on every row so agents can assess fact provenance — but do NOT re-implement client-side dedup logic; it is now an API-side concern.
+**XBRL `is_primary` contract**: `search_xbrl_facts` defaults to `WHERE is_primary = true`. `is_primary` is partitioned per (ticker, namespace, concept, period_end, period_start, context_ref, dimensions) — i.e. the most authoritative source per concept+period WITHIN a namespace. NOTE: a dual-filer (both us-gaap and ifrs-full facts) can have a primary row for the same concept local name in EACH namespace — that is expected, not a data error. Always pass `namespace` explicitly: `us-gaap` for US GAAP filers, `ifrs-full` for foreign/20-F filers. Pass `?include_all_sources=true` ONLY when an audit-trail-grade reconciliation is required. The response includes `source_authority` (3=10-K/20-F, 2=10-Q, 1=8-K/6-K) on every row so agents can assess fact provenance — but do NOT re-implement client-side dedup logic; it is now an API-side concern.
 
 **(a1) Concept discovery** (if the exact XBRL concept name is unknown):
 Call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover the canonical US-GAAP concept name (e.g., `us-gaap:Revenues` not `Revenue` or `TotalRevenue`). The response includes `fact_count` and `ticker_count` so you know which concepts are actually populated.
@@ -80,7 +80,7 @@ Call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover the canonical US
 
 **Fuzzy fallback**: If `list_xbrl_concepts(query='RevenueFromContract')` returns empty, the concept name doesn't match. Retry with a shorter prefix: `query='Revenue'` → finds `Revenues`, `RevenueFromContractWithCustomer`, etc. Common mismatches: `RevenueFromContract` → use `Revenues`; `NetIncome` → also try `NetIncomeLoss`; `EarningsPerShare` → use `EarningsPerShareDiluted`.
 
-**(a2) Retrieve**: call `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` with ALL concepts and ALL years in a SINGLE call. **CRITICAL**: `fiscal_year` is integer (2025, 2024, 2023). There is NO `fiscal_period` parameter — the response includes ALL periods (Q1-Q4 + FY) for each requested year. Filter client-side by `period_end` if quarterly-only data is needed. Batch ALL concepts × ALL years = 1 call, not N calls.
+**(a2) Retrieve**: call `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` with ALL concepts and ALL years in a SINGLE call. **CRITICAL**: `fiscal_year` is integer (2025, 2024, 2023). `fiscal_period` IS a supported parameter (FY, Q1, Q2, Q3, Q4, H1) — use it to select quarterly/annual periods directly. Batch ALL concepts × ALL years = 1 call, not N calls. Batch ALL concepts × ALL years = 1 call, not N calls.
 
 **XBRL dimensional disambiguation via `view` parameter **: `search_xbrl_facts` supports a `view` parameter that controls dimensional breakdown exposure. The same US-GAAP concept (e.g., `Revenues`) can be reported under multiple XBRL `explicitMember` dimensions (ProductOrServiceAxis, BusinessSegmentsAxis, GeographicalAxis) within a single filing — without the `view` parameter, consolidated totals and segment sub-totals are mixed, producing confusing results (e.g., GOOG revenue showing a consolidated total alongside separate Google Services and Google Cloud segment sub-totals).
 
@@ -88,13 +88,13 @@ Call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover the canonical US
 - **`view=detailed`** — returns all dimensional members including segment sub-totals. Each fact carries `dimension_axes` metadata showing which axes produced it (e.g., `{"ProductOrServiceAxis": "GoogleServicesMember", "BusinessSegmentsAxis": "GoogleCloudSegmentMember"}`). Use for programmatic segment analysis (revenue decomposition, geographic breakdown, product-line analysis).
 - **`view=summary`** — totals only, no dimensional rows at all. Narrowest possible result set — use for headline metrics only.
 
-The `is_primary` filter (existing, superseded) handles source-authority dedup (across 10-K/10-Q/8-K). The `view` parameter handles dimensional dedup (within a single filing's XBRL dimensions). Together they solve both dedup problems. When `view=detailed` is used, each fact's `dimension_axes` field carries the axis→member mapping so the agent knows exactly which segment produced each value.
+The `is_primary` filter handles source-authority dedup per namespace (across 10-K/20-F, 10-Q, 8-K/6-K — with the dual-namespace caveat above). The `view` parameter handles dimensional dedup (within a single filing's XBRL dimensions). Together they solve both dedup problems. When `view=detailed` is used, each fact's `dimension_axes` field carries the axis→member mapping so the agent knows exactly which segment produced each value.
 
 **You MUST skip step (a1) for these standard US-GAAP concepts — query them directly**: `Revenues`, `NetIncomeLoss`, `OperatingIncomeLoss`, `GrossProfit`, `Assets`, `Liabilities`, `Equity`, `OperatingCashFlow`, `ResearchAndDevelopment`, `SellingGeneralAndAdministrative`, `EarningsPerShareDiluted`, `EarningsPerShareBasic`. Only use `list_xbrl_concepts` for non-standard concepts (e.g., `RevenueFromContractWithCustomer`, `InterestIncomeExpenseNet`). Skills whose `allowed_tools` includes `search_xbrl_facts` MUST also include `list_xbrl_concepts`.
 
-**(a1.5) Statement structure navigation **: Before querying `search_xbrl_facts` for concepts, optionally call `get_statement_structure/{ticker}?statement_type=<income_statement|balance_sheet|cash_flow|equity|oci>&fiscal_year=<YYYY>` to retrieve the hierarchical XBRL presentation tree from `gold.xbrl_presentation` (3.8M rows across 165 tickers). The response includes:
+**(a1.5) Statement structure navigation **: Before querying `search_xbrl_facts` for concepts, optionally call `get_statement_structure(accession_number)` (resolve the accession_number via `search_sec_filings` first; statement types are income_statement | balance_sheet | cash_flow only) to retrieve the hierarchical XBRL presentation tree from `gold.xbrl_presentation` (~8M rows across 1,146 tickers). The response includes:
 - `tree`: parent-child concept hierarchy with `order_in_parent`, `preferred_label_role`, `statement_type`
-- `statement_type`: IncomeStatement, BalanceSheet, CashFlow, Equity, OCI
+- `statement_type`: IncomeStatement, BalanceSheet, CashFlow (Equity/OCI are not exposed)
 - `include_calculations` (optional flag): when `true`, returns `weight` (+1.0/-1.0) alongside each tree edge per `gold.xbrl_calculations`
 
 **Why use this**: The presentation tree shows the EXACT concepts the filer used and their hierarchical ordering — preventing concept-name hallucination where the agent guesses a concept name that doesn't exist in the filing. The tree is navigable: agents start at root concepts (`Revenues`, `OperatingExpenses`, `NetIncomeLoss`) → expand children to find the appropriate level of granularity (e.g., `Revenues` → `RevenueFromContractWithCustomer` → product/region dimension children).
@@ -136,17 +136,17 @@ Apply this protocol for ANY unstructured document search where the candidate doc
 
 Use `search_documents` / `search_sec_filings` / `list_sources` to identify candidate filings by ticker, form_type, and date range.
 
-- `search_documents` is the **single canonical Layer 1 entry point** . Production scale: 11,575 rows covering ALL 5 form types (8-K, 10-K, 10-Q, 6-K, 20-F) with 100% non-null `description`. Returns `citation_id`, `ticker`, `form_type`, `filing_date`, `secondary_labels`, `fiscal_period` — document-level metadata only, NO page descriptions (those live in `read_source_outline`).
+- `search_documents` is the **single canonical Layer 1 entry point** . Production scale: 11,575 SEC rows + 15,348 earnings call transcripts covering ALL 5 SEC form types (8-K, 10-K, 10-Q, 6-K, 20-F) and `earnings_call_transcript`. Returns `citation_id`, `ticker`, `form_type`, `filing_date`, `secondary_labels`, `fiscal_period` — document-level metadata only, NO page descriptions (those live in `read_source_outline`).
 - **`secondary_labels` filter **: `search_documents` supports `?secondary_label=` (single value, array-contains semantics) and `?secondary_labels=` (comma-separated, OR logic). The GIN-indexed text array on `pipeline.src_documents.secondary_labels` carries SEC Reg-FD item-number-suffixed slugs — this is the **PREFERRED narrowing axis BEFORE Layer 2** when the agent already knows the disclosure-type axis. Examples:
  - earnings-related 8-Ks → `?secondary_label=financial_results_2_02`
  - material-agreement 8-Ks → `?secondary_label=material_definitive_agreement_1_01`
  - regulation-FD disclosures → `?secondary_label=regulation_fd_disclosure_7_01`
  - results-of-operations 8-Ks → `?secondary_label=results_of_operations_8_01`
  - other-events 8-Ks → `?secondary_label=other_events_8_01`
-- `search_sec_filings`: filing metadata index for standardized SEC forms (10-K, 10-Q, 20-F, S-1, DEF 14A). Use ONLY for filing-metadata-only queries; for document discovery, prefer `search_documents`. **Always search both US and foreign form types**: annual/quarterly reports = `form_type=["10-K","10-Q","20-F"]`, material events = `form_type=["8-K","6-K"]`. Foreign filers use 20-F (annual, covers 10-K+10-Q) and 6-K (material events).
+- `search_sec_filings`: filing metadata index for standardized SEC forms (10-K, 10-Q, 20-F, S-1, DEF 14A). Use ONLY for filing-metadata-only queries; for document discovery, prefer `search_documents`. **Always search both US and foreign form types**: annual/quarterly reports = `form_type=["10-K","10-Q","20-F"]`, material events = `form_type=["8-K","6-K"]`, earnings calls = `form_type=["earnings_call_transcript"]` (pages carry section_type prepared_remarks/qa/closing as session_title; guidance/forward_looking/analyst_questions in labels). Foreign filers use 20-F (annual, covers 10-K+10-Q) and 6-K (material events).
 - `list_sources`: general listing of available document sources.
 
-**Citation-based addressing **: `search_documents` already returns `citation_id` (e.g., `sec135`) in every result row — agents pass `{ticker}/{citation_id}` directly to Layer 2 (`read_source_outline/{ticker}/{citation_id}`) and Layer 3 (`read_source_pages/{ticker}/{citation_id}?row_numbers=page1,page3`). UUID-based addressing is backward-compatible but deprecated for LLM context.
+**Citation-based addressing **: `search_documents` already returns `citation_id` (`sec135` for SEC filings, `ect83` for earnings call transcripts) in every result row — agents pass `{ticker}/{citation_id}` directly to Layer 2 (`read_source_outline/{ticker}/{citation_id}`) and Layer 3 (`read_source_pages/{ticker}/{citation_id}?pages=page1,page3`). UUID-based addressing is backward-compatible but deprecated for LLM context.
 
 ### Layer 2 — Page Map (Lightweight)
 
@@ -189,7 +189,7 @@ If `read_source_outline` yields >10 candidate pages for a single document (or th
 
 ### Layer 3 — Deep Read
 
-Use `read_source_pages/{ticker}/{citation_id}?row_numbers=page<N1>,page<N2>` to load full `page_content` for ONLY the pages identified in Layer 2 (and optionally filtered by Layer 2.5). Page identifiers MUST be in the `page<N>` format — bare integers are rejected. Each page_content includes:
+Use `read_source_pages/{ticker}/{citation_id}?pages=page<N1>,page<N2>` to load full `page_content` for ONLY the pages identified in Layer 2 (and optionally filtered by Layer 2.5). Page identifiers MUST be in the `page<N>` format — bare integers are rejected. Each page_content includes:
 - `[[Table{idx}]]` markers for traceability to the original SEC filing HTML table positions.
 - `[[Img]]` markers and `![image](...)` for embedded images.
 - Page boundary markers with UUID + page index for v1.0 citation resolution.

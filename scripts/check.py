@@ -417,7 +417,7 @@ FR011_TOOLS = {
     "get_stock_quote", "get_realtime_quote", "get_options_chain", "get_index_quotes",
     "search_stock_movers", "search_faers_events", "list_coverage",
     "get_ticker_coverage", "list_upcoming_earnings", "get_earnings_calendar_event",
-    "list_domains",
+    "list_domains", "search_unified",
     # Phase 24+ agentic-search surface (spec 019 FR-119 + batch primitive FR-051a)
     "read_source_deep_outline", "batch_search",
     # XBRL Part B statement/calculation surface (spec 019 P0)
@@ -439,14 +439,17 @@ KNOWLEDGE_CASE_TOOLS = {
     "search_technical_setups", "get_technical_setup",
     # cross-cutting analogue bridge (returns {cases, strategies} only — FR-032)
     "search_by_analogue",
+    # knowledge entries (K1-K8 analytical frameworks — spec 037)
+    "search_knowledge_entries", "get_knowledge_entry",
+    # knowledge graph traversal
+    "list_related_cases", "list_related_entries",
 }
 # Superseded by the spec-037 family above (spec 039 FR-034). Still accepted so the
 # 35 un-migrated skills keep passing, but every use is reported as a notice.
 # tasks.md T108 removes the last usage; T118 then promotes this to a hard error.
 DEPRECATED_KNOWLEDGE_TOOLS = {
-    "search_knowledge_entries": "search_investment_strategies",
-    "get_knowledge_entry": "get_investment_strategy",
-    "list_related_entries": "search_by_analogue",
+    # knowledge pipeline tools are now live in mcp.agentii.ai
+    # deprecated mappings removed 2026-08-01 — use actual tool names directly
 }
 KNOWLEDGE_CASE_TOOLS.update(DEPRECATED_KNOWLEDGE_TOOLS)
 CANONICAL_TOOLS.update(FR011_TOOLS)

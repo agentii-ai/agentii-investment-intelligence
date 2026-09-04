@@ -72,6 +72,8 @@ See frontmatter `allowed_tools`. `search_xbrl_facts` is the primary data source 
 
 Step-by-step execution detail is in `references/methodology.md`.
 
+**ROIC Analysis**: When computing Return on Invested Capital, apply the institutional-grade framework in `references/roic-methodology.md`. Use the four-variant approach (excluding/including goodwill × with/without intangible capitalization) appropriate to the analytical question, industry-specific capitalization rates per the academic framework, ROIIC over rolling 3-year periods, and DuPont decomposition to map ROIC to competitive strategy. Is the company passing the one dollar test?
+
 ### Ratio Definitions
 
 Full ratio formula definitions are in `references/methodology.md`.

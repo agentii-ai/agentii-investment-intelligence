@@ -6,7 +6,7 @@ description: >-
   across 5 verticals (equity-research-core, business-intelligence, industry-analysis,
   models-and-pitches, quantitative-analysis) powered by agentii.ai's agent-use-ready
   SEC filing data plane — 10 years of filings, XBRL financials, earnings calendars,
-  and company profiles for 165+ US-public-equity tickers. Features the three-layer
+  and company profiles for 1,146+ US-public-equity tickers. Features the three-layer
   retrieval protocol (Document Discovery → Page Map → Deep Read, with deep-outline
   escalation) for ~99% token efficiency, server-side parallel multi-period search via
   search_cross_period, and a full Excel/PPT generation pipeline with 3-tier office
@@ -34,7 +34,6 @@ tools:
   - get_company_financials
   - get_company_fiscal_calendar
   - get_earnings_calendar_event
-  - read_rendered_statement
   - get_statement
   - get_statement_structure
   - get_calculation_tree

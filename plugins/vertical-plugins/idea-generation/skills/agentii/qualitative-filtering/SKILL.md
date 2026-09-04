@@ -11,7 +11,10 @@ allowed_tools:
   - get_investment_strategy
   - search_investment_cases
   - search_by_analogue
-retrieval_scope: structured_only
+  - search_documents
+  - read_source_outline
+  - read_source_pages
+retrieval_scope: unstructured_document_search
 layer_tags: ["L2", "L3"]
 min_tool_diversity: 3
 parameter_free: false
@@ -36,16 +39,18 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 
 1. Qualitative methodology — `references/qual-methodology.md` (bundled MOP-KPI-Catalyst framework)
 2. Company disclosures — SEC filings (Business Description, Risk Factors, MD&A) via agentii MCP
-3. Earnings transcripts — defeatbeta-api via `~~earnings_data` placeholder
+3. Earnings transcripts — `search_documents(ticker={T}, form_type="earnings_call_transcript")` → `read_source_outline` → `read_source_pages` (citation prefix `ect<N>`; pages carry section_type in session_title and guidance/forward_looking/analyst_questions in labels)
 4. Strategy and case knowledge — `search_investment_strategies` + `search_investment_cases` + `search_by_analogue`
 
 ## Methodology
 
 ### Retrieval Scope
-structured_only
+unstructured_document_search (earnings call transcripts + SEC disclosures)
 
 ### Retrieval Strategy
-Branch (d) Simple Lookup from `contracts/retrieval.md`: the qualitative framework is bundled in `references/qual-methodology.md`. Earnings transcripts from data tools. Strategy frameworks and historical analogues via MCP knowledge tools. Detailed methodology and catalyst classification in `references/qual-methodology.md`.
+**Ownership & insider signals**: `search_institutional_holdings` (top-10 holders + whale portfolios, `direction=accumulating|reducing|new|exited`) and `search_insider_trades` (Form-4 transactions with SEC URLs) are available as signal inputs.
+
+Three-layer protocol from `contracts/retrieval.md`: the qualitative framework is bundled in `references/qual-methodology.md`. Earnings transcripts via `search_documents(form_type="earnings_call_transcript")` → `read_source_pages` (Layer 1→3). Strategy frameworks and historical analogues via MCP knowledge tools. Detailed methodology and catalyst classification in `references/qual-methodology.md`.
 
 ### Temporal Scope
 See frontmatter temporal_scope block.
@@ -103,7 +108,7 @@ Detailed methodology: management assessment framework (Alpha/Beta/Delta), board 
 
 | Error | Fallback |
 |-------|----------|
-| No earnings transcript available | Use SEC filings only; flag transcript gap |
+| `search_documents(form_type="earnings_call_transcript")` returns empty | Use SEC filings only; flag transcript gap |
 | No catalyst within 60-day window | Flag as watchlist item; do not force a catalyst |
 | `search_by_analogue` returns empty | Note "no relevant analogues found"; do not fabricate |
 

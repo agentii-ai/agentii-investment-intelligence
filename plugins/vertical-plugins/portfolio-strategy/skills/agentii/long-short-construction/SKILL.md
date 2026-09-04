@@ -48,6 +48,8 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 structured_only
 
 ### Retrieval Strategy
+**Ownership & insider signals**: `search_institutional_holdings` (top-10 holders + whale portfolios, `direction=accumulating|reducing|new|exited`) and `search_insider_trades` (Form-4 transactions with SEC URLs) are available as signal inputs.
+
 Branch (a) Structured Data Query from `contracts/retrieval.md`. Retrieve construction frameworks via `search_investment_strategies`; retrieve regime precedent via `search_by_analogue`. Detailed methodology in `references/construction-methodology.md`.
 
 ### Temporal Scope

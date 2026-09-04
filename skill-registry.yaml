@@ -180,9 +180,9 @@ skills:
 - skill_name: recent-quarter
   vertical: equity-research-core
   layer_tags:
-  - L1
+  - L2
   category_tags: []
-  retrieval_scope: structured_only
+  retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus: []
     domains:
@@ -307,7 +307,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  quality_score: null
+  quality_score: 6.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
@@ -317,7 +317,7 @@ skills:
   - L2
   - L3
   category_tags: []
-  retrieval_scope: structured_only
+  retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus: []
     domains:
@@ -331,7 +331,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  quality_score: null
+  quality_score: 6.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
@@ -354,7 +354,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  quality_score: null
+  quality_score: 6.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
@@ -379,7 +379,7 @@ skills:
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
-  quality_score_prev: null
+  quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []
 - skill_name: trade-template
@@ -402,7 +402,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  quality_score: null
+  quality_score: 6.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
@@ -535,7 +535,7 @@ skills:
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
-  quality_score_prev: null
+  quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []
 - skill_name: macro-regime
@@ -673,9 +673,9 @@ skills:
 - skill_name: earnings-preview
   vertical: models-and-pitches
   layer_tags:
-  - L1
+  - L2
   category_tags: []
-  retrieval_scope: structured_only
+  retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus: []
     domains:
@@ -846,7 +846,7 @@ skills:
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
-  quality_score_prev: null
+  quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []
 - skill_name: technical-execution
@@ -916,7 +916,7 @@ skills:
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
-  quality_score_prev: null
+  quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []
 - skill_name: long-short-equity
@@ -1120,7 +1120,7 @@ skills:
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
-  quality_score_prev: null
+  quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []
 - skill_name: chart-patterns
@@ -1139,9 +1139,9 @@ skills:
       market_regime: []
       event_type: []
       company_situation: []
-  has_knowledge_frameworks: false
+  has_knowledge_frameworks: true
   spec_037_references: 0
-  quality_score: null
+  quality_score: 8.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
@@ -1161,9 +1161,9 @@ skills:
       market_regime: []
       event_type: []
       company_situation: []
-  has_knowledge_frameworks: false
+  has_knowledge_frameworks: true
   spec_037_references: 0
-  quality_score: null
+  quality_score: 8.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
@@ -1183,10 +1183,10 @@ skills:
       market_regime: []
       event_type: []
       company_situation: []
-  has_knowledge_frameworks: false
+  has_knowledge_frameworks: true
   spec_037_references: 0
-  quality_score: 6.0
-  quality_score_prev: null
+  quality_score: 8.0
+  quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []
 - skill_name: trade-execution
@@ -1205,9 +1205,9 @@ skills:
       market_regime: []
       event_type: []
       company_situation: []
-  has_knowledge_frameworks: false
+  has_knowledge_frameworks: true
   spec_037_references: 0
-  quality_score: null
+  quality_score: 8.0
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
@@ -1230,6 +1230,6 @@ skills:
   has_knowledge_frameworks: false
   spec_037_references: 0
   quality_score: 6.0
-  quality_score_prev: null
+  quality_score_prev: 6.0
   last_enriched: null
   enrichment_workflows_applied: []

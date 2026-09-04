@@ -5,7 +5,7 @@ Extracted from SKILL.md for progressive disclosure (US5).
 ## Retrieval Strategy
 
 Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This skill uses:
-- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts. **Before querying XBRL facts, optionally call `get_statement_structure/{ticker}?statement_type=income_statement&fiscal_year=<YYYY>` to retrieve the exact line-item hierarchy from `gold.xbrl_presentation` (3.8M rows) — prevents concept-name hallucination and ensures accurate IS/BS/CF line-item ordering .**
+- Branch (a) for structured financial metrics via `search_xbrl_facts` with `list_xbrl_concepts` pre-condition for unfamiliar concepts. **Before querying XBRL facts, optionally call `get_statement_structure(accession_number)` to retrieve the exact line-item hierarchy from `gold.xbrl_presentation` (~8M rows) — prevents concept-name hallucination and ensures accurate IS/BS/CF line-item ordering .**
 - Branch (b) for multi-period unstructured queries via `search_cross_period`.
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.

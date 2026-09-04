@@ -19,8 +19,11 @@ allowed_tools:
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
 retrieval_scope: unstructured_document_search
-min_tool_diversity: 6
+min_tool_diversity: 8
 ---
 
 # sector-overview
@@ -72,7 +75,7 @@ Per frontmatter `allowed_tools`:
 - `search_unified` — used by this skill per the retrieval strategy
 - `read_source_outline` — Layer 2 lightweight page map (description + keywords)
 - `read_source_deep_outline` — Layer 2.5a deep page map (table_titles/drivers/metrics)
-- `list_xbrl_concepts` — US-GAAP concept discovery for non-standard line items
+- `list_xbrl_concepts` — XBRL concept discovery for non-standard line items (`namespace` param; default `us-gaap` — use `ifrs-full` for foreign filers)
 - `read_source_pages` — Layer 3 deep read of selected pages with table markers
 - `search_keyword_in_source` — Layer 2.5b keyword page filter for large documents
 
@@ -82,7 +85,7 @@ Per frontmatter `allowed_tools`:
 2. **Layer 1 — discovery**: `search_documents` / `search_sec_filings` to find candidate filings by ticker/form_type/date.
 3. **Layer 2 — page map**: `read_source_outline/{ticker}/{citation_id}`; skip NULL-description pages; escalate to `read_source_deep_outline` only when labels can't disambiguate.
 4. **Layer 2.5 (optional)**: `search_keyword_in_source` to narrow documents >50 pages.
-5. **Layer 3 — deep read**: `read_source_pages/{ticker}/{citation_id}?row_numbers=page<N>,...` for the 3–5 selected pages only.
+5. **Layer 3 — deep read**: `read_source_pages/{ticker}/{citation_id}?pages=page<N>,...` for the 3–5 selected pages only.
 6. **Multi-period** (if applicable): `search_cross_period` after fiscal-calendar resolution.
 7. **Output**: write the deliverable per `## Output File`, then append to `agentii.md`.
 

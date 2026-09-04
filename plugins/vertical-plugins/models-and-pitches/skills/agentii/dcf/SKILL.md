@@ -58,7 +58,7 @@ Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale across SEC filings (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
+This skill performs unstructured document search at scale across SEC filings and earnings call transcripts (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -90,9 +90,9 @@ Step-by-step execution detail is in `references/methodology.md`.
 
 1. **projection horizon**: ≥ 5 years (10 years for secular-trends analysis). *If failed*: If < 5 years: refuse delivery, report actual horizon.
 2. **terminal growth rate**: < risk-free rate proxy (current 10Y UST). *If failed*: If terminal_g ≥ rf: flag in assumptions section, note conservatism violation.
-3. **WACC components**: WACC = (E/V × Ke) + (D/V × Kd × (1-T) with all components cited to source data. *If failed*: If components uncited: refuse delivery, list missing citations.
+3. **WACC components**: WACC = (E/V × Ke) + (D/V × Kd × (1-T) with all components cited to source data. For risk-free rate selection, ERP triangulation, beta de-levering/re-levering, industry betas, and cost of debt estimation, consult `references/cost-of-capital-methodology.md`. *If failed*: If components uncited: refuse delivery, list missing citations.
 4. **hardcoded_count**: == 0 for all cells tagged projection|margin|discount_factor|pv|sensitivity per xlsx_audit output. *If failed*: If hardcoded_count > 0: per the hardcode gate, refuse delivery. Bounce back to analytical-subagent ONCE with audit report.
-5. **calculation arc cross-validation **: cross-statement balancing verified against `gold.xbrl_calculations` weights — the DCF free-cash-flow projection and income statement structure MUST align with the filer's reported concept hierarchy. Call `get_statement_structure/{ticker}?statement_type=income_statement&include_calculations=true`. Flag discrepancies ≥1% as audit findings. *If failed*: If material discrepancy (≥1%): flag in audit findings, refuse delivery for discrepancies ≥5%. Tool-diversity is also tracked here: distinct MCP tools used MUST be ≥ `min_tool_diversity` (5); below that, flag as depth-insufficient in Coverage Gaps (a quality signal, not a delivery blocker).
+5. **calculation arc cross-validation **: cross-statement balancing verified against `gold.xbrl_calculations` weights — the DCF free-cash-flow projection and income statement structure MUST align with the filer's reported concept hierarchy. Call `get_statement_structure(accession_number)` (resolve the accession_number first). Flag discrepancies ≥1% as audit findings. *If failed*: If material discrepancy (≥1%): flag in audit findings, refuse delivery for discrepancies ≥5%. Tool-diversity is also tracked here: distinct MCP tools used MUST be ≥ `min_tool_diversity` (5); below that, flag as depth-insufficient in Coverage Gaps (a quality signal, not a delivery blocker).
 
 ## Tool Fallbacks
 

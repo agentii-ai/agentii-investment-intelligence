@@ -63,7 +63,7 @@ Per frontmatter `allowed_tools`:
 - `get_company_financials` — consolidated IS/BS/CF highlights
 - `get_company_profile` — sector/industry classification + metadata
 - `search_earnings_calendar` — EPS actual/estimate/surprise + report dates
-- `list_xbrl_concepts` — US-GAAP concept discovery for non-standard line items
+- `list_xbrl_concepts` — XBRL concept discovery for non-standard line items (`namespace` param; default `us-gaap` — use `ifrs-full` for foreign filers)
 
 ### 5. Protocol
 

@@ -46,6 +46,8 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 structured_only
 
 ### Retrieval Strategy
+**Ownership & insider signals**: `search_institutional_holdings` (top-10 holders + whale portfolios, `direction=accumulating|reducing|new|exited`) and `search_insider_trades` (Form-4 transactions with SEC URLs) are available as signal inputs.
+
 This skill follows Branch (d) Simple Lookup from `contracts/retrieval.md`: query `search_investment_strategies` for fundamental analysis frameworks, `search_investment_cases` for historical case analogues, `search_by_analogue` for cross-strategy discovery. Delegates detailed analysis to sub-skills. No unstructured document retrieval.
 
 ### Temporal Scope

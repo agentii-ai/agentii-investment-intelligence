@@ -21,8 +21,13 @@ allowed_tools:
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
+ - search_investment_cases
+ - get_investment_case
 retrieval_scope: unstructured_document_search
-min_tool_diversity: 10
+min_tool_diversity: 12
 ---
 
 <!-- analog: sector-overview -->
@@ -60,7 +65,7 @@ Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
+This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings and earnings call transcripts spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -82,6 +87,8 @@ See frontmatter `allowed_tools`.
 ### Protocol
 
 This skill delivers analyst-grade output via 8 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
+
+**Industry Structure**: For the full moat assessment framework covering ROIC persistence by sector, Five Forces + Barriers integration, disruption analysis, and the 67-item Moat Checklist, consult `business-model/references/moat-methodology.md` — this skill uses the industry-level sections of that framework.
 
 ### Analyst Modes
 

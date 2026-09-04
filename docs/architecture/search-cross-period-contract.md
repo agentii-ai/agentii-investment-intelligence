@@ -11,7 +11,7 @@ Documents `search_cross_period` partial failure semantics, internal sub-batching
  "ticker": "LLY",
  "query": "analyze management commentary on revenue growth drivers",
  "fiscal_periods": ["2025Q1", "2025Q2", "2025Q3", "2025Q4", "FY2024", "FY2023"],
- "source_types": ["sec_8k", "sec_6k", "sec_filing"]
+ "source_types": ["sec_8k", "sec_6k", "sec_filing", "earnings_call_transcript"]
 }
 ```
 

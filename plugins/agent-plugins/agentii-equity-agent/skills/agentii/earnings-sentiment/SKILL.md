@@ -18,8 +18,11 @@ allowed_tools:
  - get_company_profile
  - list_xbrl_concepts
  - search_keyword_in_source
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
 retrieval_scope: unstructured_document_search
-min_tool_diversity: 8
+min_tool_diversity: 10
 ---
 
 <!-- analog: catalyst-calendar -->
@@ -57,9 +60,11 @@ Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
+This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings and earnings call transcripts spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
+**Ownership & insider signals**: `search_institutional_holdings` (top-10 holders + whale portfolios, `direction=accumulating|reducing|new|exited`) and `search_insider_trades` (Form-4 transactions with SEC URLs) are available as signal inputs.
+
 
 See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 

@@ -71,6 +71,8 @@ Per frontmatter `allowed_tools`:
 
 Step-by-step execution detail is in `references/methodology.md`.
 
+**Reverse DCF & PVGO**: When quantifying expectations embedded in the current stock price, apply the methodology in `references/reverse-dcf-methodology.md`. Solve for implied growth/WACC/margin assumptions, decompose enterprise value into Steady-State Value vs. PVGO, and apply the One Job expectations gap framework to structure the variant view. The Reverse DCF is an expectations diagnostic, not a valuation tool.
+
 ## Output File
 
 Write the final deliverable to `{ticker}/{YYYY-MM-DD_HHMM}_reverse-dcf_{affix}.md`.

@@ -10,7 +10,7 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 - Branch (c) for single-period document queries via direct `read_source_outline` → `read_source_pages`.
 - Branch (d) for simple lookups via `get_company_profile` / `search_earnings_calendar`.
 
-**Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=financial_results_2_02,regulation_fd_disclosure_7_01` to capture earnings-related 8-Ks AND Reg-FD guidance disclosures before Layer 2. For uncertainty context, also query `?secondary_label=other_events_8_01` for material-event 8-Ks that may signal sentiment shifts.
+**Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=financial_results_2_02,regulation_fd_disclosure_7_01` to capture earnings-related 8-Ks AND Reg-FD guidance disclosures before Layer 2. For uncertainty context, also query `?secondary_label=other_events_8_01` for material-event 8-Ks that may signal sentiment shifts. **Earnings call transcripts**: add `form_type=earnings_call_transcript` (citation prefix `ect<N>`) — pages carry `section_type` (prepared_remarks/qa/closing) as session_title and `sentiment`/`guidance`/`forward_looking`/`analyst_questions` in labels; Q&A pages are the highest-signal pages for management tone under pressure.
 
 ## Protocol
 

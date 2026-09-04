@@ -18,8 +18,11 @@ allowed_tools:
  - get_company_profile
  - list_xbrl_concepts
  - search_keyword_in_source
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
 retrieval_scope: unstructured_document_search
-min_tool_diversity: 8
+min_tool_diversity: 10
 ---
 
 <!-- analog: initiating-coverage -->
@@ -57,7 +60,7 @@ Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
+This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings and earnings call transcripts spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -74,6 +77,8 @@ See frontmatter `allowed_tools`.
 ### Protocol
 
 Step-by-step execution detail is in `references/methodology.md`.
+
+**TIER SHARE Workflow**: For structured valuation method selection and equity research workflow, apply the institutional consensus framework in `references/tier-methodology.md`. SHARE (Select→Historical→Adjust→Range→Evaluate) provides the method-selection logic matching business model to valuation approach. TIER (Target→Identify→Ensure→Review) is the standard equity research workflow, now CFA Institute Level II curriculum (2024).
 
 ### Analyst Modes
 

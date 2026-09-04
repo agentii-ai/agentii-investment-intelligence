@@ -57,18 +57,18 @@ Step-by-step numbered procedure (modeled on `himself65/finance-skills` pattern):
 The Neon production database and `api.agentii.ai` REST/MCP surfaces are LIVE and AUTHORITATIVE as of 2026-05-25. Every skill MUST treat the following as ground truth and call the pre-flight (`get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`) BEFORE any retrieval planning:
 
 - 4.17M `gold.xbrl_facts` (with `is_primary` partial index)
-- 11,575 `pipeline.src_documents` (100% non-null `description`, GIN-indexed `secondary_labels`)
-- 243K `pipeline.src_silver_pages` covering ALL 5 SEC form types (8-K/10-K/10-Q/6-K/20-F)
-- 4,653 `pipeline.earnings_calendar` rows
-- 79 `gold.launch_ticker_registry` tickers at 100% processing
+- 51,089 `pipeline.src_documents` (100% non-null `description`, GIN-indexed `secondary_labels`)
+- 1.34M `pipeline.src_silver_pages` covering ALL 5 SEC form types (8-K/10-K/10-Q/6-K/20-F) PLUS earnings call transcripts (`form_type=earnings_call_transcript`, citation prefix `ect<N>`)
+- 75,967 `pipeline.earnings_calendar` rows
+- 142 `gold.launch_ticker_registry` tickers at 100% processing
 
 Do NOT plan for missing data outside this scope without first calling the pre-flight.
 
 ## XBRL Retrieval
 
-`search_xbrl_facts` returns `source_authority` (integer 1–3: 3=10-K, 2=10-Q, 1=8-K) and `is_primary` (boolean) on every row.
+`search_xbrl_facts` returns `source_authority` (integer 0–3: 3=10-K/20-F, 2=10-Q, 1=8-K/6-K) and `is_primary` (boolean, partitioned per namespace) on every row.
 
-- The API defaults to `WHERE is_primary = true` via the `idx_xf_primary` partial index — duplicates across multiple SEC disclosures are hidden by default.
+- The API defaults to `WHERE is_primary = true` — dedup is per (ticker, namespace, concept, period). Dual-filers can have a primary per namespace (us-gaap / ifrs-full); pass `namespace` explicitly.
 - Skills MAY surface `source_authority` in deliverables for fact-provenance transparency.
 - Skills MUST NOT re-implement client-side dedup logic — this is now an API-side concern.
 - The `?include_all_sources=true` flag is reserved for audit-xls and reconciliation workflows; do NOT pass it from analytical skills.

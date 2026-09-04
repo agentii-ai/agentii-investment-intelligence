@@ -4,8 +4,8 @@ Extracted from SKILL.md for progressive disclosure (US5).
 
 ## Retrieval Strategy
 
-1. **Fetch statement structure**: call `get_statement_structure/{ticker}?statement_type=<type>&fiscal_year=<YYYY>&include_calculations=true` to retrieve the hierarchical concept tree from `gold.xbrl_presentation` (3.8M rows) with `order_in_parent` and calculation arc weights .
-2. **Fetch rendered statement**: call `get_statement/{ticker}?statement_type=<type>&fiscal_year=<YYYY>` for the period-column-formatted financial data.
+1. **Fetch statement structure**: call `get_statement_structure(accession_number)` to retrieve the hierarchical concept tree from `gold.xbrl_presentation` (~8M rows) with `order_in_parent` and calculation arc weights .
+2. **Fetch rendered statement**: call `get_statement(accession_number, type=<type>, format=<full|markdown|structured>)` for the period-column-formatted financial data.
 3. **Structure for Excel**: map the hierarchical concept tree to Excel rows with proper indentation levels, parent-child grouping, and subtotal rows.
 4. **Build workbook**: write a Python script using `openpyxl` (following Anthropic FSI xlsx-author conventions) and execute via Bash.
 

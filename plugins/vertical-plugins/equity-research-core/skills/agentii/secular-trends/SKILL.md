@@ -19,8 +19,11 @@ allowed_tools:
  - list_xbrl_concepts
  - read_source_pages
  - search_keyword_in_source
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
 retrieval_scope: unstructured_document_search
-min_tool_diversity: 10
+min_tool_diversity: 12
 ---
 
 <!-- analog: idea-generation -->
@@ -58,7 +61,7 @@ Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
+This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filings and earnings call transcripts spanning multiple fiscal periods). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 

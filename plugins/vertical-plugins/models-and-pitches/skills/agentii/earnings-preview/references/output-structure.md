@@ -7,7 +7,7 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 3. **Slide 3 — Consensus Estimates**: Table with consensus/high/low for Revenue, EPS, EBITDA; YoY comparison; estimate count (from `search_earnings_calendar`)
 4. **Slide 4 — Historical Surprises**: Table of last 4 quarters: estimate vs actual, surprise %, direction (from `search_earnings_calendar` + `search_xbrl_facts`)
 5. **Slide 5 — Peer Comparison**: Peer table with ticker, EV/EBITDA, P/E, Revenue growth (from `search_companies` + `search_xbrl_facts`)
-6. **Slide 6 — Catalysts & Outlook**: Forward catalysts from earnings transcript, upcoming events, guidance summary (from `search_earnings_calendar`)
+6. **Slide 6 — Catalysts & Outlook**: Forward catalysts from the latest earnings call transcript (`search_documents(form_type="earnings_call_transcript")` → `read_source_pages` on the guidance/forward-looking pages), upcoming events, guidance summary (from `search_earnings_calendar`)
 
 Slide 6 is optional (4–6 range). If peer data or catalyst data is unavailable, merge into fewer slides.
 

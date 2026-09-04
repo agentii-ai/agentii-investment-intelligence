@@ -81,7 +81,7 @@ Per frontmatter `allowed_tools`:
 
 ## Validation Gates
 
-1. **calculation arc cross-validation **: workbook computed totals verified against `gold.xbrl_calculations` weights. Compare `get_calculation_tree/{ticker}` expected values against workbook formulas. Flag discrepancies ≥1% of parent concept value. *If failed*: If material discrepancy (≥5%): refuse delivery. If minor (1-5%): flag in audit findings with `severity: warning`.
+1. **calculation arc cross-validation **: workbook computed totals verified against `gold.xbrl_calculations` weights. Compare `get_calculation_tree(accession_number)` expected values against workbook formulas. Flag discrepancies ≥1% of parent concept value. *If failed*: If material discrepancy (≥5%): refuse delivery. If minor (1-5%): flag in audit findings with `severity: warning`.
 2. **hardcoded cell detection**: zero hardcoded values in cells tagged as formulas. Use `xlsx_audit` hardcoded-count output. *If failed*: If hardcoded_count > 0: refuse delivery with audit report listing each hardcoded cell location.
 3. **cross-sheet reference integrity**: all cross-sheet references resolve to valid cell ranges. *If failed*: If broken references found: refuse delivery with broken reference map.
 4. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (3). *If failed*: flag as depth-insufficient in Coverage Gaps.

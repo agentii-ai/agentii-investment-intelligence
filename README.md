@@ -7,7 +7,7 @@
 <p align="center">
   <strong>The financial data layer for AI agents.</strong><br>
   Open-source alternative to FactSet / Daloopa / S&P Global for AI agents.<br>
-  165+ US equities with full SEC filing history. 48 Claude-type skills. 20+ MCP tools.<br>
+  1,146+ US equities with full SEC filing history. 48 Claude-type skills. 20+ MCP tools.<br>
   One API key. Zero infrastructure. Single entrance: <code>/agentii:skill-name</code>.
 </p>
 
@@ -24,7 +24,7 @@
 
 Wall Street pays $30K+/seat/year for FactSet, Bloomberg, and S&P Global. Those platforms were built for humans clicking through terminals. AI agents need **agent-use-ready data** — structured, citation-backed, page-addressable, API-delivered.
 
-agentii.ai ingests every SEC filing (10-K, 10-Q, 8-K, 20-F, 6-K) into a Neon PostgreSQL data plane with 4.17M XBRL facts, 15K+ source documents, and 243K+ parsed pages. A single `agentii` MCP server at `mcp.agentii.ai` exposes 30+ tools that Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork consume natively.
+agentii.ai ingests every SEC filing (10-K, 10-Q, 8-K, 20-F, 6-K) and 15K+ earnings call transcripts (2022+) into a Neon PostgreSQL data plane with 15.99M XBRL facts, 51K+ source documents, and 1.34M+ parsed pages. A single `agentii` MCP server at `mcp.agentii.ai` exposes 30+ tools (incl. institutional ownership + insider activity) that Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork consume natively.
 
 This repository mirrors [`anthropics/financial-services`](https://github.com/anthropics/financial-services) — marketplace plugin system, vertical skill decomposition, agent-plugin bundling. The difference: all skills point at a **single `agentii` MCP server** backed by agentii.ai's own data plane. There is no second MCP — office output uses the same **code-mode** approach (Python + LibreOffice, invoked via `Bash`) that Anthropic's package uses.
 
@@ -259,7 +259,7 @@ Skills that search unstructured documents at scale follow a mandatory protocol c
 
 ## Coverage
 
-**165+ US public companies** across med + tech sectors (launch cohort), with full SEC filing history from 2022 onward (10-K, 10-Q, 8-K, 20-F, 6-K). Every data point carries a clickable citation watermark linking to the original filing page.
+**1,146+ US public companies** across med + tech + industrial + fin + consumer sectors, with full SEC filing history from 2022 onward (10-K, 10-Q, 8-K, 20-F, 6-K) and earnings call transcripts (2022+). Every data point carries a clickable citation watermark linking to the original filing page.
 
 | Sector | Example Tickers |
 |--------|-----------------|
@@ -270,7 +270,7 @@ Skills that search unstructured documents at scale follow a mandatory protocol c
 | Industrials / Energy / Materials | GE, CAT, XOM, BA, RTX, LMT |
 | Communication / Media | META, GOOG, NFLX, DIS, T, VZ |
 
-**Data volume**: 4.17M XBRL facts, 15K+ source documents, 243K+ parsed silver pages. XBRL facts updated daily via Dagster pipeline. SEC filings indexed within hours of EDGAR publication. [Full coverage →](https://agentii.ai/coverage) | [Request a ticker →](https://agentii.ai/request-data)
+**Data volume**: 15.99M XBRL facts, 51K+ source documents (SEC filings + earnings call transcripts), 1.34M+ parsed silver pages. XBRL facts updated daily via Dagster pipeline. SEC filings indexed within hours of EDGAR publication. [Full coverage →](https://agentii.ai/coverage) | [Request a ticker →](https://agentii.ai/request-data)
 
 Skills surface a `data_freshness` warning for tickers with < 100% coverage and refuse to fabricate data outside the launch cohort.
 

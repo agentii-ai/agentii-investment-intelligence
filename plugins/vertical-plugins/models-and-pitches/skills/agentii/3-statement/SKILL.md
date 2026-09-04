@@ -58,7 +58,7 @@ Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii
 
 ### Retrieval Scope
 
-This skill performs unstructured document search at scale across SEC filings (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
+This skill performs unstructured document search at scale across SEC filings and earnings call transcripts (10-K, 10-Q, 8-K). The three-layer agent-use-ready retrieval protocol (Document Discovery → Page Map → Deep Read) applies to all unstructured document search at scale.
 
 ### Retrieval Strategy
 
@@ -91,7 +91,7 @@ Step-by-step execution detail is in `references/methodology.md`.
 1. **balance sheet balance**: Assets = Liabilities + Equity within 1% tolerance. *If failed*: If unbalanced > 1%: refuse delivery, report imbalance amount.
 2. **cash flow tie-out**: CF ending cash = BS cash for current period. *If failed*: If mismatched: refuse delivery, report discrepancy.
 3. **forecast years**: exactly 5 historical + 5 forecast years. *If failed*: If < 5+5: flag in Coverage Gaps, proceed with available data.
-4. **calculation arc cross-validation **: cross-statement balancing verified against `gold.xbrl_calculations` weights — each parent concept's value equals the weighted sum of its children per the XBRL calculation linkbase (e.g., `Assets = +1.0 × CurrentAssets + 1.0 × NoncurrentAssets`, `NetIncomeLoss = +1.0 × Revenues - 1.0 × OperatingExpenses + ...`). Call `get_statement_structure/{ticker}?statement_type=<type>&include_calculations=true` to retrieve the weighted parent-child relationships. Flag discrepancies ≥1% of parent concept value as audit findings. *If failed*: If any material discrepancy (≥1% of parent value): flag in audit findings, refuse delivery for discrepancies ≥5%.
+4. **calculation arc cross-validation **: cross-statement balancing verified against `gold.xbrl_calculations` weights — each parent concept's value equals the weighted sum of its children per the XBRL calculation linkbase (e.g., `Assets = +1.0 × CurrentAssets + 1.0 × NoncurrentAssets`, `NetIncomeLoss = +1.0 × Revenues - 1.0 × OperatingExpenses + ...`). Call `get_statement_structure(accession_number)` (resolve the accession_number first via `search_sec_filings`) to retrieve the weighted parent-child relationships. Flag discrepancies ≥1% of parent concept value as audit findings. *If failed*: If any material discrepancy (≥1% of parent value): flag in audit findings, refuse delivery for discrepancies ≥5%.
 
 5. **tool diversity**: distinct MCP tools used in this invocation >= `min_tool_diversity` (5). *If failed*: flag as depth-insufficient in Coverage Gaps, listing which tool categories were unused (structured data / document retrieval / company metadata / earnings calendar / coverage). This gate does NOT block analysis completion — it is a quality signal for your review.
 

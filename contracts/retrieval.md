@@ -27,9 +27,11 @@ consolidate into one `batch_search` (≤8 sub-queries). Fall back to sequential 
 `PROXY_ERROR`.
 
 - **Branch (a) — Structured data** (Revenue, EPS, EBITDA, margins, BS/CF line
-  items): use `search_xbrl_facts`. `is_primary = true` is the default (dedup
-  across 8-K/10-Q/10-K); pass `?include_all_sources=true` only for audit-grade
-  reconciliation. Use the `view` parameter for dimensional control:
+  items): use `search_xbrl_facts`. `is_primary = true` is the default (dedup per
+  namespace — dual-filers can have a primary per namespace, so pass
+  `namespace=us-gaap` for US filers or `namespace=ifrs-full` for foreign);
+  pass `?include_all_sources=true` only for audit-grade reconciliation.
+  Use the `view` parameter for dimensional control:
   `view=standard` (default, consolidated totals), `view=detailed` (segment /
   product / geography members with `dimension_axes`), `view=summary` (totals
   only). Discover non-standard concepts via `list_xbrl_concepts`; standard
@@ -55,8 +57,13 @@ answer pages are not known in advance.
   returns `citation_id`, `ticker`, `form_type`, `filing_date`, `secondary_labels`)
   / `search_sec_filings` (filing-metadata only) / `list_sources`. Always search
   both US and foreign forms: annual/quarterly = `form_type=["10-K","10-Q","20-F"]`,
-  material events = `form_type=["8-K","6-K"]`. Narrow with `?secondary_label=` when
-  the disclosure-type axis is known.
+  material events = `form_type=["8-K","6-K"]`, earnings calls =
+  `form_type=["earnings_call_transcript"]` (citation prefix `ect<N>`; pages carry
+  `section_type` prepared_remarks/qa/closing as session_title and guidance/
+  forward_looking/analyst_questions in labels). Ownership signals: `search_institutional_holdings`
+  (top-10 holders + whale portfolios per ticker, `direction=accumulating|reducing|new|exited`) and
+  `search_insider_trades` (Form-4 officer/director/10% owner transactions with SEC filing URLs).
+  Narrow with `?secondary_label=` when the disclosure-type axis is known.
 - **Layer 2 — Page map**: `read_source_outline/{ticker}/{citation_id}` returns
   per-page `description` + `keywords` without `page_content` (~5K tokens for a
   200-page filing). NULL `description` = not financially relevant — skip, never
@@ -64,7 +71,7 @@ answer pages are not known in advance.
   `metrics`, `views`) only when lightweight labels can't disambiguate (~5% of
   filings; `unstructured_document_search` scope only). Optional
   `search_keyword_in_source` narrows >10-page candidate sets.
-- **Layer 3 — Deep read**: `read_source_pages/{ticker}/{citation_id}?row_numbers=page<N1>,page<N2>`
+- **Layer 3 — Deep read**: `read_source_pages/{ticker}/{citation_id}?pages=page<N1>,page<N2>`
   loads `page_content` for ONLY the Layer-2-selected pages. Page identifiers MUST
   use the `page<N>` format — bare integers are rejected.
 

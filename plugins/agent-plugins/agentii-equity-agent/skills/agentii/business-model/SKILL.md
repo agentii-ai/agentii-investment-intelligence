@@ -22,8 +22,11 @@ allowed_tools:
  - list_xbrl_concepts
  - search_cross_period
  - batch_search
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
 retrieval_scope: unstructured_document_search
-min_tool_diversity: 7
+min_tool_diversity: 9
 ---
 
 <!-- analog: equity-research-core/business-model -->
@@ -73,7 +76,7 @@ Production data-plane grounding (scale, locators) is in `references/methodology.
 
 ### 1. Retrieval Scope
 
-This skill performs **unstructured document search at scale** (10-K, 10-Q, 8-K filings). The three-layer agent-use-ready retrieval protocol applies (Layer 1 → Layer 2 → Layer 3). For foreign issuers, use 20-F (annual) and 6-K (material events) instead of 10-K and 8-K respectively.
+This skill performs **unstructured document search at scale** (10-K, 10-Q, 8-K filings and earnings call transcripts). The three-layer agent-use-ready retrieval protocol applies (Layer 1 → Layer 2 → Layer 3). For foreign issuers, use 20-F (annual) and 6-K (material events) instead of 10-K and 8-K respectively.
 
 ### 2. Retrieval Strategy
 
@@ -96,6 +99,8 @@ See frontmatter `allowed_tools`.
 ### 5. Protocol
 
 Step-by-step execution detail is in `references/methodology.md`.
+
+**Moat Assessment**: When evaluating competitive advantage durability, apply the Sustainable Value Creation framework in `references/moat-methodology.md`. Quantify the ROIC−WACC spread magnitude, calibrate sustainability using sector-level ROIC autocorrelation data (Consumer Staples r=0.46 → Energy r=0.15), classify industry structure (Fragmented/Oligopoly/Dominant/Network/Commodity), and apply the 67-item Moat Checklist. High current ROIC in a rapid-mean-reversion industry is not a moat.
 
 ## Modes (5 — structural equity analysis)
 

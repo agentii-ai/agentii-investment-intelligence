@@ -13,8 +13,11 @@ allowed_tools:
  - get_company_financials
  - get_company_profile
  - list_xbrl_concepts
+ - search_documents
+ - read_source_outline
+ - read_source_pages
  - Bash
-retrieval_scope: structured_only
+retrieval_scope: unstructured_document_search
 min_tool_diversity: 5
 ---
 
@@ -64,7 +67,7 @@ Include the `X-Agentii-Trace` header on every tool call per
 
 ### Retrieval Scope
 
-This skill performs structured data retrieval (earnings calendar, XBRL facts, company profile) with simple lookups — no unstructured document search. `retrieval_scope: structured_only` applies. See references/formula-sheet.md for presentation structure guidelines.
+This skill performs structured data retrieval (earnings calendar, XBRL facts, company profile) plus earnings call transcript document search (`search_documents(form_type="earnings_call_transcript")` → `read_source_outline` → `read_source_pages`) for forward-looking catalyst and guidance context. See references/formula-sheet.md for presentation structure guidelines.
 
 ### Retrieval Strategy
 

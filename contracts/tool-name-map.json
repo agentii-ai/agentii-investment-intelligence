@@ -18,7 +18,7 @@
     "search_filings": "search_sec_filings",
     "get_xbrl_concept_value": "search_xbrl_facts",
     "list_available_xbrl_concepts": "list_xbrl_concepts",
-    "get_rendered_statement": "read_rendered_statement",
+    "get_rendered_statement": "get_statement",
     "get_earnings_calendar": "search_earnings_calendar",
     "get_upcoming_earnings": "list_upcoming_earnings",
     "get_fiscal_calendar": "get_company_fiscal_calendar",
@@ -49,7 +49,7 @@
     "office.refresh_presentation": "pptx.refresh"
   },
   "citation_rewrite_rules": {
-    "_comment": "Regex-based rewrites to convert upstream citation formats to the FR-050 v1.0 frozen format: [\ud83d\udcc4 <ticker> <form> p.<page>](agentii://source/<uuid>?accession=<accession>&page=<page>). The canonical format is validated by scripts/validate-citations.py.",
+    "_comment": "Regex-based rewrites to convert upstream citation formats to the FR-050 v1.0 frozen format: [📄 <ticker> <form> p.<page>](agentii://source/<uuid>?accession=<accession>&page=<page>). The canonical format is validated by scripts/validate-citations.py.",
     "canonical_regex": "\\[\\ud83d\\udcc4 [^\\]]+ p\\.\\d+\\]\\(agentii://source/[a-f0-9-]+\\?accession=[\\d-]+&page=\\d+\\)",
     "rules": [
       {
@@ -79,13 +79,15 @@
   },
   "mcp_tool_descriptions": {
     "_comment": "Protocol-sequence position guidance for the critical-path three-layer tools per spec 023 FR-059a. Consumed by spec 019 MCP tools/list generation (FR-119). Descriptions use explicit 'AFTER X, BEFORE Y' language so agents discover the correct call sequence via tools/list without reading external documentation. The two-tier outline is exposed as TWO separate tools (read_source_outline + read_source_deep_outline) per spec 019 FR-119 — NOT as an include_deep_labels parameter.",
-    "search_documents": "Layer 1 document discovery. Use FIRST before any page-level operation to identify candidate filings by ticker, form_type, date range. Returns page-based silver records with pre-computed labels for 8-K/6-K filings.",
+    "search_documents": "Layer 1 document discovery. Use FIRST before any page-level operation to identify candidate filings by ticker, form_type, date range. Covers SEC filings (10-K/10-Q/8-K/6-K/20-F) and earnings call transcripts (form_type=earnings_call_transcript, citation prefix ect<N>). Returns page-based silver records with pre-computed labels.",
     "search_sec_filings": "Layer 1 filing metadata index for standardized SEC forms (10-K, 10-Q, 20-F, S-1, DEF 14A). Use to discover which filings exist for a ticker and fiscal period before content retrieval.",
-    "read_source_outline": "Layer 2 page map (lightweight). Use AFTER document discovery (search_documents/search_sec_filings) and BEFORE read_source_pages. Returns ALL pages' description + keywords WITHOUT loading page_content \u2014 scan hundreds of pages' metadata to pinpoint the 3-5 relevant pages. For deeper labels (table_titles, views, drivers, metrics), escalate to the separate read_source_deep_outline tool.",
-    "read_source_deep_outline": "Layer 2.5a page map (deep). Use AFTER read_source_outline ONLY when lightweight description + keywords cannot disambiguate similar-looking pages. Returns the same base map plus table_titles, drivers, metrics, views from LLM labels. Heavier context (~15K tokens for 200 pages, ~3x lightweight) \u2014 use sparingly (~5% of filings). Eligible only for retrieval_scope: unstructured_document_search skills.",
+    "read_source_outline": "Layer 2 page map (lightweight). Use AFTER document discovery (search_documents/search_sec_filings) and BEFORE read_source_pages. Returns ALL pages' description + keywords WITHOUT loading page_content — scan hundreds of pages' metadata to pinpoint the 3-5 relevant pages. For deeper labels (table_titles, views, drivers, metrics), escalate to the separate read_source_deep_outline tool.",
+    "read_source_deep_outline": "Layer 2.5a page map (deep). Use AFTER read_source_outline ONLY when lightweight description + keywords cannot disambiguate similar-looking pages. Returns the same base map plus table_titles, drivers, metrics, views from LLM labels. Heavier context (~15K tokens for 200 pages, ~3x lightweight) — use sparingly (~5% of filings). Eligible only for retrieval_scope: unstructured_document_search skills.",
     "search_keyword_in_source": "Layer 2.5b optional keyword filter. Use AFTER read_source_outline and BEFORE read_source_pages to keyword-filter pages within a known document. Best for narrowing large documents (>50 pages) where the outline returns >10 candidate pages.",
     "read_source_pages": "Layer 3 deep read. Use AFTER read_source_outline (and optionally read_source_deep_outline / search_keyword_in_source) to load full page_content with [[Table{idx}]] markers for ONLY the pages identified in prior layers. Each page carries a citation_id (UUID+page_index) for FR-050 citation traceability.",
-    "search_cross_period": "Wraps the full three-layer protocol (Layer 1\u21922\u21922.5\u21923) in parallel across fiscal periods. Use AFTER get_company_fiscal_calendar to resolve period format labels. Each period's sub-agent independently executes the three-layer protocol against its assigned period's documents. Results merged by fiscal_quarter tag.",
+    "search_cross_period": "Wraps the full three-layer protocol (Layer 1→2→2.5→3) in parallel across fiscal periods. Use AFTER get_company_fiscal_calendar to resolve period format labels. Each period's sub-agent independently executes the three-layer protocol against its assigned period's documents. Results merged by fiscal_quarter tag.",
     "batch_search": "Multi-query consolidation primitive (spec 019 US7 / FR-051a). Use when issuing 3+ independent queries of the SAME tool type (e.g., search_xbrl_facts across 5 tickers, or search_documents across 5 form types). Batch up to 8 sub-queries per call; each successful sub-query is metered 1 credit. For multi-PERIOD parallel search use search_cross_period instead."
-  }
+  },
+  "search_institutional_holdings": "search_institutional_holdings",
+  "search_insider_trades": "search_insider_trades"
 }

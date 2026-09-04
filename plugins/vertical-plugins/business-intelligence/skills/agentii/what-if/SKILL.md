@@ -13,8 +13,11 @@ allowed_tools:
  - search_earnings_calendar
  - get_company_profile
  - list_xbrl_concepts
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
 retrieval_scope: structured_only
-min_tool_diversity: 6
+min_tool_diversity: 8
 ---
 
 # what-if
@@ -62,7 +65,7 @@ Per frontmatter `allowed_tools`:
 - `get_company_financials` — consolidated IS/BS/CF highlights
 - `search_earnings_calendar` — EPS actual/estimate/surprise + report dates
 - `get_company_profile` — sector/industry classification + metadata
-- `list_xbrl_concepts` — US-GAAP concept discovery for non-standard line items
+- `list_xbrl_concepts` — XBRL concept discovery for non-standard line items (`namespace` param; default `us-gaap` — use `ifrs-full` for foreign filers)
 
 ### 5. Protocol
 

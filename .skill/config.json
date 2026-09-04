@@ -9,10 +9,7 @@
     "search_documents",
     "get_company_profile",
     "list_coverage",
-    "read_source_outline",
-    "read_source_pages",
-    "search_keyword_in_source",
-    "search_unified"
+    "agentii_health"
   ],
   "env": {
     "AGENTII_API_KEY": {

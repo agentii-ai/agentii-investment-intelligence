@@ -1,5 +1,5 @@
 {
-  "_doc": "agentii data-plane MCP server. Replicated byte-identically across all 4 verticals per FR-010 / Round 4 Q15 from contracts/mcp-canonical.json. Host CLIs dedupe by 'name'. The MCP wraps the spec-019 Hono REST API at agentii-ai/apps/api/src/routes/, which itself queries Neon-hosted spec-022 schemas: gold.companies (165-ticker registry), gold.canonical_entities, gold.entity_aliases, gold.xbrl_facts, gold.rendered_statements, pipeline.sec_filings, pipeline.src_documents, pipeline.src_silver_pages, pipeline.earnings_calendar, knowledge.* (entity/domain/block surfaces). MCP tool names match spec-019 endpoint names per FR-011.",
+  "_doc": "agentii data-plane MCP server. The `agentii` server entry is canonical-enforced against contracts/mcp-canonical.json (scripts/check.py Check 13); `_tool_inventory` and prose are per-vertical and may vary. Host CLIs dedupe by 'name'. The MCP wraps the spec-019 Hono REST API at agentii-ai/apps/api/src/routes/, which itself queries Neon-hosted spec-022 schemas: gold.companies (1,146-ticker registry), gold.canonical_entities, gold.entity_aliases, gold.xbrl_facts, gold.rendered_statements, pipeline.sec_filings, pipeline.src_documents, pipeline.src_silver_pages, pipeline.earnings_calendar, knowledge.* (entity/domain/block surfaces). MCP tool names match spec-019 endpoint names per FR-011.",
   "_tool_inventory": {
     "_comment": "All P0 tools from spec 023 FR-011 exposed as MCP tools. Each tool name == HTTP path under /v1/.",
     "companies": [
@@ -15,7 +15,7 @@
       "search_xbrl_facts",
       "get_xbrl_fact",
       "get_company_financials",
-      "read_rendered_statement"
+      "get_statement"
     ],
     "earnings-calendar": [
       "search_earnings_calendar",

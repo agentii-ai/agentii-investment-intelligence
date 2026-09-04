@@ -16,8 +16,14 @@ allowed_tools:
  - get_ticker_coverage
  - list_xbrl_concepts
  - batch_search
-retrieval_scope: structured_only
-min_tool_diversity: 6
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
+ - search_documents
+ - read_source_outline
+ - read_source_pages
+retrieval_scope: unstructured_document_search
+min_tool_diversity: 8
 ---
 
 # Recent Quarter Performance
@@ -51,7 +57,7 @@ Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii
 
 ### 1. Retrieval Scope
 
-This skill performs **structured data retrieval only** (XBRL facts + earnings calendar). No unstructured document search — business-model structural analysis is handled by `/agentii:business-model` . This skill is TEMPORAL/QUANTITATIVE .
+This skill performs **structured data retrieval** (XBRL facts + earnings calendar) plus earnings call transcript document search (`search_documents(form_type="earnings_call_transcript")` → `read_source_pages`) to cross-reference management's call commentary against the reported quarter. Business-model structural analysis is handled by `/agentii:business-model` . This skill is TEMPORAL/QUANTITATIVE .
 
 ### 2. Retrieval Strategy
 
@@ -66,7 +72,7 @@ Default: 1 fiscal quarter (max 4). This skill is a temporal snapshot of the most
 
 ### 4. Tool Allowlist
 
-See frontmatter `allowed_tools`. This skill is `structured_only` (temporal/quantitative only). `search_xbrl_facts` is the primary data source for consolidated P&L metrics. `search_earnings_calendar` provides EPS actuals, estimates, and surprise data. `get_company_fiscal_calendar` resolves fiscal period orientation. Document search and structural analysis belong to `/agentii:business-model` .
+See frontmatter `allowed_tools`. `search_xbrl_facts` is the primary data source for consolidated P&L metrics; `search_earnings_calendar` provides EPS actuals, estimates, and surprise data; `get_company_fiscal_calendar` resolves fiscal period orientation; `search_documents(form_type="earnings_call_transcript")` + `read_source_pages` cross-reference management commentary. Deep structural analysis belongs to `/agentii:business-model` .
 
 ### 5. Protocol
 
@@ -122,3 +128,5 @@ End the closing chat reply with a compact **Key Citations** list (headline 5–1
 | Missing data | Data API returns empty result set | Widen date range and retry once | "No data available for {ticker} in requested window." |
 | Partial data | Data API returns <80% expected records | Proceed with coverage gaps section | "Analysis based on partial data; see Coverage Gaps section." |
 | MCP unreachable | Preflight probe fails | Halt with actionable error | "agentii data plane unreachable; check connection." |
+
+**Ownership & insider signals**: `search_institutional_holdings` (top-10 holders + whale portfolios, `direction=accumulating|reducing|new|exited`) and `search_insider_trades` (Form-4 transactions with SEC URLs) are available as signal inputs.

@@ -12,8 +12,11 @@ allowed_tools:
  - get_company_financials
  - get_company_profile
  - list_xbrl_concepts
+ - search_knowledge_entries
+ - get_knowledge_entry
+ - search_by_analogue
 retrieval_scope: structured_only
-min_tool_diversity: 7
+min_tool_diversity: 9
 ---
 
 # operational-kpi
@@ -60,7 +63,7 @@ Per frontmatter `allowed_tools`:
 - `search_xbrl_facts` — primary structured financial facts (is_primary default)
 - `get_company_financials` — consolidated IS/BS/CF highlights
 - `get_company_profile` — sector/industry classification + metadata
-- `list_xbrl_concepts` — US-GAAP concept discovery for non-standard line items
+- `list_xbrl_concepts` — XBRL concept discovery for non-standard line items (`namespace` param; default `us-gaap` — use `ifrs-full` for foreign filers)
 
 ### 5. Protocol
 

@@ -13,7 +13,7 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` .
 2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","Assets","Liabilities","Equity","OperatingCashFlow","InventoryNet","ReceivablesNet","CurrentAssets","CurrentLiabilities","InterestExpense","LongTermDebt"], fiscal_year=[latest, latest-1, latest-2, latest-3])` — batch all concepts × 4 years.
 3. **Price data**: `get_realtime_quote(ticker)` for current stock price, market cap, PE (TTM).
-4. **Peer identification**: `search_companies(sector=<sector>)` to identify peer tickers for cross-company comparison.
+4. **Peer identification**: `get_peer_comparison(ticker, metric)` (or `search_companies(search=<industry>)` — note there is no `sector` param) to identify peer tickers for cross-company comparison.
 5. **Compute ratios** into 6 categories per the Ratio Definitions below.
 6. **Cross-company comparison**: for each peer, fetch key ratios and present comparison table with mean/median/high/low.
 7. **Output**: per file convention with YAML frontmatter .
