@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  dashboard.html — the INTERACTIVE template family (prompts-0908).
+  Deliberately SEPARATE from thesis-report.html: print pagination and
+  interactivity are incompatible constraints (Q48 product-line boundary).
+  Fully offline — zero CDN references; charts are rendered by embedded JS
+  from data injected as a JSON block.
+-->
+<head>
+<meta charset="utf-8">
+<title>Research Dashboard</title>
+<style>
+  :root { --primary: #dcaf3e; --accent: #1e2a4a; --primary-foreground: #080b14;
+          --accent-foreground: #f0ede3; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #fff;
+         color: var(--primary-foreground); }
+  header { background: var(--accent); color: var(--accent-foreground);
+           padding: 12px 20px; }
+  header a { color: var(--primary); text-decoration: none; }
+  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+         gap: 16px; padding: 16px; }
+  .card { border: 1px solid #ccc; border-radius: 6px; padding: 12px; }
+  .card h2 { font-size: 14px; color: var(--accent); margin-top: 0; }
+  .bar { background: var(--primary); margin: 2px 0; color: var(--primary-foreground);
+         font-size: 10px; padding: 2px 6px; white-space: nowrap; }
+  input { width: 100%; padding: 6px; margin: 4px 0; }
+  .kpi { font-size: 24px; font-weight: bold; color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <a href="https://www.agentii.ai">www.agentii.ai</a> —
+  Agent-Use-Ready Financial Data and Skills Platform · hello@agentii.xyz
+</header>
+<main>
+  <section class="card"><h2>Portfolio View</h2><div id="portfolio"></div></section>
+  <section class="card"><h2>Valuation Calculator</h2>
+    <label>Terminal growth <input id="tg" type="number" step="0.001" value="0.025"></label>
+    <label>Discount rate <input id="r" type="number" step="0.001" value="0.09"></label>
+    <div class="kpi" id="multiple"></div>
+  </section>
+  <section class="card"><h2>Scenario Explorer</h2><div id="scenarios"></div></section>
+</main>
+<script id="dashboard-data" type="application/json">{"positions": [], "scenarios": []}</script>
+<script>
+  // zero-dependency rendering from the injected JSON block (offline by design)
+  var data = JSON.parse(document.getElementById('dashboard-data').textContent);
+  var port = document.getElementById('portfolio');
+  data.positions.forEach(function (p) {
+    var el = document.createElement('div');
+    el.className = 'bar';
+    el.style.width = Math.min(100, p.weight * 8) + '%';
+    el.textContent = p.ticker + ' — ' + p.weight + '%';
+    port.appendChild(el);
+  });
+  function recalc() {
+    var tg = parseFloat(document.getElementById('tg').value);
+    var r = parseFloat(document.getElementById('r').value);
+    var multiple = r > tg ? (1 + tg) / (r - tg) : NaN;
+    document.getElementById('multiple').textContent =
+      isFinite(multiple) ? multiple.toFixed(2) + '×' : '—';
+  }
+  document.getElementById('tg').addEventListener('input', recalc);
+  document.getElementById('r').addEventListener('input', recalc);
+  recalc();
+</script>
+</body>
+</html>

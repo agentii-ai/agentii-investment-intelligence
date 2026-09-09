@@ -17,7 +17,9 @@ META_SKILLS_DIR="${REPO_ROOT}/plugins/agentii-plugin/skills/agentii"
 # spec 039 US6 (T077): all 12 verticals — original 5 + 3 pre-existing (macro-strategy,
 # options-derivatives, portfolio-strategy; previously omitted from assembly) + 4 new course
 # verticals (idea-generation, risk-and-psychology, trading-as-business, technical-analysis).
-VERTICALS="equity-research-core business-intelligence industry-analysis models-and-pitches quantitative-analysis macro-strategy options-derivatives portfolio-strategy idea-generation risk-and-psychology trading-as-business technical-analysis"
+VERTICALS="equity-research-core business-intelligence industry-analysis models-and-pitches quantitative-analysis macro-strategy options-derivatives portfolio-strategy idea-generation risk-and-psychology trading-as-business technical-analysis bio-pharm"
+# Naming convention (spec 052): same-name sector adaptations use {base}-{sector}
+# suffixes (e.g., earnings-preview-med), so the meta namespace stays collision-free.
 TMPFILE="$(mktemp)"
 trap "rm -f $TMPFILE" EXIT
 
@@ -41,7 +43,7 @@ for vertical in $VERTICALS; do
     if [ ! -f "$skill_file" ]; then
       continue
     fi
-    # Check for collisions
+    # Check for collisions (strict — {base}-{sector} naming keeps it collision-free)
     existing="$(grep "^${skill_name} " "$TMPFILE" 2>/dev/null || true)"
     if [ -n "$existing" ]; then
       other_vert="$(echo "$existing" | awk '{print $2}')"

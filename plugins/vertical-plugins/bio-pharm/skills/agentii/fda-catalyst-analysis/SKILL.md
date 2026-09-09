@@ -1,6 +1,7 @@
 ---
 name: fda-catalyst-analysis
 description: Dated FDA catalyst calendar (PDUFA target dates, AdCom meetings, device decisions, trial readouts, earnings) with AdCom-style scrutiny outcome framing and historical-case grounding. The FDA decision is the strongest stock catalyst in med.medicines_biotech — use this skill to enumerate, verify, and size upcoming catalysts for any biotech/pharma ticker or watchlist.
+sectors: [med.medicines_biotech, med.medical_devices]
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4

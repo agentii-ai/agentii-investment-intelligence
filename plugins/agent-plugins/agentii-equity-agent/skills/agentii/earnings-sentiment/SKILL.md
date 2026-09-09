@@ -2,6 +2,7 @@
 name: earnings-sentiment
 multi_ticker_semantics: single_target
 description: Earnings sentiment analysis, analyst estimates vs guidance, earnings surprise history, consensus sentiment, earnings revision trends, analyst rating changes, earnings beat miss track record, guidance accuracy, whisper numbers, pre-announcement sentiment
+essentials_modes: [analyst-sentiment-assessment-current-quarter, fy0-analyst-estimates-extraction, current-quarter-fiscal-year-analyst-estimates]
 temporal_scope:
  default_quarters: 4
  max_quarters: 8

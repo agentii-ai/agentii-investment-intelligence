@@ -1,0 +1,32 @@
+# value-checks.yaml — numeric plausibility rules (spec 046 Q21).
+# Evaluable structured rules; fail = definitionally impossible (VALUE_IMPLAUSIBLE),
+# warn = statistical outlier (G2/G3 judgment — biotech negative margins and
+# cycle-trough negative EPS are legitimate; never fail on them).
+version: 1
+rules:
+  - id: margin_in_unit_interval
+    metric: [margin, gross_margin, net_margin, operating_margin]
+    op: between
+    args: [-1, 1]
+    level: fail
+  - id: terminal_growth_below_risk_free
+    metric: terminal_growth
+    op: lt_ref
+    ref_metric: risk_free_rate
+    level: fail
+  - id: wacc_above_risk_free
+    metric: wacc
+    op: gt_ref
+    ref_metric: risk_free_rate
+    level: fail
+  - id: segments_sum_to_total
+    op: sum_equals
+    sum_metric_prefix: segment_revenue
+    total_metric: total_revenue
+    level: fail
+  - id: dcf_implied_vs_actual_growth
+    metric: dcf_implied_growth
+    op: ratio_gt
+    ref_metric: actual_growth
+    args: [3]
+    level: warn

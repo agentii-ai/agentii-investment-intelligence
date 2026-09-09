@@ -2,6 +2,7 @@
 name: competitive
 multi_ticker_semantics: target_with_required_peers
 description: Competitive landscape analysis, competitor comparison, peer positioning, market share dynamics, competitive moat assessment, Porter five forces, industry competition, competitive advantage analysis, market positioning, strategic group mapping, compare competitors
+essentials_modes: [direct-competitor-identification-and-analysis, market-share-dynamics-analysis, market-share-evolution-and-competitive-benchmarking]
 temporal_scope:
  default_quarters: 4
  max_quarters: 12

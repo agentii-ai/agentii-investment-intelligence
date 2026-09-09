@@ -13,7 +13,7 @@
     {
       "name": "agentii",
       "source": "./plugins/agentii-plugin",
-      "description": "Unified meta-plugin — all 31 skills across 5 verticals under a single /agentii:skill-name namespace. The recommended single install."
+      "description": "Unified meta-plugin — the full agentii skill namespace (13 verticals, 62 skills) under a single /agentii:skill-name namespace. The recommended single install. Skills with same-name vertical variants (e.g., bio-pharm's med-adapted earnings-preview) ship via their own vertical plugins."
     },
     {
       "name": "equity-research-core",
@@ -43,7 +43,47 @@
     {
       "name": "agentii-equity-agent",
       "source": "./plugins/agent-plugins/agentii-equity-agent",
-      "description": "Orchestrating agent plugin bundling all 31 skills from the 5 vertical plugins, with capability-isolated subagents (retrieval, analytical, BI, visualization) and a three-layer retrieval protocol system prompt."
+      "description": "Orchestrating agent plugin with capability-isolated subagents (retrieval, analytical, BI, visualization) and a three-layer retrieval protocol system prompt."
+    },
+    {
+      "name": "bio-pharm",
+      "source": "./plugins/vertical-plugins/bio-pharm",
+      "description": "7 med-sector skills (spec 052): fda-catalyst-analysis (dated PDUFA/AdCom/device catalyst calendars), pipeline-analysis (risk-adjusted pipeline + runway), trial-readout-analysis (AdCom-style six-axis scrutiny), plus med-adapted sector-overview-med, peer-bench-med, earnings-preview-med and recent-quarter-med. Naming rule: same-name sector adaptations use {base}-{sector} suffixes. Backed by the med knowledge base (130 strategies / 320 cases) and the structured AdCom calendar (122 meetings)."
+    },
+    {
+      "name": "idea-generation",
+      "source": "./plugins/vertical-plugins/idea-generation",
+      "description": "5 idea-generation skills: macro-idea-generation, qualitative-filtering, quantitative-screening, trade-idea-generation, trade-template."
+    },
+    {
+      "name": "macro-strategy",
+      "source": "./plugins/vertical-plugins/macro-strategy",
+      "description": "4 macro-strategy skills: currency-analysis, leading-indicators, macro-regime, rate-cycle."
+    },
+    {
+      "name": "options-derivatives",
+      "source": "./plugins/vertical-plugins/options-derivatives",
+      "description": "6 options & derivatives skills: options-foundations, options-strategies, income-strategies, volatility-trading, price-action-options, technical-execution."
+    },
+    {
+      "name": "portfolio-strategy",
+      "source": "./plugins/vertical-plugins/portfolio-strategy",
+      "description": "4 portfolio-strategy skills: long-short-construction, long-short-equity, portfolio-hedging, position-sizing."
+    },
+    {
+      "name": "risk-and-psychology",
+      "source": "./plugins/vertical-plugins/risk-and-psychology",
+      "description": "Risk-and-psychology skill (trading psychology and risk discipline)."
+    },
+    {
+      "name": "technical-analysis",
+      "source": "./plugins/vertical-plugins/technical-analysis",
+      "description": "4 technical-analysis skills: chart-patterns, price-action, trade-execution, options-execution."
+    },
+    {
+      "name": "trading-as-business",
+      "source": "./plugins/vertical-plugins/trading-as-business",
+      "description": "Trading-as-business skill (running trading as a disciplined business)."
     }
   ]
 }

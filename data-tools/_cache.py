@@ -20,14 +20,17 @@ from typing import Any, Callable, Optional
 DEFAULT_ROOT = Path(os.path.expanduser("~/.agentii/cache"))
 
 # Per-category default TTL in seconds (fresh-enough windows; overridable per call).
+# Q44 (spec 046): market quotes 15 min (was 300s); history 24 h lands with T073.
 CATEGORY_TTL = {
     "macro": 6 * 3600,        # macro series update slowly
-    "market": 300,            # quotes are volatile
+    "market": 900,            # quote TTL 15 min per Q44
     "earnings": 3600,
     "alternative": 1800,
     "calendar": 12 * 3600,
     "global": 900,
 }
+# Dual-TTL by data_type (Q44) — the history half is consumed by get_price_history (T073).
+DATA_TYPE_TTL = {"quote": 900, "history": 24 * 3600}
 
 
 class FileCache:
@@ -40,16 +43,42 @@ class FileCache:
         return self.root / category / f"{h}.json"
 
     def get(self, category: str, key: str) -> tuple[bool, Any]:
+        hit, value, _meta = self.get_meta(category, key)
+        return hit, value
+
+    def get_meta(self, category: str, key: str) -> tuple[bool, Any, Optional[dict]]:
+        """(hit, value, meta) — meta carries stored_at/expires_at (spec 046 Q71:
+        the stored timestamp currently discarded by get(); cache_age_seconds derives
+        from it)."""
         p = self._path(category, key)
         if not p.is_file():
-            return False, None
+            return False, None, None
         try:
             rec = json.loads(p.read_text(encoding="utf-8"))
         except (ValueError, OSError):
-            return False, None
+            return False, None, None
         if self.clock() > rec.get("expires_at", 0):
-            return False, None
-        return True, rec.get("value")
+            return False, None, None
+        return True, rec.get("value"), {
+            "stored_at": rec.get("stored_at"),
+            "expires_at": rec.get("expires_at"),
+        }
+
+    def get_stale(self, category: str, key: str) -> tuple[bool, Any, Optional[dict]]:
+        """Q44's fallback path: the newest entry REGARDLESS of TTL — served with
+        stale: true when the provider is unreachable. TTL is a performance
+        parameter; the correctness gate lives on the consumer side (Q41)."""
+        p = self._path(category, key)
+        if not p.is_file():
+            return False, None, None
+        try:
+            rec = json.loads(p.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            return False, None, None
+        return True, rec.get("value"), {
+            "stored_at": rec.get("stored_at"),
+            "expires_at": rec.get("expires_at"),
+        }
 
     def set(self, category: str, key: str, value: Any, ttl: Optional[int] = None) -> None:
         if ttl is None:

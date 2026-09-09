@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  thesis-report.html — the print-first thesis report template (spec 046 Q46).
+  Letter pages (8.5×11in = 215.9mm × 279.4mm), all CSS/JS embedded, images
+  base64 data-URI. Zero external links — the file must print offline.
+  Layout technique informed by the AI-Sci-Vi reference (converted to letter).
+  Pins: sources_hash / template_version are injected by synthesize_report.py;
+  the open-time JS pin check raises the yellow "source data updated" bar (Q50).
+-->
+<head>
+<meta charset="utf-8">
+<title>Thesis Report</title>
+<style>
+  :root {
+    --primary: #dcaf3e;            /* agentii.ai gold */
+    --accent: #1e2a4a;             /* agentii.ai navy */
+    --primary-foreground: #080b14;
+    --accent-foreground: #f0ede3;  /* cream */
+  }
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--primary-foreground);
+         font-family: Georgia, 'Times New Roman', serif; font-size: 11pt;
+         line-height: 1.45; }
+  .page { width: 215.9mm; height: 279.4mm; padding: 16mm 15mm;
+          page-break-after: always; overflow: hidden; position: relative; }
+  .page:last-child { page-break-after: auto; }
+  h1 { font-size: 20pt; color: var(--accent); border-bottom: 2px solid var(--primary); }
+  h2 { font-size: 14pt; color: var(--accent); }
+  .report-header { display: flex; justify-content: space-between; align-items: center;
+                   border-bottom: 1px solid var(--primary); padding-bottom: 4mm;
+                   margin-bottom: 8mm; }
+  .report-header .brand { font-weight: bold; color: var(--accent); }
+  .report-header .brand a { color: var(--accent); text-decoration: none; }
+  .report-header .contact { font-size: 9pt; color: #444; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.5pt; }
+  th, td { border: 1px solid #999; padding: 2mm 3mm; text-align: left; }
+  th { background: var(--accent); color: var(--accent-foreground); }
+  .citation, a { color: #1a3a8a; }
+  .pillar { margin-bottom: 6mm; }
+  .wrong_if { font-family: 'Courier New', monospace; font-size: 9pt;
+              background: var(--accent-foreground); padding: 2mm; }
+  .stale-bar { display: none; position: fixed; top: 0; left: 0; right: 0;
+               background: #ffd75e; color: #080b14; text-align: center;
+               font-size: 10pt; padding: 2mm; z-index: 99; }
+  .page-overflow { outline: 1px solid #c00; }
+  .page-overflow::after { content: "⚠ overflow"; position: absolute; top: 2mm;
+                          right: 2mm; color: #c00; font-size: 9pt; }
+  @media print {
+    .page-overflow { page-break-after: always; }
+    .stale-bar { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="stale-bar" id="stale-bar">This report was generated on a previous
+  state of its source data — see reproduce.md before distributing.</div>
+
+<!-- ⬇ synthesize_report.py fills sections from the thesis markdown artifacts -->
+
+<section class="page" data-report-page="1">
+  <div class="report-header">
+    <span class="brand"><a href="https://www.agentii.ai">www.agentii.ai</a><br>
+      Agent-Use-Ready Financial Data and Skills Platform</span>
+    <span class="contact">hello@agentii.xyz</span>
+  </div>
+  <h1>Executive Summary</h1>
+  <div id="exec-summary"><!-- filled by synthesizer --></div>
+</section>
+
+<section class="page" data-report-page="2">
+  <h2>Pillars</h2>
+  <div id="pillars"><!-- filled by synthesizer --></div>
+</section>
+
+<section class="page" data-report-page="3">
+  <h2>Universe</h2>
+  <div id="universe"><!-- filled by synthesizer --></div>
+</section>
+
+<section class="page" data-report-page="4">
+  <h2>Cross-Cutting</h2>
+  <div id="cross-cutting"><!-- filled by synthesizer --></div>
+</section>
+
+<section class="page" data-report-page="5">
+  <h2>Coverage Gaps</h2>
+  <div id="coverage-gaps"><!-- filled by synthesizer --></div>
+  <p class="citation">Citations use the agentii viewer:
+    <code>https://agentii.ai/v/{ticker}/{citation_id}/{N}</code></p>
+</section>
+
+<script>
+// Q47 runtime safety net — warn only, never the gate (the build-time checker
+// holds the blocking authority).
+document.querySelectorAll('.page').forEach(function (pg) {
+  if (pg.scrollHeight > pg.clientHeight + 2) { pg.classList.add('page-overflow'); }
+});
+// Q50 open-time pin check: the synthesizer embeds the pins as data attributes.
+(function () {
+  var bar = document.getElementById('stale-bar');
+  if (document.body.dataset.sourcesHash && document.body.dataset.diskHash &&
+      document.body.dataset.sourcesHash !== document.body.dataset.diskHash) {
+    bar.style.display = 'block';
+  }
+})();
+</script>
+</body>
+</html>

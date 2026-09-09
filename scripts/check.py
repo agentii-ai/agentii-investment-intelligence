@@ -227,6 +227,27 @@ SKILL_FILES = sorted(PLUGINS.glob("vertical-plugins/*/skills/agentii/*/SKILL.md"
               sorted(PLUGINS.glob("agent-plugins/*/skills/agentii/*/SKILL.md")) + \
               sorted(PLUGINS.glob("agentii-plugin/skills/agentii/*/SKILL.md"))
 
+
+# spec 046 Q25 (consequence #4): kit/orchestrator bodies are workspace meta-commands
+# and DAGs, not ticker analyses — the ticker-specific structure checks below do not
+# apply to them (three body types → three validators). Check 30's registry↔disk
+# bijection still covers them; the role-based validator split is the design.
+def _meta_role(sk: Path) -> bool:
+    try:
+        text = sk.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if not text.startswith("---"):
+        return False
+    try:
+        _, fm, _ = text.split("---", 2)
+        return (yaml.safe_load(fm) or {}).get("role") in ("kit", "orchestrator")
+    except (ValueError, yaml.YAMLError):
+        return False
+
+
+SKILL_FILES = [sk for sk in SKILL_FILES if not _meta_role(sk)]
+
 # Self-test: the gate must never silently match zero skills again. If this
 # fires, the namespace layout changed and the globs above need updating.
 MIN_EXPECTED_SKILLS = 55
@@ -864,6 +885,150 @@ if DATA_TOOLS.exists():
                     f"license-boundary: {rel(py)}: imports copyleft package '{mod}' into MIT core "
                     f"(Constitution VIII) — invoke it via subprocess/MCP instead (see contracts/SOURCES.md)"
                 )
+
+# --- spec 046 Check 33: taxonomy axis uniqueness (Q76) ----------------------
+# Every value lives on exactly one axis. CI fails on a value appearing on two
+# axes or on none — the closed-enum discipline that keeps eval corpora comparable.
+_taxonomy_path = ROOT / "contracts" / "taxonomy.yaml"
+try:
+    _tax = yaml.safe_load(_taxonomy_path.read_text(encoding="utf-8")) or {}
+    _axes = _tax.get("axes") or {}
+    _seen: dict[str, str] = {}
+    for _axis, _values in _axes.items():
+        if not isinstance(_values, list):
+            err(f"taxonomy-axes: {rel(_taxonomy_path)}: axis '{_axis}' is not a list")
+            continue
+        for _v in _values:
+            if not isinstance(_v, str) or not _v:
+                err(f"taxonomy-axes: {rel(_taxonomy_path)}: axis '{_axis}' has a non-string value")
+                continue
+            if _v in _seen:
+                err(f"taxonomy-axes: value '{_v}' appears on both '{_seen[_v]}' and "
+                    f"'{_axis}' — the Q76 one-axis rule (Check 33)")
+            _seen[_v] = _axis
+except (OSError, yaml.YAMLError) as e:
+    err(f"taxonomy-axes: {rel(_taxonomy_path)}: {e}")
+
+# --- spec 046 Check 31: registry ↔ SKILL.md frontmatter sync (Q12) ----------
+# Safety-critical, not tidiness: the dispatcher reads gates from the derived
+# registry, so a stale registry means an out-of-date gate is silently in force.
+try:
+    import sync_registry  # noqa: E402 — same-directory module
+
+    _disk = {e["skill_name"]: e for e in sync_registry.build_entries()}
+    _reg = {s.get("skill_name"): s for s in
+            (yaml.safe_load(REGISTRY_PATH.read_text(encoding="utf-8")) or {}).get("skills", [])}
+    for _name, _disk_entry in _disk.items():
+        _reg_entry = _reg.get(_name)
+        if _reg_entry is None:
+            err(f"registry-sync: skill '{_name}' missing from skill-registry.yaml (Check 31 — run scripts/sync-registry.sh)")
+            continue
+        for _field in ("vertical", "layer_tags", "category_tags", "retrieval_scope",
+                       "requires", "role", "essentials_modes", "sectors",
+                       "freshness_window", "market_data_stage", "modes"):
+            if _disk_entry.get(_field) != _reg_entry.get(_field):
+                err(f"registry-sync: skill '{_name}' field '{_field}' diverges — "
+                    f"disk={_disk_entry.get(_field)} registry={_reg_entry.get(_field)} "
+                    f"(Check 31 — run scripts/sync-registry.sh)")
+    for _name in set(_reg) - set(_disk):
+        err(f"registry-sync: skill '{_name}' in registry has no SKILL.md on disk (Check 31)")
+except (OSError, yaml.YAMLError) as e:
+    err(f"registry-sync: {e}")
+
+# --- spec 046 Check 35: tool contract ↔ implementation conformance (Q44/Q43) -
+# Fixture-based (deterministic, no network): every ✅-status field in
+# get-realtime-quote-tool.md must appear in the ok-envelope the implementation
+# actually produces. The live half lives in tests/test_market_data_smoke.py.
+_CONTRACT_FIELD_MAP = {"ticker": "symbol", "last_close": "price",
+                       "market_cap": "market_cap", "source": "source",
+                       "stale": "stale"}
+
+
+def _contract_delivered_fields(contract_path: Path) -> set[str]:
+    import re as _re
+
+    text = contract_path.read_text(encoding="utf-8")
+    delivered: set[str] = set()
+    for row in _re.findall(r"^\| `(\w+)` \|.*?\| (✅ today[^|]*?) \|", text,
+                           flags=_re.MULTILINE):
+        delivered.add(row[0])
+    return delivered
+
+
+try:
+    _contract = ROOT / "contracts" / "get-realtime-quote-tool.md"
+    _impl = ROOT / "data-tools" / "market_data.py"
+    if _contract.is_file() and _impl.is_file():
+        import importlib.util as _ilu
+        import tempfile
+
+        _spec = _ilu.spec_from_file_location("md_ck", _impl)
+        _md = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_md)
+        _cache_spec = _ilu.spec_from_file_location("cache_ck", ROOT / "data-tools" / "_cache.py")
+        _ck = _ilu.module_from_spec(_cache_spec)
+        _cache_spec.loader.exec_module(_ck)
+        _delivered = _contract_delivered_fields(_contract)
+        # happy path: a pinnable fake provider
+        _fake = {"ck35": lambda t: {"symbol": t, "price": 1.0, "market_cap": 1000,
+                                    "observed_at": "2026-09-08T16:00:00-04:00",
+                                    "price_basis": "close", "data_class": "fast"}}
+        _env = _md.get_quote("CK35", providers=_fake)
+        _have = dict(_env)
+        _have.update(_env.get("data") or {})
+        # fallback path: a failing provider + a pre-seeded stale entry → stale: true
+        _tmp_cache = _ck.FileCache(root=Path(tempfile.mkdtemp()))
+        _tmp_cache.set("market", "quote:CK35F", {"symbol": "CK35F", "price": 9.0,
+                                                 "_source": "ck35",
+                                                 "observed_at": "2026-09-07T16:00:00-04:00"},
+                       ttl=-1)
+        _fallback = _md.get_quote("CK35F", providers={"ck35": lambda t: (_ for _ in ()).throw(RuntimeError("down"))},
+                                  cache_root=_tmp_cache.root)
+        _have_fallback = dict(_fallback)
+        _have_fallback.update(_fallback.get("data") or {})
+        for _field in _delivered:
+            _key = _CONTRACT_FIELD_MAP.get(_field, _field)
+            if _key in _have or _key in _have_fallback:
+                continue
+            err(f"contract-conformance: '{_field}' is ✅ in {rel(_contract)} but "
+                f"absent from the implementation envelope (Check 35)")
+except Exception as _e:  # noqa: BLE001 — conformance check must not break the linter
+    err(f"contract-conformance: could not run the fixture check: {_e}")
+
+# --- spec 046 Check 34: a committed theses/INDEX.md is a proven derivative (Q75)
+# Workspaces are runtime artifacts and normally uncommitted; but IF one is
+# committed, its generated index must regenerate byte-identically — the Q12
+# pattern applied to derived views (a hand-edited index diverges). Dormant until
+# the first workspace is committed; active the moment one is.
+for _idx in sorted(ROOT.rglob("theses/INDEX.md")):
+    if ".tmp" in _idx.name or "node_modules" in _idx.parts:
+        continue
+    try:
+        import importlib.util as _ilu
+
+        _ts_spec = _ilu.spec_from_file_location("ts_ck34", ROOT / "scripts" / "thesis_status.py")
+        _ts = _ilu.module_from_spec(_ts_spec)
+        _ts_spec.loader.exec_module(_ts)
+        _ws = _idx.parents[1]  # theses/INDEX.md → workspace root
+        _regenerated = _ts.render_index(_ts.scan_workspace(_ws))
+        if _idx.read_text(encoding="utf-8") != _regenerated:
+            err(f"index-derivative: {rel(_idx)} does not regenerate byte-identically "
+                f"(Check 34 — DO NOT EDIT generated files; re-run agentii.status)")
+    except Exception as _e:  # noqa: BLE001
+        err(f"index-derivative: {rel(_idx)}: could not verify regeneration: {_e}")
+
+# --- spec 046 Check 32: no baked harness strings (Q34) ----------------------
+# Any harness-specific literal in the kit's core tree is a bypass of the control
+# plane's harness-independence — the failure upstream shipped as five divergent
+# "shared" cores. Command references resolve at runtime from one config value.
+for _f in sorted(ROOT.glob("plugins/vertical-plugins/scenarios/**/*")):
+    if not _f.is_file() or _f.suffix not in (".md", ".py", ".yml", ".yaml"):
+        continue
+    _text = _f.read_text(encoding="utf-8")
+    if "/agentii-" in _text or "/agentii." in _text:
+        err(f"baked-harness-string: {rel(_f)}: literal '/agentii[-.]' in the core "
+            f"tree — command references resolve at runtime from one config value (Q34)")
+
 
 # --- report ----------------------------------------------------------------
 if notices:

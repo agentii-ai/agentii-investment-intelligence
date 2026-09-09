@@ -2,6 +2,7 @@
 name: business-model
 multi_ticker_semantics: target_with_optional_peers
 description: Business model classification, business model analysis, structural analysis of how a company makes money, product offering decomposition, distribution channel analysis, customer segment analysis, revenue model identification, market sizing TAM SAM SOM, competitive positioning, business unit performance, management team & leadership analysis, what does the company sell, how does the company go to market, business model type platform service product, channel mix direct vs indirect, revenue concentration risk, CEO CFO executive backgrounds and changes
+essentials_modes: [business-model-classification, distribution-channel-analysis, revenue-composition-and-concentration]
 temporal_scope:
  default_quarters: 4
  max_quarters: 8

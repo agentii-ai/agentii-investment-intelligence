@@ -1,6 +1,7 @@
 ---
 name: pipeline-analysis
 description: "Med pipeline analysis: enumerate a biotech/pharma company's drug/device assets by phase, indication, and next catalyst, with risk-adjusted value framing and cash-runway assessment. The core valuation lens for clinical-stage names."
+sectors: [med.medicines_biotech, med.medical_devices]
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 4

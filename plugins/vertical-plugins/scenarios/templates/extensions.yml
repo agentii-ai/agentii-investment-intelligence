@@ -1,0 +1,15 @@
+# extensions.yml — hooks, SIDE-EFFECTS ONLY (spec 046 Q28).
+# Hard rule: a hook may report a gate result but is NEVER the sole enforcer of
+# any `requires:` condition — the control plane lives outside the harness, and a
+# hook lives inside it. Swapping the harness must not remove any enforcement.
+version: 1
+hooks:
+  after_implement:
+    - journal_rollup        # fold journal shards → agentii/ narrative log (Q81 rotation)
+  after_converge:
+    - synthesize            # cross-skill synthesis (rollup's judgment counterpart)
+  daily_post_close:
+    - price_falsifier_sweep # Q72 A+: per-pillar SELECTIVE — only pillars whose
+                            # wrong_if.source is a price metric; never a global default
+  notifications:
+    - gate_waiting          # pending_gate aging surfaced (Q80)

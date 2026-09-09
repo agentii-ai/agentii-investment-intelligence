@@ -1,0 +1,41 @@
+# constitution.yaml — executable L1 constraints (spec 046 Q16/Q58/Q67).
+# Workspace copy scaffolded by agentii.constitution; ratified by a human.
+# Placeholders ([ALL_CAPS]) make aggregate checks HARD-FAIL until replaced (Q83).
+version: 0
+constraints:
+  - id: POS_SINGLE
+    arity: scalar
+    field: position_pct
+    max: [MAX_SINGLE_POSITION_PCT]
+  - id: POS_BINARY
+    arity: scalar
+    field: position_pct
+    max: [MAX_BINARY_CATALYST_PCT]
+    when: catalyst_type == binary
+  - id: STOP_THESIS
+    arity: scalar
+    field: stop_loss_pct
+    max: [MAX_STOP_LOSS_PCT]
+  - id: CONC_SECTOR
+    arity: aggregate
+    group_by: sector
+    max: [MAX_SECTOR_CONCENTRATION_PCT]
+  - id: EXPO_MACRO
+    arity: aggregate
+    group_by: macro_driven
+    max: [MAX_MACRO_EXPOSURE_PCT]
+
+# Q58 workspace-level budgets (task-count based; deterministic, harness-agnostic)
+budgets:
+  max_concurrent_subagents: [MAX_CONCURRENT_SUBAGENTS]
+  max_tasks_per_day: [MAX_TASKS_PER_DAY]
+  max_theses_active: [MAX_ACTIVE_THESES]
+
+# Q67 drift thresholds: regime declarations paired with deterministic leading-indicator
+# triggers. The dispatcher daily sweep compares these mechanically; drift findings
+# go to converge + the IC agenda — detection is deterministic, correction is human.
+regime:
+  declared: [EXPANSION_OR_CONTRACTION_OR_STAGFLATION_OR_RECOVERY]
+  drift_triggers:
+    - indicator: ISM Manufacturing PMI
+      condition: ISM < 50 for 2 consecutive months

@@ -1,0 +1,11 @@
+# taxonomy.yaml — workspace copy of the closed classification axes (spec 046 Q76/Q78/Q83).
+# Scaffolded by agentii.constitution. The authoritative versioned declaration lives in
+# agentii-investment-intelligence/contracts/taxonomy.yaml — this copy is what gates in
+# a workspace read; it is replaced, never hand-edited (a declaration, not a ledger).
+version: 1
+axes:
+  error_code: [DATA_STALE, CALC_UNVALIDATED, ASSUMPTION_UNPINNED, LOOKAHEAD_VIOLATION, VALUE_IMPLAUSIBLE, DEP_MISSING, SCHEMA_MISMATCH, PIN_MISMATCH, VALIDATOR_FAIL, UNFRAMED_REFERENCE, CONSTITUTION_BREACH, PRICE_ACCESS_PREMATURE, INSUFFICIENT_HISTORY]
+  gap_type: [missing, partial, contradicts, unrequested, stale, invalidated, dependency_retired]
+  claim_state: [pinned, superseded, retired, retired_by_ic, pending_review, stale_price, pending_gate]
+  data_class: [slow, fast]
+  severity: [blocking, warn]

@@ -1,0 +1,23 @@
+# macro-regime — Analyst Mode Definitions
+
+Derived from the skill's own methodology structure (scripts/mode_backfill.py, spec 046 M1).
+
+### Mode: defaults
+
+**Objective**: Defaults analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: preflight
+
+**Objective**: Preflight analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: data-source-priority-mandatory-o
+
+**Objective**: Data Source Priority Mandatory O analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: methodology
+
+**Objective**: Methodology analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: retrieval-scope
+
+**Objective**: Retrieval Scope analysis per the skill's methodology (see SKILL.md sections).

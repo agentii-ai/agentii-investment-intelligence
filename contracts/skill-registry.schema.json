@@ -2,34 +2,62 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentii.ai/contracts/skill-registry.schema.json",
   "title": "Skill Registry",
-  "description": "Schema for skill-registry.yaml — one entry per on-disk skill (spec 039 Part I, data-model.md §1). Bijection with skills/agentii/<name>/ enforced by check.py Check 30.",
+  "description": "Schema for skill-registry.yaml \u2014 one entry per on-disk skill (spec 039 Part I, data-model.md \u00a71). Bijection with skills/agentii/<name>/ enforced by check.py Check 30.",
   "type": "object",
-  "required": ["version", "skills"],
+  "required": [
+    "version",
+    "skills"
+  ],
   "additionalProperties": false,
   "properties": {
-    "version": { "type": "string", "description": "registry schema semver" },
-    "generated_by": { "type": "string" },
+    "version": {
+      "type": "string",
+      "description": "registry schema semver"
+    },
+    "generated_by": {
+      "type": "string"
+    },
     "skills": {
       "type": "array",
-      "items": { "$ref": "#/definitions/skillEntry" }
+      "items": {
+        "$ref": "#/definitions/skillEntry"
+      }
     }
   },
   "definitions": {
     "skillEntry": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["skill_name", "vertical", "layer_tags"],
+      "required": [
+        "skill_name",
+        "vertical",
+        "layer_tags",
+        "market_data_stage",
+        "requires",
+        "role"
+      ],
       "properties": {
         "skill_name": {
           "type": "string",
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
           "description": "matches on-disk skills/agentii/<name>/ dir; unique"
         },
-        "vertical": { "type": "string", "minLength": 1 },
+        "vertical": {
+          "type": "string",
+          "minLength": 1
+        },
         "layer_tags": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "enum": ["L1", "L2", "L3", "L4"] }
+          "items": {
+            "type": "string",
+            "enum": [
+              "L1",
+              "L2",
+              "L3",
+              "L4"
+            ]
+          }
         },
         "category_tags": {
           "type": "array",
@@ -39,27 +67,151 @@
           }
         },
         "retrieval_scope": {
-          "type": ["string", "null"],
-          "enum": ["structured_only", "single_document", "simple_lookup", "unstructured_document_search", null]
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "structured_only",
+            "single_document",
+            "simple_lookup",
+            "unstructured_document_search",
+            null
+          ]
         },
-        "enrichment_axes": { "$ref": "#/definitions/enrichmentAxes" },
-        "has_knowledge_frameworks": { "type": "boolean" },
-        "quality_score": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
-        "quality_score_prev": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
-        "last_enriched": { "type": ["string", "null"] },
+        "enrichment_axes": {
+          "$ref": "#/definitions/enrichmentAxes"
+        },
+        "has_knowledge_frameworks": {
+          "type": "boolean"
+        },
+        "quality_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "quality_score_prev": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10
+        },
+        "last_enriched": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "enrichment_workflows_applied": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "timestamp"],
+            "required": [
+              "name",
+              "timestamp"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "timestamp": { "type": "string" }
+              "name": {
+                "type": "string"
+              },
+              "timestamp": {
+                "type": "string"
+              }
             }
           }
         },
-        "spec_037_references": { "type": "integer", "minimum": 0 }
+        "spec_037_references": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "spec 046 Q12 \u2014 dispatch preconditions declared in SKILL.md frontmatter (the single source of truth); registry is derived. Optional (M-a)."
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "orchestrator",
+            "analysis",
+            "kit"
+          ],
+          "description": "spec 046 Q25 \u2014 body type; closed enum. Default 'analysis'."
+        },
+        "modes": {
+          "type": "array",
+          "description": "spec 046 Q79 \u2014 addressable modes derived from references/modes.md '### Mode: <slug>' headings; implicit single mode 'default' when absent.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "slug"
+            ],
+            "properties": {
+              "slug": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "market_data_stage": {
+                "type": "string",
+                "enum": [
+                  "early",
+                  "late",
+                  "none"
+                ]
+              },
+              "requires": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "essentials_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "spec 046 Q79/M1 \u2014 the skill's self-declared default mode subset (Depth Tier Light)."
+        },
+        "sectors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*([.][a-z][a-z0-9_]*)+$"
+          },
+          "description": "spec 046 Q53 \u2014 dotted industry_taxonomy.json paths; derives sectors_focus."
+        },
+        "freshness_window": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "spec 046 Q60 \u2014 artifact reuse window in days (structural 30 / earnings 7 / price-sensitive 1 / technical 1)."
+        },
+        "market_data_stage": {
+          "type": "string",
+          "enum": [
+            "early",
+            "late",
+            "none"
+          ],
+          "description": "spec 046 Q41/Q45 \u2014 skill-level default derived by vertical (Q45 rule); frontmatter override wins; mode-level granularity lands with M2."
+        }
       }
     },
     "enrichmentAxes": {
@@ -69,19 +221,37 @@
       "properties": {
         "sectors_focus": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
           "description": "Sector boost terms, e.g. biotechnology, technology. Empty = no sector boost."
         },
         "domains": {
           "type": "array",
-          "items": { "type": "string", "enum": ["fundamental", "macro", "event-driven", "hybrid"] }
+          "items": {
+            "type": "string",
+            "enum": [
+              "fundamental",
+              "macro",
+              "event-driven",
+              "hybrid"
+            ]
+          }
         },
         "instrument_scope": {
           "type": "array",
           "minItems": 1,
           "items": {
             "type": "string",
-            "enum": ["equity", "option", "etf", "futures", "forex", "multi-asset"]
+            "enum": [
+              "equity",
+              "option",
+              "etf",
+              "futures",
+              "forex",
+              "multi-asset"
+            ]
           },
           "description": "Default ['equity']. ERC ['equity']; options-derivatives ['equity','option']; portfolio-strategy ['equity','option','etf']."
         },
@@ -90,9 +260,24 @@
           "additionalProperties": false,
           "description": "Axes passed to search_by_analogue. Setups are never returned by that tool (FR-032).",
           "properties": {
-            "market_regime": { "type": "array", "items": { "type": "string" } },
-            "event_type": { "type": "array", "items": { "type": "string" } },
-            "company_situation": { "type": "array", "items": { "type": "string" } }
+            "market_regime": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "event_type": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "company_situation": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       }

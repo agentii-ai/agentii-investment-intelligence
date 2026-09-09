@@ -27,7 +27,9 @@ def test_market_adapter_parity(tmp_path):
     md = _load("market_data", "data-tools/market_data.py")
 
     def fake_yf(ticker):
-        return {"symbol": ticker, "price": 42.0}
+        return {"symbol": ticker, "price": 42.0,
+                "observed_at": "2026-09-08T16:00:00-04:00",
+                "price_basis": "close", "data_class": "fast"}
 
     direct = md.get_quote("AAPL", providers={"yfinance": fake_yf}, cache_root=tmp_path / "a")
     viaad = ad.get_market_data("AAPL", providers={"yfinance": fake_yf}, cache_root=tmp_path / "b")

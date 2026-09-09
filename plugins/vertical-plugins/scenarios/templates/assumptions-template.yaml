@@ -1,0 +1,20 @@
+# assumptions.yaml — the quantitative assumption ledger (spec 046 Q4).
+# Versioned; pinned by artifacts via assumption_pin. Agents NEVER write this file —
+# changes go through agentii.constitution (single-threaded approval).
+# Deviating from a value without an explicit declared justification is silent drift.
+version: 1
+effective: [YYYY-MM-DD]
+approved_by: [APPROVER]
+rationale: "[RATIONALE_FOR_THIS_VERSION]"
+
+macro:
+  risk_free_rate:   { value: [VALUE], source: "[SOURCE]", tolerance: [TOL] }
+  erp:              { value: [VALUE], source: "[SOURCE]" }
+  terminal_growth:  { value: [VALUE], tolerance: [TOL] }
+  us_real_gdp_next_year: { value: [VALUE] }
+
+sector_wacc:            # skills computing WACC must land inside the band or explain
+  [SECTOR]: { value: [VALUE], band: [LOW, HIGH] }
+
+commodities:
+  [COMMODITY]: { value: [VALUE], unit: [UNIT] }

@@ -1,0 +1,49 @@
+# taxonomy.yaml — the closed, versioned classification axes of the control plane (spec 046, Q76/Q78).
+#
+# Every value must live on exactly one axis (Q76 placement rule); CI fails on a value
+# appearing on two axes or on none. Additions require an explicit enum extension + a
+# version bump (Q6/Q8 contract 1) — otherwise eval corpora become incomparable.
+#
+# Q76 adjudicated the two orphan values:
+#   stale_price        → claim_state   (decision-gating only, Q72 — NOT a rescan trigger)
+#   insufficient_history → error_code   (Q42 — tool-side refusal)
+# PRICE_ACCESS_PREMATURE is plan-declared (Q41 late-mode early-quote refusal) per the
+# Q6 closed-enum extension procedure, declared here in v1.
+version: 1
+axes:
+  error_code:        # transient refusal at a boundary
+    - DATA_STALE
+    - CALC_UNVALIDATED
+    - ASSUMPTION_UNPINNED
+    - LOOKAHEAD_VIOLATION
+    - VALUE_IMPLAUSIBLE
+    - DEP_MISSING
+    - SCHEMA_MISMATCH
+    - PIN_MISMATCH
+    - VALIDATOR_FAIL
+    - UNFRAMED_REFERENCE
+    - CONSTITUTION_BREACH
+    - PRICE_ACCESS_PREMATURE
+    - INSUFFICIENT_HISTORY
+  gap_type:          # persistent condition of an artifact
+    - missing
+    - partial
+    - contradicts
+    - unrequested
+    - stale
+    - invalidated
+    - dependency_retired
+  claim_state:       # lifecycle position of a claim
+    - pinned
+    - superseded
+    - retired
+    - retired_by_ic
+    - pending_review
+    - stale_price
+    - pending_gate
+  data_class:        # decay speed
+    - slow
+    - fast
+  severity:          # 5th axis — Q78 requires it declared, not inherited
+    - blocking
+    - warn

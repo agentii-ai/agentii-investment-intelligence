@@ -2,6 +2,7 @@
 name: recent-quarter
 multi_ticker_semantics: single_target
 description: Recent quarter performance analysis, quarterly earnings review, last quarter results, quarterly financial performance, analyze recent quarter, Q4 earnings, quarterly revenue breakdown, EPS this quarter, margin analysis recent quarter, sequential growth, quarterly performance review
+essentials_modes: [consolidated-p-and-l, margin-analysis, earnings-vs-consensus]
 temporal_scope:
  default_quarters: 1
  max_quarters: 4

@@ -1,6 +1,7 @@
 ---
 name: macro-regime
 description: Macro regime analysis, bull bear market detection, business cycle analysis, macro environment assessment, interest rate cycle, yield curve analysis, monetary policy, fiscal policy, global macro, central bank posture, credit cycle, recession probability, expansion regime, macro regime shift, stagflation detection
+market_data_stage: early
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 8

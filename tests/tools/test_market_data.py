@@ -24,13 +24,18 @@ def test_module_exists():
 
 def test_zero_key_quote_via_injected_provider(tmp_path):
     m = _load()
-    # inject a fake yfinance-like provider so no network/key needed
+    # inject a fake yfinance-like provider so no network/key needed.
+    # spec 046 Q71: providers must now carry observed_at — a quote without it is
+    # refused (DATA_STALE), never served.
     def fake_yf(ticker):
-        return {"symbol": ticker, "price": 150.2, "market_cap": 2.4e12}
+        return {"symbol": ticker, "price": 150.2, "market_cap": 2.4e12,
+                "observed_at": "2026-09-08T16:00:00-04:00",
+                "price_basis": "close", "data_class": "fast"}
     env = m.get_quote("AAPL", providers={"yfinance": fake_yf}, cache_root=tmp_path)
     assert env["status"] in ("ok", "degraded")
     assert env["source"] == "yfinance"
     assert env["data"]["symbol"] == "AAPL"
+    assert env["data"]["observed_at"].startswith("2026-09-08")
     m_env = _load_env_validator()
     m_env.validate(env)
 
@@ -49,11 +54,16 @@ def test_cache_hit_second_call(tmp_path):
     calls = []
     def fake_yf(ticker):
         calls.append(ticker)
-        return {"symbol": ticker, "price": 1.0}
+        return {"symbol": ticker, "price": 1.0,
+                "observed_at": "2026-09-08T16:00:00-04:00",
+                "price_basis": "close", "data_class": "fast"}
     m.get_quote("AAPL", providers={"yfinance": fake_yf}, cache_root=tmp_path)
     env2 = m.get_quote("AAPL", providers={"yfinance": fake_yf}, cache_root=tmp_path)
     assert env2["cache_hit"] is True
     assert calls == ["AAPL"]  # provider called once
+    # Q71: cache hits now report their age from the previously-discarded stored_at
+    assert "cache_age_seconds" in env2["data"]
+    assert env2["data"]["cache_age_seconds"] >= 0
 
 
 def test_cli_json(tmp_path):

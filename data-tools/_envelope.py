@@ -29,9 +29,15 @@ def _envelope(status: str, data: Any, source: Optional[str], *, cache_hit: bool 
 
 
 def ok(data: Any, *, source: str, cache_hit: bool = False,
-       rate_limit_remaining: Optional[int] = None) -> dict:
+       rate_limit_remaining: Optional[int] = None,
+       data_class: Optional[str] = None) -> dict:
     if data is None:
         raise ValueError("ok() requires non-null data (invariant 1)")
+    # spec 046 Q72: data_class rides inside the payload — the closed envelope schema
+    # (additionalProperties: false) makes a top-level field impossible without a
+    # schema bump, and the payload position is the one the gates read anyway.
+    if data_class is not None and isinstance(data, dict):
+        data = {**data, "data_class": data_class}
     return _envelope("ok", data, source, cache_hit=cache_hit,
                      rate_limit_remaining=rate_limit_remaining, error=None)
 

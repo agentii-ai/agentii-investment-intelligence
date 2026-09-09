@@ -2,6 +2,7 @@
 name: risk
 multi_ticker_semantics: single_target
 description: Risk analysis, regulatory risk assessment, competitive risk, macro risk, technology risk, litigation risk, financial risk assessment, enterprise risk, operational risk, geopolitical risk exposure
+essentials_modes: [general-risk-factors-identification-assessment, technology-disruption-risk-analysis, regulatory-compliance-risk-assessment]
 temporal_scope:
  default_quarters: 4
  max_quarters: 10

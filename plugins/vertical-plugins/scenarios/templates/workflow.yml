@@ -1,0 +1,40 @@
+# workflow.yml — six gates, two tiers (spec 046 Q39/Q80).
+# Gates are DECLARATIVE human-approval points on the cost/irreversibility
+# boundary. Rules: on_reject: abort; NO gate ever times out into approval
+# (silence is never consent); informational gates may carry a RECORDED standing
+# delegation; consequential gates are NEVER delegable. Tier is a closed enum —
+# nothing migrates downward silently.
+version: 1
+gates:
+  - id: gate1
+    after: specify
+    tier: informational            # delegable with a recorded standing approval
+    shows: "pillar/wrong_if decidability"
+    on_reject: abort
+  - id: gate2
+    after: plan
+    tier: informational
+    shows: "phases + ## Deviation Register"
+    on_reject: abort
+  - id: gate3
+    after: tasks
+    tier: informational
+    shows: "task count × cost estimate"
+    on_reject: abort
+  - id: gate4
+    before: mass_dispatch
+    tier: consequential            # NEVER delegable
+    shows: "budget, parallelism"
+    requires_budget_estimate: true
+    on_reject: abort
+  - id: gate5
+    before: constitution_reexamination_sweep
+    tier: consequential
+    shows: "affected theses × pillars (Q33 budget report)"
+    requires_budget_estimate: true
+    on_reject: abort
+  - id: gate6
+    before: thesis_archive
+    tier: consequential
+    shows: "open items, failed artifacts, final conviction"
+    on_reject: abort

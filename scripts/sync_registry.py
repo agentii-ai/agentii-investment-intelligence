@@ -63,6 +63,79 @@ VERTICAL_AXES = {
                               "instrument_scope": ["equity", "option", "etf"]},
 }
 
+# --- spec 046 declarative-field derivation (Q12/Q25/Q41/Q45/Q53/Q60/Q79) ------
+# All fields below land OPTIONAL (M-a) and are promoted per the §2.0 ladder; the
+# schema change and this file are an atomic pair (Q12: a stale registry is a
+# silently failing enforcement surface).
+#
+# Q45 deterministic default rule (verified R1 vertical counts):
+#   technical-analysis + options-derivatives → early (9 skills)
+#   macro-strategy → none (except macro-regime → early via explicit override)
+#   everything else → late when get_realtime_quote is in allowed_tools, else none
+_EARLY_VERTICALS = {"technical-analysis", "options-derivatives"}
+_NONE_VERTICALS = {"macro-strategy"}
+# Q60 freshness windows by skill type (days); frontmatter override wins.
+_FRESHNESS_BY_VERTICAL = {
+    # price-sensitive (1d)
+    "technical-analysis": 1, "options-derivatives": 1,
+    # earnings-driven (7d)
+    "equity-research-core": 7, "quantitative-analysis": 7, "business-intelligence": 7,
+    "industry-analysis": 7, "models-and-pitches": 7, "idea-generation": 7, "bio-pharm": 7,
+    # structural (30d)
+    "macro-strategy": 30, "portfolio-strategy": 30, "risk-and-psychology": 30,
+    "trading-as-business": 30,
+}
+
+
+def derive_market_data_stage(vertical: str, meta: dict) -> str:
+    """Q45: explicit frontmatter override wins; otherwise the vertical default."""
+    override = meta.get("market_data_stage")
+    if override in ("early", "late", "none"):
+        return override
+    if vertical in _EARLY_VERTICALS:
+        return "early"
+    if vertical in _NONE_VERTICALS:
+        return "none"
+    tools = meta.get("allowed_tools") or []
+    return "late" if "get_realtime_quote" in tools else "none"
+
+
+def derive_sectors_focus(sectors: list[str]) -> list[str]:
+    """Q53: dotted taxonomy paths → boost terms. leaf segments after the top-level
+    sector, underscores → spaces. Empty/absent → caller preserves the curator value."""
+    terms: list[str] = []
+    for path in sectors or []:
+        parts = path.split(".")
+        for seg in parts[1:]:
+            term = seg.replace("_", " ")
+            if term and term not in terms:
+                terms.append(term)
+    return terms
+
+
+def derive_modes(skill_dir: Path, meta: dict, vertical: str) -> list[dict]:
+    """Q79/M0: canonical mode location = references/modes.md '### Mode: <slug>' headings.
+    Skills without that file expose exactly one implicit mode, `default`.
+    M2 (Q79/Q41): each mode carries its own `market_data_stage` — the Q45
+    deterministic default applied at mode granularity (the skill-level stage,
+    since vertical defaults are mode-uniform; per-mode overrides land later)."""
+    modes_file = skill_dir / "references" / "modes.md"
+    modes: list[dict] = []
+    if modes_file.is_file():
+        text = modes_file.read_text(encoding="utf-8")
+        # Real-world heading: "### Mode: <slug> (<meta>)" — e.g. an anchor like
+        # "(1_1 — anchor)". Tolerate the optional trailing parenthetical.
+        for m in re.finditer(r"^### Mode:\s*([a-z0-9][a-z0-9-]*)\s*(?:\(.*\))?\s*$", text,
+                             flags=re.MULTILINE):
+            slug = m.group(1)
+            if slug != "all" and slug not in [x["slug"] for x in modes]:
+                modes.append({"slug": slug,
+                              "market_data_stage": derive_market_data_stage(vertical, meta)})
+    if not modes:
+        modes.append({"slug": "default", "title": "Default (implicit — no references/modes.md)",
+                      "market_data_stage": derive_market_data_stage(vertical, meta)})
+    return modes
+
 
 def default_axes(vertical: str) -> dict:
     """Seed enrichment_axes for a vertical. Returns a fresh, unshared structure so
@@ -115,6 +188,7 @@ def build_entries() -> list[dict]:
         # so an in-memory edit to one entry would mutate every aliased entry.
         layer_tags = list(meta.get("layer_tags") or LAYER_BY_SCOPE.get(scope, ["L2"]))
         kf_exists = (skill_dir / "references" / "knowledge-frameworks.md").is_file()
+        sectors = list(meta.get("sectors") or [])
         entries.append(
             {
                 "skill_name": name,
@@ -125,6 +199,15 @@ def build_entries() -> list[dict]:
                 "enrichment_axes": default_axes(vertical),
                 "has_knowledge_frameworks": kf_exists,
                 "spec_037_references": _count_spec037_refs(skill_dir),
+                # --- spec 046 fields (all optional at this stage, M-a) ---
+                "requires": list(meta.get("requires") or []),
+                "role": meta.get("role", "analysis"),
+                "modes": derive_modes(skill_dir, meta, vertical),
+                "essentials_modes": list(meta.get("essentials_modes") or []),
+                "sectors": sectors,
+                "freshness_window": int(meta["freshness_window"]) if meta.get("freshness_window") is not None
+                else _FRESHNESS_BY_VERTICAL.get(vertical, 7),
+                "market_data_stage": derive_market_data_stage(vertical, meta),
             }
         )
     return entries
@@ -152,6 +235,11 @@ def sync(path: Path | None = None) -> int:
             tags = merged.setdefault("analogue_tags", {})
             for axis in ("market_regime", "event_type", "company_situation"):
                 tags.setdefault(axis, [])
+            # Q53: a declared `sectors` frontmatter derives sectors_focus (boost
+            # terms from the dotted paths); an empty declaration means the curator
+            # owns it — never clobbered by a re-sync.
+            if e.get("sectors"):
+                merged["sectors_focus"] = derive_sectors_focus(e["sectors"])
             e["enrichment_axes"] = merged
     doc = {
         "version": "1.0.0",
@@ -163,5 +251,19 @@ def sync(path: Path | None = None) -> int:
 
 
 if __name__ == "__main__":
+    import argparse
+
+    p = argparse.ArgumentParser(description="Bootstrap/refresh skill-registry.yaml")
+    p.add_argument("--report-missing", action="store_true",
+                   help="list skills whose only mode is the implicit 'default' (no references/modes.md)")
+    args = p.parse_args()
+
     n = sync()
+    if args.report_missing:
+        entries = _registry.load_registry().get("skills", [])
+        missing = [s["skill_name"] for s in entries
+                   if [m["slug"] for m in s.get("modes", [])] == ["default"]]
+        print(f"{len(missing)} skills with only the implicit 'default' mode:")
+        for name in missing:
+            print(f"  - {name}")
     print(f"OK — skill-registry.yaml written with {n} entries.")
