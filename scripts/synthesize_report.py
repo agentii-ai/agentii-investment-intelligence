@@ -175,6 +175,16 @@ def pack_text(thesis: Path, body_limit: int | None = None) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _json_default(obj):
+    """Deterministic fallback for YAML-native scalars (date/datetime) inside
+    frontmatter — ISO strings, never locale-dependent."""
+    import datetime as _dt
+
+    if isinstance(obj, (_dt.date, _dt.datetime)):
+        return obj.isoformat()
+    return str(obj)
+
+
 def extract_metrics(thesis: Path) -> dict:
     """Deterministic per-ticker metrics bundle for report authoring (v0.3.0).
 
@@ -219,8 +229,9 @@ def pack(thesis: Path, body_limit: int | None = None) -> tuple[Path, str]:
     out = thesis / "report-input.md"
     _atomic_write(out, pack_text(thesis, body_limit))
     metrics_path = thesis / "report" / "metrics.json"
-    _atomic_write(metrics_path, json.dumps(extract_metrics(thesis),
-                                           indent=2, ensure_ascii=False) + "\n")
+    _atomic_write(metrics_path, json.dumps(extract_metrics(thesis), indent=2,
+                                           ensure_ascii=False,
+                                           default=_json_default) + "\n")
     return out, sources_hash(thesis)
 
 

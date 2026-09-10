@@ -75,6 +75,25 @@ def _fallback_svg(kind: str, data: dict) -> str:
                      f'height="{height}" fill="#1e2a4a"/>'
                      f'<text x="{i * step + step / 2}" y="215" text-anchor="middle" '
                      f'font-size="9">{label}</text>')
+    elif kind == "kpi_trend":
+        xs = data.get("x", []) or []
+        ys = [float(v) for v in data.get("y", []) or []]
+        if xs and len(ys) == len(xs) and len(xs) >= 2:
+            lo, hi = min(ys), max(ys)
+            span = max(hi - lo, 1e-9)
+            pad_x, top, bottom = 20, 20, 200
+            step = (w - 2 * pad_x) / (len(xs) - 1)
+            pts = [(pad_x + i * step,
+                    bottom - (v - lo) / span * (bottom - top - 20))
+                   for i, v in enumerate(ys)]
+            poly = " ".join(f"{px:.1f},{py:.1f}" for px, py in pts)
+            dots = "".join(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="3.5" fill="#dcaf3e"/>'
+                           for px, py in pts)
+            labels = "".join(f'<text x="{px:.1f}" y="215" text-anchor="middle" '
+                             f'font-size="9" fill="#1e2a4a">{x}</text>'
+                             for (px, _py), x in zip(pts, xs))
+            bars = (f'<polyline points="{poly}" fill="none" stroke="#1e2a4a" '
+                    f'stroke-width="2.5"/>{dots}{labels}')
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
             f'viewBox="0 0 {w} {h}"><rect width="{w}" height="{h}" fill="#f0ede3"/>'
             f'{bars}</svg>')
