@@ -104,7 +104,12 @@ def expand_tasks(matrix: list[dict]) -> list[str]:
 def parse_spec_matrix(spec_text: str) -> list[dict]:
     """Parse the spec-template's '## 3. Skill Deployment Matrix' markdown table
     (Skill | Vertical | Depth | Tickers | Market Data Stage | Purpose) into
-    [{skill, tickers: [...], depth}]."""
+    [{skill, tickers: [...], depth, purpose}].
+
+    The Purpose cell (column 6) is carried through — it is the only place the
+    spec states what a deployment is *for*, and discarding it left every task
+    with the same placeholder text.
+    """
     rows: list[dict] = []
     in_matrix = False
     for line in spec_text.splitlines():
@@ -122,8 +127,35 @@ def parse_spec_matrix(spec_text: str) -> list[dict]:
         depth = cells[2]
         tickers = [t.strip() for t in cells[3].replace("，", ",").split(",")
                    if t.strip()]
-        rows.append({"skill": skill, "tickers": tickers, "depth": depth.lower()})
+        purpose = cells[5] if len(cells) > 5 and cells[5] else "analysis"
+        rows.append({"skill": skill, "tickers": tickers, "depth": depth.lower(),
+                     "purpose": purpose})
     return rows
+
+
+def parse_subs_to_pillars(spec_text: str) -> dict[str, list[str]]:
+    """Map skill -> [pillar ids] from each pillar block's `Subscribed:` list.
+
+    Q9 makes the subscription the binding consistency statement between a
+    pillar and its deployment, so it is the authoritative source for a task's
+    `src:`. Without this every task inherited the literal string "P1", which
+    made the src: ref (Q26 traceability) vacuous.
+    """
+    import re as _re
+
+    mapping: dict[str, list[str]] = {}
+    for m in _re.finditer(
+            r"###\s+Pillar\s+(\d+)\s+—.*?\*\*Subscribed\*\*:\s*([^\n]+)",
+            spec_text, _re.S):
+        pid = f"PIL-{m.group(1)}"
+        for tok in _re.findall(r"`([^`]+)`", m.group(2)):
+            if " × " in tok:
+                _ticker, skill = tok.split(" × ", 1)
+                skill = skill.strip()
+                mapping.setdefault(skill, [])
+                if pid not in mapping[skill]:
+                    mapping[skill].append(pid)
+    return mapping
 
 
 def depth_to_modes(depth: str, registry: dict, skill: str) -> list[str]:
@@ -145,18 +177,24 @@ def tasks_from_spec(spec_path: Path, registry: dict) -> list[str]:
         registry = _yaml.safe_load(
             (ROOT / "skill-registry.yaml").read_text(encoding="utf-8")) or {}
     spec_text = spec_path.read_text(encoding="utf-8")
+    skill_pillars = parse_subs_to_pillars(spec_text)
     entries: list[dict] = []
     for row in parse_spec_matrix(spec_text):
         modes = depth_to_modes(row["depth"], registry, row["skill"])
+        # src: = the pillar(s) this skill is subscribed to (Q9/Q26). Falls back
+        # to "P1" only when the spec declares no subscription for the skill.
+        pillars = skill_pillars.get(row["skill"]) or ["P1"]
+        pillar_field = "/".join(pillars)
+        src_field = pillars[0] if len(pillars) == 1 else f"spec-{row['skill']}"
         for ticker in row["tickers"]:
+            entry = {"pillar": pillar_field, "ticker": ticker, "skill": row["skill"],
+                     "purpose": row["purpose"], "src": src_field}
             if row["depth"] in ("deep", "full"):
-                entries.append({"pillar": "P1", "ticker": ticker, "skill": row["skill"],
-                                "modes": ["all"], "all_modes": modes,
-                                "purpose": "per spec deployment matrix"})
+                entry["modes"] = ["all"]
+                entry["all_modes"] = modes
             else:
-                entries.append({"pillar": "P1", "ticker": ticker, "skill": row["skill"],
-                                "modes": modes,
-                                "purpose": "per spec deployment matrix"})
+                entry["modes"] = modes
+            entries.append(entry)
     return expand_tasks(entries)
 
 

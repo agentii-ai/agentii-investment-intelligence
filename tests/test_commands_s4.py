@@ -162,6 +162,63 @@ def test_tasks_from_spec_end_to_end(tmp_path):
     assert any("× business-model ×" in r for r in bm_rows)
 
 
+SPEC_PILLARS_AND_MATRIX = """# Research Thesis: x
+
+## 1b. Pillars
+
+### Pillar 1 — Value chain position (Priority: P1)
+**wrong_if**: `metric=a threshold=1 source=b`
+**Subscribed**: `NVDA × business-model`
+
+### Pillar 2 — Unit economics (Priority: P2)
+**wrong_if**: `metric=c threshold=2 source=d`
+**Subscribed**: `NVDA × business-model`, `NVDA × recent-quarter`
+
+## 3. Skill Deployment Matrix
+| Skill | Vertical | Depth | Tickers | Market Data Stage | Purpose |
+|---|---|:---:|---|---|---|
+| `business-model` | ERC | Light | NVDA | none | value chain position mapping |
+| `recent-quarter` | ERC | Light | NVDA | none | cost stack decomposition |
+"""
+
+
+def test_tasks_src_reflects_pillar_and_purpose_is_carried_through(tmp_path):
+    """Regression (2026-09-10, found dogfooding T-001): two traceability defects.
+
+    (a) tasks_from_spec() hardcoded {"pillar": "P1"} for every entry, so every
+        emitted row read `(src: P1)` regardless of which pillar the work served.
+        Q26 traceability from converge back to a pillar was therefore vacuous.
+    (b) The spec matrix's Purpose column (col 6) was parsed away, so every task
+        carried the same placeholder text "per spec deployment matrix".
+    """
+    spec = tmp_path / "spec.md"
+    spec.write_text(SPEC_PILLARS_AND_MATRIX)
+    rows = agentii_cmd.tasks_from_spec(spec, None)
+    joined = "\n".join(rows)
+
+    # (a) src: must name the pillar(s) the skill is subscribed to, not a literal P1
+    #     recent-quarter is subscribed only by PIL-2 -> src must be PIL-2
+    rq = [r for r in rows if "recent-quarter" in r]
+    assert rq, "no recent-quarter rows emitted"
+    assert all("(src: PIL-2)" in r for r in rq), rq[0]
+    #     business-model appears under both PIL-1 and PIL-2 -> multi-pillar form
+    bm = [r for r in rows if "business-model" in r]
+    assert bm and all("[PIL-1/PIL-2]" in r for r in bm), bm[0]
+    assert "spec-business-model" in bm[0]
+    #     the old behaviour must be gone
+    assert "(src: P1)" not in joined
+
+    # (b) the matrix Purpose text must survive into the task line
+    assert "cost stack decomposition" in joined
+    assert "per spec deployment matrix" not in joined
+
+
+def test_parse_subs_to_pillars_maps_skill_to_pillars():
+    m = agentii_cmd.parse_subs_to_pillars(SPEC_PILLARS_AND_MATRIX)
+    assert m["recent-quarter"] == ["PIL-2"]
+    assert sorted(m["business-model"]) == ["PIL-1", "PIL-2"]
+
+
 # --- D75 #4: agentii.clarify (the 8th kit command) ----------------------------
 
 SPEC_UNDERSPEC = """# Research Thesis: x
