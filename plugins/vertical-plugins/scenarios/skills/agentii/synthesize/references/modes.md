@@ -13,3 +13,7 @@ Derived from the skill's own methodology structure (scripts/mode_backfill.py, sp
 ### Mode: assemble
 
 **Objective**: Assemble analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: render
+
+**Objective**: Render analysis per the skill's methodology (see SKILL.md sections).

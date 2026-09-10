@@ -2646,6 +2646,8 @@ skills:
     market_data_stage: none
   - slug: assemble
     market_data_stage: none
+  - slug: render
+    market_data_stage: none
   essentials_modes: []
   sectors: []
   freshness_window: 7

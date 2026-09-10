@@ -132,7 +132,7 @@ def test_assemble_synthesizes_with_pins_and_passes_overflow_gate(tmp_path):
     html = path.read_text(encoding="utf-8")
     assert "www.agentii.ai" in html and "hello@agentii.xyz" in html
     assert f'data-sources-hash="{shash}"' in html          # Q50 pins embedded
-    assert 'data-template-version="0.2.0"' in html
+    assert 'data-template-version="0.3.0"' in html
     assert "Test Baseline — agentii Thesis Report" in html  # cover title
     assert "Data binds, not compute." in html               # cover claim
     assert '<td id="cover-universe">NVDA ~16.7%</td>' in html

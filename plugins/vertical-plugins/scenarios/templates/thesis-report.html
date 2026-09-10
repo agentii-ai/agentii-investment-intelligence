@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-  thesis-report.html — the print-first thesis report template (spec 046 Q46), v0.2.0.
+  thesis-report.html — the print-first thesis report template (spec 046 Q46), v0.3.0.
   Letter pages (8.5×11in = 215.9mm × 279.4mm), all CSS/JS embedded, images
   base64 data-URI. Zero external links — the file must print offline.
   Layout technique informed by the AI-Sci-Vi reference (converted to letter).
 
-  v0.2.0 (LLM-authored content): page 1 is a cover shell owned by the template
-  (title / claim / pins / universe / generated / TOC — filled by the assembler);
-  the LLM-authored page sequence is injected at <!-- PAGES -->. Variable page
-  count — the build-time overflow gate (check_page_overflow.py) is the blocking
-  authority per page.
+  v0.3.0 (LLM-authored AND LLM-optimized): page 1 is a navy ink cover owned by
+  the template (kicker / title / claim / pins / universe / generated / TOC —
+  filled by the assembler, plus a template-owned spiral motif); the LLM-authored
+  page sequence is injected at the PAGES injection point below. The assembler
+  injects the running sheet head/foot + page marks + corner registration marks
+  into every page. (NOTE: never write a nested comment-closing marker inside
+  this header — it would end the comment early and leak prose into the body.)
+  The LLM authors content only — section kickers, KPI stat tiles, verdict and
+  taxonomy badges, the timeline, tables and citations.
+
+  Visual QA loop: scripts/render_report.py (Chrome headless → PDF → per-page
+  PNGs) — the LLM reads the renders and iterates on content.html; the build-time
+  overflow gate (check_page_overflow.py) remains the deterministic gate.
 
   Pins: sources_hash / template_version are embedded by synthesize_report.py;
   converge.py flags html_stale on mismatch (the open-time JS bar below is a
@@ -70,7 +78,75 @@
   .page-overflow { outline: 1px solid #c00; }
   .page-overflow::after { content: "⚠ overflow"; position: absolute; top: 2mm;
                           right: 2mm; color: #c00; font-size: 9pt; }
+
+  /* ── v0.3.0 component systems (AI-Sci-Vi layout language + style.md) ── */
+  .sec-kicker { font-family: 'Courier New', monospace; font-size: 7pt; font-weight: 600;
+                letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+                margin-bottom: 2mm; }
+  /* KPI stat tiles */
+  .stat-row { display: flex; gap: 3mm; margin: 3mm 0; }
+  .stat { flex: 1; background: var(--accent-foreground); border: 1px solid #999;
+          border-top: 1mm solid var(--primary); padding: 2.5mm 3mm; }
+  .stat .num { font-family: 'Courier New', monospace; font-size: 16pt; font-weight: 700;
+               color: var(--accent); letter-spacing: -0.02em; }
+  .stat .lbl { font-family: 'Courier New', monospace; font-size: 8.5pt;
+               text-transform: uppercase; letter-spacing: 0.08em; margin-top: 1mm;
+               color: #222; }
+  .stat .sub { font-size: 7.5pt; color: #555; margin-top: 0.5mm; }
+  /* Badges — taxonomy axis (FR-092) and verdict axis (pillar verdicts) */
+  .badge { display: inline-block; font-family: 'Courier New', monospace; font-size: 7pt;
+           font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+           padding: 0.4mm 1.6mm; border-radius: 999px; }
+  .badge-fact       { background: #eef6ef; color: #1a7a3c; border: 0.3mm solid #1a7a3c; }
+  .badge-deducted   { background: #eef3fa; color: #1a3a8a; border: 0.3mm solid #1a3a8a; }
+  .badge-view       { background: #fdf3e7; color: #b3661a; border: 0.3mm solid #b3661a; }
+  .badge-supported  { background: #eef6ef; color: #1a7a3c; border: 0.3mm solid #1a7a3c; }
+  .badge-indeterminate { background: var(--accent-foreground); color: var(--accent);
+                         border: 0.3mm solid var(--accent); }
+  .badge-refuted    { background: #fdf0ef; color: #b3312c; border: 0.3mm solid #b3312c; }
+  /* Capability timeline */
+  .timeline { border-left: 0.6mm solid var(--primary); margin: 2mm 0 2mm 2mm;
+              padding-left: 6mm; }
+  .tl-item { position: relative; margin-bottom: 5mm; }
+  .tl-item::before { content: ""; position: absolute; left: -7.6mm; top: 1mm;
+                     width: 2.4mm; height: 2.4mm; border-radius: 50%;
+                     background: var(--primary); }
+  .tl-phase { font-family: 'Courier New', monospace; font-size: 8pt; text-transform: uppercase;
+              letter-spacing: 0.1em; color: var(--accent); font-weight: 700; }
+  /* Running sheet head/foot + registration marks (assembler-injected) */
+  .sheet-head, .sheet-foot { position: absolute; left: 15mm; right: 15mm; display: flex;
+                             justify-content: space-between;
+                             font-family: 'Courier New', monospace; font-size: 7pt;
+                             letter-spacing: 0.08em; text-transform: uppercase; color: #555; }
+  .sheet-head { top: 7mm; border-bottom: 0.3mm solid var(--primary); padding-bottom: 1mm; }
+  .sheet-foot { bottom: 7mm; border-top: 0.3mm solid #999; padding-top: 1mm; }
+  .page-mark { font-weight: 700; color: var(--accent); }
+  .reg { position: absolute; width: 3mm; height: 3mm; }
+  .reg-tl { top: 5mm; left: 5mm; border-top: 0.5mm solid var(--primary); border-left: 0.5mm solid var(--primary); }
+  .reg-tr { top: 5mm; right: 5mm; border-top: 0.5mm solid var(--primary); border-right: 0.5mm solid var(--primary); }
+  .reg-bl { bottom: 5mm; left: 5mm; border-bottom: 0.5mm solid var(--primary); border-left: 0.5mm solid var(--primary); }
+  .reg-br { bottom: 5mm; right: 5mm; border-bottom: 0.5mm solid var(--primary); border-right: 0.5mm solid var(--primary); }
+  /* Cover ink field */
+  .cover { background: var(--accent); color: var(--accent-foreground); }
+  .cover .report-header { border-bottom-color: var(--primary); }
+  .cover .report-header .brand, .cover .report-header .brand a,
+  .cover .report-header .contact { color: var(--accent-foreground); }
+  .cover h1 { color: #fff; font-size: 26pt; border-bottom: 0.4mm solid var(--primary);
+              padding-bottom: 3mm; }
+  .cover .claim { color: var(--accent-foreground); }
+  .cover #cover-meta th { background: transparent; color: var(--primary);
+                          border: 0.3mm solid #4a5670; }
+  .cover #cover-meta td { border: 0.3mm solid #4a5670; color: var(--accent-foreground); }
+  .cover .toc a { color: var(--accent-foreground); }
+  .cover .toc { border-top: 0.3mm solid #4a5670; margin-top: 6mm; padding-top: 4mm; }
+  .cover .sec-kicker { color: var(--primary); }
+  .cover .sheet-head, .cover .sheet-foot { color: #b8b08a; }
+  .cover .sheet-foot { border-top-color: var(--primary); }
+  .cover .reg { border-color: var(--primary); }
+  .cover-motif { position: absolute; right: 12mm; bottom: 16mm; width: 68mm; opacity: 0.55; }
+
   @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .page-overflow { page-break-after: always; }
     .stale-bar { display: none !important; }
   }
@@ -80,13 +156,16 @@
 <div class="stale-bar" id="stale-bar">This report was generated on a previous
   state of its source data — see reproduce.md before distributing.</div>
 
-<!-- ⬇ Page 1: cover shell — owned by the template, filled by the assembler -->
-<section class="page" data-report-page="1">
+<!-- ⬇ Page 1: navy ink cover — owned by the template, filled by the assembler -->
+<section class="page cover" data-report-page="1">
+  <i class="reg reg-tl"></i><i class="reg reg-tr"></i><i class="reg reg-bl"></i><i class="reg reg-br"></i>
+  <div class="sheet-head"><span>AGENTII THESIS REPORT</span><span>COVER</span></div>
   <div class="report-header">
     <span class="brand"><a href="https://www.agentii.ai">www.agentii.ai</a><br>
       Agent-Use-Ready Financial Data and Skills Platform</span>
     <span class="contact">hello@agentii.xyz</span>
   </div>
+  <span id="cover-kicker" class="sec-kicker"></span>
   <h1 id="cover-title">Thesis Report</h1>
   <p id="cover-claim" class="claim"></p>
   <table id="cover-meta">
@@ -96,6 +175,20 @@
     <tr><th>Generated</th><td id="cover-generated"></td></tr>
   </table>
   <div id="cover-toc" class="toc"></div>
+  <svg class="cover-motif" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- golden-ratio spiral: quarter arcs scaling by 1/φ per level -->
+    <g fill="none" stroke="#dcaf3e" stroke-width="1.4">
+      <path d="M 0 200 A 200 200 0 0 1 200 0"/>
+      <path d="M 200 0 A 123.6 123.6 0 0 1 76.4 123.6"/>
+      <path d="M 76.4 123.6 A 76.4 76.4 0 0 1 0 47.2"/>
+      <path d="M 0 47.2 A 47.2 47.2 0 0 1 47.2 0"/>
+      <path d="M 47.2 0 A 29.2 29.2 0 0 1 18 29.2"/>
+      <path d="M 18 29.2 A 18 18 0 0 1 0 11.1"/>
+      <path d="M 0 11.1 A 11.1 11.1 0 0 1 11.1 0"/>
+      <path d="M 11.1 0 A 6.9 6.9 0 0 1 4.2 6.9"/>
+    </g>
+  </svg>
+  <div class="sheet-foot"><span>__SLUG__</span><span class="page-mark">01 / __TOTAL__</span></div>
 </section>
 
 <!-- PAGES — assembler injects the LLM-authored <section class="page"> sequence -->

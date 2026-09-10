@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
-"""synthesize_report.py — thesis HTML synthesis (spec 046 Q49/Q50), v0.2.0.
+"""synthesize_report.py — thesis HTML synthesis (spec 046 Q49/Q50), v0.3.0.
 
 The report CONTENT is authored by an LLM (skills/agentii/synthesize/SKILL.md);
 this module is the deterministic scaffolding around that authorship:
 
   pack      — bundle every source markdown file verbatim into report-input.md
-              (the LLM's sole input, plus header facts and the sources_hash).
+              (the LLM's sole input, plus header facts and the sources_hash)
+              AND write report/metrics.json (per-ticker key_metrics/conclusions/
+              counts, values verbatim — machine-ready numbers for KPI tiles
+              and kpi_trend charts).
   assemble  — validate the LLM-authored report/content.html against hard gates
               (fragment-only, element whitelist, no <img>, citation anti-
               fabrication gate, chart-token contract), render chart tokens to
-              base64 SVG (Q48), inject the page sequence into the template,
-              fill the cover + TOC, embed the Q50 pins, run the Q47 overflow
-              gate with the 3-tier font fallback, write thesis-report.html —
-              or degrade to a markdown fallback + draft banner.
+              base64 SVG (Q48), inject the page sequence + running sheet
+              head/foot into the template, fill the cover + TOC, embed the Q50
+              pins, run the Q47 overflow gate with the 3-tier font fallback,
+              write thesis-report.html — or degrade to a markdown fallback +
+              draft banner. Non-blocking quality advisories go to stderr.
+  render    — the visual QA loop lives in render_report.py (Chrome headless →
+              per-page PNGs); the LLM reads the renders and iterates.
 
 Skills emit MARKDOWN only (Q49); ONE thesis-report.html per thesis is produced
 here, at the synthesis step. Python never selects or renders narrative content
@@ -37,8 +43,8 @@ import chart_render  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "plugins" / "vertical-plugins" / "scenarios" / "templates" / "thesis-report.html"
-TEMPLATE_VERSION = "0.2.0"
-PACK_VERSION = "1.0"
+TEMPLATE_VERSION = "0.3.0"
+PACK_VERSION = "2.0"
 
 # Q50: all source markdown artifacts — artifacts, the cross-stock synthesis and
 # the snapshot all feed the report, so all of them pin it (v0.1.0 hashed only
@@ -169,10 +175,52 @@ def pack_text(thesis: Path, body_limit: int | None = None) -> str:
     return "\n".join(lines) + "\n"
 
 
+def extract_metrics(thesis: Path) -> dict:
+    """Deterministic per-ticker metrics bundle for report authoring (v0.3.0).
+
+    KPI tiles and kpi_trend charts draw from this. Raw values verbatim (ints stay
+    ints, strings like ">10,000x" / "900-3700" preserved — only the LLM formats),
+    key names lowercased, first-sorted-file wins for the value while
+    metric_sources lists every contributing file. Never fed to the citation
+    gate; never timestamped (byte-deterministic)."""
+    tickers: dict[str, dict] = {}
+    artifacts = thesis / "artifacts"
+    if artifacts.is_dir():
+        for ticker_dir in sorted(p for p in artifacts.iterdir() if p.is_dir()):
+            entry: dict = {"artifacts": [], "key_metrics": {}, "metric_sources": {},
+                           "entity_claims": [], "conclusions": [], "counts": {}}
+            for p in sorted(ticker_dir.glob("*.md")):
+                rel = str(p.relative_to(thesis)).replace(os.sep, "/")
+                entry["artifacts"].append(rel)
+                fm = _frontmatter(p.read_text(encoding="utf-8"))
+                for key, value in (fm.get("key_metrics") or {}).items():
+                    lkey = str(key).lower()
+                    if lkey not in entry["key_metrics"]:
+                        entry["key_metrics"][lkey] = value
+                    entry["metric_sources"].setdefault(lkey, []).append(rel)
+                entry["entity_claims"].extend(fm.get("entity_claims") or [])
+                entry["conclusions"].extend(fm.get("conclusions") or [])
+                for field in ("facts_count", "deducted_count", "views_count",
+                              "citation_count"):
+                    entry["counts"][field] = entry["counts"].get(field, 0) + (fm.get(field) or 0)
+            tickers[ticker_dir.name] = entry
+    synthesis: dict = {}
+    synth = _newest_file(["_cross/*_synthesis.md"], thesis)
+    if synth:
+        fm = _frontmatter(synth.read_text(encoding="utf-8"))
+        synthesis = {"pillar_verdicts": fm.get("pillar_verdicts") or {},
+                     "capability_timeline": fm.get("capability_timeline") or {}}
+    return {"pack_version": PACK_VERSION, "thesis": thesis.name,
+            "tickers": tickers, "synthesis": synthesis}
+
+
 def pack(thesis: Path, body_limit: int | None = None) -> tuple[Path, str]:
     thesis = Path(thesis)
     out = thesis / "report-input.md"
     _atomic_write(out, pack_text(thesis, body_limit))
+    metrics_path = thesis / "report" / "metrics.json"
+    _atomic_write(metrics_path, json.dumps(extract_metrics(thesis),
+                                           indent=2, ensure_ascii=False) + "\n")
     return out, sources_hash(thesis)
 
 
@@ -324,6 +372,46 @@ def _renumber_pages(content: str) -> str:
     return "".join(out)
 
 
+def _inject_page_chrome(pages_html: str, total: int, slug: str, thesis_num: str) -> str:
+    """Running sheet head/foot + page marks + registration marks on every content
+    page (v0.3.0). Assembler-owned — the LLM never authors these reserved classes
+    (sheet-head / sheet-foot / reg / page-mark)."""
+    def _chrome(m: re.Match) -> str:
+        n = int(m.group(2))
+        return (m.group(1)
+                + f'<div class="sheet-head"><span>AGENTII THESIS REPORT</span>'
+                  f'<span>THESIS {_html.escape(thesis_num)}</span></div>'
+                + '<i class="reg reg-tl"></i><i class="reg reg-tr"></i>'
+                  '<i class="reg reg-bl"></i><i class="reg reg-br"></i>'
+                + f'<div class="sheet-foot"><span>{_html.escape(slug)}</span>'
+                  f'<span class="page-mark">{n:02d} / {total:02d}</span></div>')
+
+    return re.sub(r'(<section\b[^>]*data-report-page="(\d+)"[^>]*>)', _chrome, pages_html)
+
+
+def _quality_advisories(content: str) -> list[str]:
+    """NON-blocking quality guidance (v0.3.0) — the SKILL.md checklist, echoed
+    by the machine where it is mechanically detectable. Hard gates stay as-is;
+    these warn only."""
+    advisories: list[str] = []
+    if 'class="stat-row"' not in content:
+        advisories.append("no .stat-row KPI tiles anywhere — the executive "
+                          "summary page requires a 2–4 tile row")
+    elif not re.search(r'<section\b[^>]*class="[^"]*page[^"]*"[^>]*>'
+                       r'(?:(?!</section>).)*?class="stat-row"', content, re.DOTALL):
+        advisories.append("the first page (executive summary) has no .stat-row tile row")
+    if not re.search(r'class="badge-(supported|indeterminate|refuted)"', content):
+        advisories.append("no pillar verdict badges "
+                          "(.badge-supported/.badge-indeterminate/.badge-refuted)")
+    if 'class="timeline"' not in content:
+        advisories.append("capability timeline not styled (.timeline / .tl-item)")
+    if 'class="sec-kicker"' not in content:
+        advisories.append("no section kickers (.sec-kicker) — every page opens with one")
+    if re.search(r"\*\*[^*]+\*\*|````", content):
+        advisories.append("raw markdown leakage (** or code fences) in content")
+    return advisories
+
+
 def _toc_entries(content: str) -> list[tuple[int, str]]:
     """First h1/h2 heading text of each renumbered page → TOC entries."""
     entries: list[tuple[int, str]] = []
@@ -339,11 +427,16 @@ def _toc_entries(content: str) -> list[tuple[int, str]]:
 
 def build_html(thesis: Path, pages_html: str, shash: str, generated_at: str,
                *, font_tier: int = 0, draft: bool = False) -> str:
-    """Template + cover fill + page injection + pins. Deterministic except the
-    generated_at output metadata (never a pin)."""
+    """Template + cover fill + page injection + chrome + pins. Deterministic
+    except the generated_at output metadata (never a pin)."""
     facts = _header_facts(thesis)
     esc = _html.escape
     universe = " · ".join(f"{t} {w}".strip() for t, w in facts["universe"]) or "—"
+    thesis_num = thesis.name.split("-", 1)[0]
+    slug = thesis.name.upper()
+    # v0.3.0: running sheet head/foot + page marks on every content page.
+    total = 1 + len(re.findall(r'data-report-page="(\d+)"', pages_html))
+    pages_html = _inject_page_chrome(pages_html, total, slug, thesis_num)
 
     html = TEMPLATE.read_text(encoding="utf-8")
     if PAGES_COMMENT not in html:
@@ -352,6 +445,11 @@ def build_html(thesis: Path, pages_html: str, shash: str, generated_at: str,
                         f"<title>{esc(facts['name'])} — agentii Thesis Report</title>", 1)
     html = html.replace('<h1 id="cover-title">Thesis Report</h1>',
                         f'<h1 id="cover-title">{esc(facts["name"])}</h1>', 1)
+    html = html.replace('<span id="cover-kicker" class="sec-kicker"></span>',
+                        f'<span id="cover-kicker" class="sec-kicker">'
+                        f'AGENTII THESIS REPORT · {esc(thesis_num)}</span>', 1)
+    html = html.replace("__SLUG__", esc(slug), 1)
+    html = html.replace("__TOTAL__", f"{total:02d}", 1)
     html = html.replace('<p id="cover-claim" class="claim"></p>',
                         f'<p id="cover-claim" class="claim">{esc(facts["claim"] or "—")}</p>', 1)
     html = html.replace('<td id="cover-pin"></td>',
@@ -413,6 +511,8 @@ def assemble(thesis: Path, out_path: Path | None = None, *,
     problems = _validate_content(content, pack_txt)
     if problems:
         raise ValueError("content.html validation failed:\n- " + "\n- ".join(problems))
+    for advisory in _quality_advisories(content):
+        print(f"advisory: {advisory}", file=sys.stderr)
 
     pages_html = _renumber_pages(render_chart_tokens(content))
     shash = sources_hash(thesis)

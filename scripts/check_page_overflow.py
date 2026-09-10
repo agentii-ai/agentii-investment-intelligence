@@ -35,6 +35,7 @@ class _Estimator(html.parser.HTMLParser):
         self._current = None
         self._text_buf: list[str] = []
         self._row_max = 0.0  # tallest cell of the current table row
+        self._skip = False  # inside assembler chrome (sheet head/foot, reg marks)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -43,6 +44,7 @@ class _Estimator(html.parser.HTMLParser):
             self.pages.append(self._current)
         if self._current is None:
             return
+        classes = (attrs.get("class") or "").split()
         if tag == "img":
             # chart tokens carry an explicit data-height → the assembler renders
             # <img height="N">; honour it, then style="height:Npx", else default.
@@ -63,14 +65,27 @@ class _Estimator(html.parser.HTMLParser):
             self._current["height"] += 26.0
         elif tag in ("hr",):
             self._current["height"] += 10.0
+        elif tag == "div" and "stat-row" in classes:
+            # v0.3.0 KPI tile row (tile text still counted via its inner divs)
+            self._current["height"] += 72.0
+        elif tag in ("div", "span") and "sec-kicker" in classes:
+            self._current["height"] += 16.0
+        elif tag == "div" and "tl-item" in classes:
+            self._current["height"] += 10.0  # rail-node spacing; text still counted
+        # Assembler chrome lives in the padding zone — never counted.
+        if ((tag in ("div", "span") and {"sheet-head", "sheet-foot"} & set(classes))
+                or (tag == "i" and any("reg" in c for c in classes))):
+            self._skip = True
 
     def handle_data(self, data):
-        if self._current is not None and data.strip():
+        if self._current is not None and not self._skip and data.strip():
             self._text_buf.append(data)
 
     def handle_endtag(self, tag):
         if self._current is None:
             return
+        if tag in ("div", "span", "i") and self._skip:
+            self._skip = False  # chrome elements carry no nested content
         if tag in ("td", "th"):
             # table rows: height is the tallest cell, not the sum (v0.2.0 fix —
             # the old flat +22/tr fee double-counted cell text and made every
