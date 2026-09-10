@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-  thesis-report.html — the print-first thesis report template (spec 046 Q46).
+  thesis-report.html — the print-first thesis report template (spec 046 Q46), v0.2.0.
   Letter pages (8.5×11in = 215.9mm × 279.4mm), all CSS/JS embedded, images
   base64 data-URI. Zero external links — the file must print offline.
   Layout technique informed by the AI-Sci-Vi reference (converted to letter).
-  Pins: sources_hash / template_version are injected by synthesize_report.py;
-  the open-time JS pin check raises the yellow "source data updated" bar (Q50).
+
+  v0.2.0 (LLM-authored content): page 1 is a cover shell owned by the template
+  (title / claim / pins / universe / generated / TOC — filled by the assembler);
+  the LLM-authored page sequence is injected at <!-- PAGES -->. Variable page
+  count — the build-time overflow gate (check_page_overflow.py) is the blocking
+  authority per page.
+
+  Pins: sources_hash / template_version are embedded by synthesize_report.py;
+  converge.py flags html_stale on mismatch (the open-time JS bar below is a
+  chrome remnant — an offline file cannot read disk, so converge is the
+  enforcement and the bar only fires when both pins are present).
 -->
 <head>
 <meta charset="utf-8">
@@ -17,30 +26,44 @@
     --accent: #1e2a4a;             /* agentii.ai navy */
     --primary-foreground: #080b14;
     --accent-foreground: #f0ede3;  /* cream */
+    --font-base: 11pt;             /* tier fallback overrides inline (Q47) */
   }
   @page { size: letter; margin: 0; }
   * { box-sizing: border-box; }
   body { margin: 0; background: #fff; color: var(--primary-foreground);
-         font-family: Georgia, 'Times New Roman', serif; font-size: 11pt;
+         font-family: Georgia, 'Times New Roman', serif; font-size: var(--font-base);
          line-height: 1.45; }
   .page { width: 215.9mm; height: 279.4mm; padding: 16mm 15mm;
           page-break-after: always; overflow: hidden; position: relative; }
   .page:last-child { page-break-after: auto; }
   h1 { font-size: 20pt; color: var(--accent); border-bottom: 2px solid var(--primary); }
   h2 { font-size: 14pt; color: var(--accent); }
+  h3 { font-size: 12pt; color: var(--accent); }
   .report-header { display: flex; justify-content: space-between; align-items: center;
                    border-bottom: 1px solid var(--primary); padding-bottom: 4mm;
                    margin-bottom: 8mm; }
   .report-header .brand { font-weight: bold; color: var(--accent); }
   .report-header .brand a { color: var(--accent); text-decoration: none; }
   .report-header .contact { font-size: 9pt; color: #444; }
-  table { border-collapse: collapse; width: 100%; font-size: 9.5pt; }
-  th, td { border: 1px solid #999; padding: 2mm 3mm; text-align: left; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.5pt;
+          table-layout: fixed; }
+  th, td { border: 1px solid #999; padding: 2mm 3mm; text-align: left;
+           overflow-wrap: anywhere; }
   th { background: var(--accent); color: var(--accent-foreground); }
   .citation, a { color: #1a3a8a; }
   .pillar { margin-bottom: 6mm; }
   .wrong_if { font-family: 'Courier New', monospace; font-size: 9pt;
               background: var(--accent-foreground); padding: 2mm; }
+  .claim { font-style: italic; font-size: 11.5pt; color: #222; margin: 4mm 0; }
+  #cover-meta { margin: 4mm 0 6mm; }
+  #cover-meta th { width: 38mm; }
+  .toc h2 { margin-top: 6mm; }
+  .toc ol { padding-left: 6mm; }
+  .toc a { text-decoration: none; }
+  .headline { background: var(--accent-foreground); border-left: 1mm solid var(--primary);
+              padding: 2mm 3mm; margin: 4mm 0; }
+  .draft-banner { background: #c00; color: #fff; text-align: center;
+                  font-size: 10pt; padding: 2mm; }
   .stale-bar { display: none; position: fixed; top: 0; left: 0; right: 0;
                background: #ffd75e; color: #080b14; text-align: center;
                font-size: 10pt; padding: 2mm; z-index: 99; }
@@ -57,39 +80,25 @@
 <div class="stale-bar" id="stale-bar">This report was generated on a previous
   state of its source data — see reproduce.md before distributing.</div>
 
-<!-- ⬇ synthesize_report.py fills sections from the thesis markdown artifacts -->
-
+<!-- ⬇ Page 1: cover shell — owned by the template, filled by the assembler -->
 <section class="page" data-report-page="1">
   <div class="report-header">
     <span class="brand"><a href="https://www.agentii.ai">www.agentii.ai</a><br>
       Agent-Use-Ready Financial Data and Skills Platform</span>
     <span class="contact">hello@agentii.xyz</span>
   </div>
-  <h1>Executive Summary</h1>
-  <div id="exec-summary"><!-- filled by synthesizer --></div>
+  <h1 id="cover-title">Thesis Report</h1>
+  <p id="cover-claim" class="claim"></p>
+  <table id="cover-meta">
+    <tr><th>Constitution pin</th><td id="cover-pin"></td></tr>
+    <tr><th>As of</th><td id="cover-as-of"></td></tr>
+    <tr><th>Universe</th><td id="cover-universe"></td></tr>
+    <tr><th>Generated</th><td id="cover-generated"></td></tr>
+  </table>
+  <div id="cover-toc" class="toc"></div>
 </section>
 
-<section class="page" data-report-page="2">
-  <h2>Pillars</h2>
-  <div id="pillars"><!-- filled by synthesizer --></div>
-</section>
-
-<section class="page" data-report-page="3">
-  <h2>Universe</h2>
-  <div id="universe"><!-- filled by synthesizer --></div>
-</section>
-
-<section class="page" data-report-page="4">
-  <h2>Cross-Cutting</h2>
-  <div id="cross-cutting"><!-- filled by synthesizer --></div>
-</section>
-
-<section class="page" data-report-page="5">
-  <h2>Coverage Gaps</h2>
-  <div id="coverage-gaps"><!-- filled by synthesizer --></div>
-  <p class="citation">Citations use the agentii viewer:
-    <code>https://agentii.ai/v/{ticker}/{citation_id}/{N}</code></p>
-</section>
+<!-- PAGES — assembler injects the LLM-authored <section class="page"> sequence -->
 
 <script>
 // Q47 runtime safety net — warn only, never the gate (the build-time checker
@@ -97,7 +106,9 @@
 document.querySelectorAll('.page').forEach(function (pg) {
   if (pg.scrollHeight > pg.clientHeight + 2) { pg.classList.add('page-overflow'); }
 });
-// Q50 open-time pin check: the synthesizer embeds the pins as data attributes.
+// Q50 open-time pin check: fires only when both pins are present (chrome —
+// converge.py's html_stale finding is the enforcement; an offline file
+// cannot read disk).
 (function () {
   var bar = document.getElementById('stale-bar');
   if (document.body.dataset.sourcesHash && document.body.dataset.diskHash &&

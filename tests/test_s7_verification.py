@@ -10,6 +10,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import challenge  # noqa: E402
 import check_page_overflow  # noqa: E402
 import converge  # noqa: E402
 import resolve_template  # noqa: E402
@@ -17,30 +18,200 @@ import synthesize_report  # noqa: E402
 import validate_scenes  # noqa: E402
 
 
-def test_report_synthesizes_with_pins_and_passes_overflow_gate(tmp_path):
-    thesis = tmp_path / "theses" / "001-mvp"
+def _write_report_sources(thesis: Path) -> None:
+    """The v0.2.0 report fixture: spec + synthesis + snapshot + one artifact.
+    The synthesis body carries the citation the authored content may link to."""
+    (thesis / "_cross").mkdir(parents=True)
+    (thesis / "_cross" / "x_synthesis.md").write_text("""---
+constitution_pin: "1.3.0"
+as_of: 2026-09-10
+---
+
+# Cross-Stock Synthesis
+
+## Executive Summary
+
+Real narrative paragraph one.
+
+## 3. Cross-ticker evidence
+
+| Ticker | Headline | Value | Citation |
+|---|---|---|---|
+| NVDA | FY2026 revenue | $215.9B | https://agentii.ai/v/NVDA/sec169/37 |
+""")
+    (thesis / "snapshots" / "001-x").mkdir(parents=True)
+    (thesis / "snapshots" / "001-x" / "t.md").write_text(
+        '{"mechanical": {"entry_count": 24, "by_skill": {"risk": 6, "supply-chain": 4},'
+        ' "price_freshness": {"fresh": true}}}')
     (thesis / "artifacts" / "NVDA").mkdir(parents=True)
     (thesis / "artifacts" / "NVDA" / "a.md").write_text("""---
 assumption_pin: 1
-corpus_version: "2026-08"
-as_of: 2026-09-08
-constitution_pin: 0.1.0
+corpus_version: "x"
+as_of: 2026-09-10
+constitution_pin: 1.3.0
 skill_pin: "x:y"
 mode: default
 data_class: slow
 ---
 
-# body
+# NVDA body — cited at https://agentii.ai/v/NVDA/sec169/37
 """)
-    path, shash, degraded = synthesize_report.synthesize(thesis)
-    assert path.is_file()
-    assert len(shash) == 16
-    assert not degraded  # a normal thesis fits the letter pages
+    (thesis / "spec.md").write_text("""# Research Thesis: Test Baseline
+
+**Claim**: Data binds, not compute.
+
+| Ticker | Company | Sector | Weight in Thesis | Rationale |
+|---|---|---|:---:|---|
+| NVDA | Compute reference | IT | ~16.7% | x |
+""")
+
+
+def _write_minimal_content(thesis: Path, pages: str = "") -> None:
+    (thesis / "report").mkdir(parents=True, exist_ok=True)
+    (thesis / "report" / "content.html").write_text(pages or """
+<section class="page">
+<h2>Executive Summary</h2>
+<p>Condensed narrative.</p>
+</section>
+<section class="page">
+<h2>Evidence</h2>
+<table>
+<thead><tr><th>Ticker</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>NVDA</td><td>$215.9B <a href="https://agentii.ai/v/NVDA/sec169/37">sec169/37</a></td></tr>
+</tbody>
+</table>
+</section>
+""")
+
+
+def test_pack_deterministic_and_complete(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_report_sources(thesis)
+    out, shash = synthesize_report.pack(thesis)
+    assert out.is_file() and len(shash) == 16
+    text = out.read_text(encoding="utf-8")
+    assert "Real narrative paragraph one" in text      # synthesis body verbatim
+    assert '"supply-chain": 4' in text                 # snapshot verbatim
+    assert "NVDA body" in text                         # artifact verbatim
+    assert "Test Baseline" in text                     # header facts
+    assert "~16.7%" in text
+    # deterministic: a second pack run is byte-identical (no timestamps)
+    assert synthesize_report.pack_text(thesis) == text
+    # sources_hash covers all three source families
+    h0 = synthesize_report.sources_hash(thesis)
+    art = thesis / "artifacts" / "NVDA" / "a.md"
+    art.write_text(art.read_text() + "\n# extra\n")
+    assert synthesize_report.sources_hash(thesis) != h0
+    art.write_text(art.read_text().replace("\n# extra\n", ""))
+    snap = thesis / "snapshots" / "001-x" / "t.md"
+    snap.write_text('{"mechanical": {"entry_count": 25}}')
+    assert synthesize_report.sources_hash(thesis) != h0
+    snap.write_text('{"mechanical": {"entry_count": 24, "by_skill": {"risk": 6, "supply-chain": 4},'
+                    ' "price_freshness": {"fresh": true}}}')
+    synth = thesis / "_cross" / "x_synthesis.md"
+    synth.write_text(synth.read_text() + "\n# extra\n")
+    assert synthesize_report.sources_hash(thesis) != h0
+
+
+def test_assemble_requires_content_html(tmp_path, capsys):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_report_sources(thesis)
+    rc = synthesize_report.main(["assemble", "--thesis", str(thesis)])
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "report/content.html" in err and "pack" in err
+
+
+def test_assemble_synthesizes_with_pins_and_passes_overflow_gate(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_report_sources(thesis)
+    _write_minimal_content(thesis)
+    path, shash, degraded = synthesize_report.assemble(thesis)
+    assert path.is_file() and not degraded and len(shash) == 16
     html = path.read_text(encoding="utf-8")
-    assert "www.agentii.ai" in html
-    assert "hello@agentii.xyz" in html
-    assert f'data-sources-hash="{shash}"' in html  # Q50 pins embedded
+    assert "www.agentii.ai" in html and "hello@agentii.xyz" in html
+    assert f'data-sources-hash="{shash}"' in html          # Q50 pins embedded
+    assert 'data-template-version="0.2.0"' in html
+    assert "Test Baseline — agentii Thesis Report" in html  # cover title
+    assert "Data binds, not compute." in html               # cover claim
+    assert '<td id="cover-universe">NVDA ~16.7%</td>' in html
+    assert 'data-report-page="2"' in html and 'id="page-2"' in html  # renumbered
+    assert 'href="#page-2"' in html                         # TOC anchor
+    assert synthesize_report.PAGES_COMMENT not in html     # injection point consumed
+    assert "https://agentii.ai/v/NVDA/sec169/37" in html    # citation rendered
     assert check_page_overflow.check(html) == []
+
+
+def test_assemble_rejects_fabricated_citations(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_report_sources(thesis)
+    _write_minimal_content(thesis, """
+<section class="page">
+<h2>Evidence</h2>
+<p><a href="https://agentii.ai/v/NVDA/sec999/1">invented</a></p>
+</section>
+""")
+    try:
+        synthesize_report.assemble(thesis)
+        raise AssertionError("fabricated citation must fail validation")
+    except ValueError as exc:
+        assert "sec999" in str(exc)
+
+
+def test_chart_token_rendered(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_report_sources(thesis)
+    _write_minimal_content(thesis, """
+<section class="page">
+<h2>Peers</h2>
+<div data-chart="peer_bars" data-spec='{"labels":["NVDA"],"values":[215.9]}' data-height="200"></div>
+</section>
+""")
+    path, _shash, degraded = synthesize_report.assemble(thesis)
+    assert not degraded
+    html = path.read_text(encoding="utf-8")
+    assert "data:image/svg+xml;base64," in html            # Q48 base64 inline
+    assert 'height="200"' in html                          # honest page budget
+
+
+def test_overflow_tier_fallback_and_degrade(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_report_sources(thesis)
+    word = "word " * 20
+    # ~38 paragraphs → above the tier-1 limit, below tier-2 (Q47 3-tier loop).
+    mid = "<section class=\"page\"><h2>Long</h2>" + "".join(f"<p>{word}</p>" for _ in range(38)) + "</section>"
+    _write_minimal_content(thesis, mid)
+    path, _shash, degraded = synthesize_report.assemble(thesis)
+    assert not degraded
+    html = path.read_text(encoding="utf-8")
+    assert 'data-font-tier="2"' in html and "font-size:9.0pt" in html
+
+    # unresolvable → markdown fallback (the full pack) + HTML draft banner
+    huge = "<section class=\"page\"><h2>Long</h2>" + "".join(f"<p>{word}</p>" for _ in range(60)) + "</section>"
+    _write_minimal_content(thesis, huge)
+    path, _shash, degraded = synthesize_report.assemble(thesis)
+    assert degraded
+    assert path.with_suffix(".md").is_file()
+    assert "Real narrative paragraph one" in path.with_suffix(".md").read_text()
+    assert "draft-banner" in path.read_text()
+
+
+def test_converge_flags_html_stale(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_report_sources(thesis)
+    _write_minimal_content(thesis)
+    synthesize_report.assemble(thesis)
+    # mutate a source after the report was built → html_stale finding
+    art = thesis / "artifacts" / "NVDA" / "a.md"
+    art.write_text(art.read_text() + "\n# post-report edit\n")
+    result = converge.run(thesis, {})
+    assert result["status"] == "gaps_found"
+    tasks = (thesis / "tasks.md").read_text(encoding="utf-8")
+    assert "converge:html_stale" in tasks
+    # idempotent: a re-run appends nothing (content-derived finding id)
+    assert converge.run(thesis, {})["status"] == "converged"
+    assert tasks.count("html_stale") == 1
 
 
 def test_all_four_presets_resolve_over_core(tmp_path):
@@ -104,3 +275,18 @@ def test_analyze_cross_artifact_consistency():
     # the 9/53 mode substrate is consistent between plan and implementation
     plan = (ROOT / ".." / "specs" / "046-agentii-research-orchestration" / "plan.md").read_text()
     assert "9 of 62" in plan and "remaining 53" in plan
+
+
+def test_challenge_writes_findings_file(tmp_path, capsys):
+    thesis = tmp_path / "theses" / "001-x"
+    (thesis / "artifacts").mkdir(parents=True)
+    rc = challenge.main(["--thesis", str(thesis)])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "findings written →" in out
+    files = list((thesis / "challenge").glob("*.md"))
+    assert len(files) == 1
+    text = files[0].read_text()
+    assert "# Challenge Findings" in text
+    assert "## IC findings" in text
+    assert "Backstops triggered" in text

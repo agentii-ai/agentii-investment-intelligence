@@ -16,6 +16,10 @@ Append-only gap closure — the cadence engine of the research orchestration sys
 - After every `agentii.implement` batch (the system detects its own staleness).
 - On any cadence cycle (quarterly re-visits, post-earnings, post-constitution-bump).
 - Before any IC review (the conflict list must be current).
+- When the cross-stock synthesis tasks complete, close the loop with the report
+  workflow — see `skills/agentii/synthesize/SKILL.md` (pack → author
+  content.html → assemble). An `html_stale` finding below means that workflow
+  must re-run.
 
 ## What it does
 

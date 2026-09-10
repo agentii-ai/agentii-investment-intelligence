@@ -27,6 +27,7 @@ from typing import Any, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g1_gate  # noqa: E402 — frontmatter parsing
+import synthesize_report  # noqa: E402 — Q50 sources_hash / source_files
 
 MAX_JUDGMENT_FINDINGS = 50  # Q40 cap for the judgment class only
 FIVE_PINS = g1_gate.FIVE_PINS
@@ -292,6 +293,32 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
     # Judgment-class, capped: missing artifacts.
     missing_rows, judgment_count = _evaluate_missing(thesis, tasks_text, existing_ids)
     appended.extend(missing_rows)
+
+    # Q50 html_stale, deterministic + uncapped: a report whose embedded pins no
+    # longer match the source markdown (or whose template version moved, or
+    # whose inputs changed after the report was built) must be regenerated.
+    # The open-time JS bar cannot read disk — this finding is the enforcement.
+    report = thesis / "thesis-report.html"
+    if report.is_file():
+        text = report.read_text(encoding="utf-8")
+        emb = re.search(r'data-sources-hash="([0-9a-f]{16})"', text)
+        emb_tv = re.search(r'data-template-version="([^"]+)"', text)
+        input_mtimes = [p.stat().st_mtime for p in synthesize_report.source_files(thesis)]
+        content_html = thesis / "report" / "content.html"
+        if content_html.is_file():
+            input_mtimes.append(content_html.stat().st_mtime)
+        stale = (
+            emb is None or emb.group(1) != synthesize_report.sources_hash(thesis)
+            or emb_tv is None or emb_tv.group(1) != synthesize_report.TEMPLATE_VERSION
+            or (input_mtimes and max(input_mtimes) > report.stat().st_mtime))
+        if stale:
+            fid = finding_id("thesis", "report", "html", "stale")
+            if fid not in existing_ids:
+                existing_ids.add(fid)
+                appended.append(
+                    f"- [ ] {_next_row_id()} [Convergence] Re-run synthesis "
+                    f"(pack → author content.html → assemble): thesis-report.html "
+                    f"pins stale (src: converge:html_stale id={fid})")
 
     # Q58: a thesis paused on budget is a finding, not silence.
     try:
