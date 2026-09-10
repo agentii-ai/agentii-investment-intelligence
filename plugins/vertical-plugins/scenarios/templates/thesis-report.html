@@ -41,7 +41,7 @@
   body { margin: 0; background: #fff; color: var(--primary-foreground);
          font-family: Georgia, 'Times New Roman', serif; font-size: var(--font-base);
          line-height: 1.45; }
-  .page { width: 215.9mm; height: 279.4mm; padding: 16mm 15mm;
+  .page { width: 215.9mm; min-width: 215.9mm; height: 279.4mm; padding: 16mm 15mm;
           page-break-after: always; overflow: hidden; position: relative; }
   .page:last-child { page-break-after: auto; }
   h1 { font-size: 20pt; color: var(--accent); border-bottom: 2px solid var(--primary); }
@@ -132,6 +132,11 @@
   .print-btn:active { transform: scale(0.97); }
   .cover .print-btn { background: var(--primary); color: var(--primary-foreground); }
   .cover .print-btn:hover { background: var(--accent-foreground); color: var(--accent); }
+  .print-center { position: absolute; left: 50%; transform: translateX(-50%);
+                  display: flex; align-items: center; gap: 2mm; }
+  .print-hint { font-family: 'Courier New', monospace; font-size: 6.5pt;
+                letter-spacing: 0.08em; text-transform: uppercase; color: #888; }
+  .cover .print-hint { color: #b8b08a; }
   .reg { position: absolute; width: 3mm; height: 3mm; }
   .reg-tl { top: 5mm; left: 5mm; border-top: 0.5mm solid var(--primary); border-left: 0.5mm solid var(--primary); }
   .reg-tr { top: 5mm; right: 5mm; border-top: 0.5mm solid var(--primary); border-right: 0.5mm solid var(--primary); }
@@ -157,10 +162,17 @@
   .cover-motif { position: absolute; right: 12mm; bottom: 16mm; width: 68mm; opacity: 0.55; }
 
   @media print {
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* AI-Sci-Vi print contract (letter): the page box IS the paper — no
+       dialog margins, no shrink-to-fit, one section = exactly one sheet. */
+    html, body { background: #fff; margin: 0 !important; padding: 0 !important; }
+    .page { zoom: 1 !important; break-after: page; page-break-after: always;
+            break-inside: avoid; page-break-inside: avoid; }
+    .page:last-child { break-after: auto; page-break-after: auto; }
     .page-overflow { page-break-after: always; }
     .stale-bar { display: none !important; }
     .no-print { display: none !important; }
+    * { animation: none !important; transition: none !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -200,7 +212,7 @@
       <path d="M 11.1 0 A 6.9 6.9 0 0 1 4.2 6.9"/>
     </g>
   </svg>
-  <div class="sheet-foot"><span>__SLUG__</span><button type="button" class="print-btn no-print" onclick="window.print()">Print / PDF</button><span class="page-mark">01 / __TOTAL__</span></div>
+  <div class="sheet-foot"><span>__SLUG__</span><span class="print-center no-print"><button type="button" class="print-btn" title="Safari print dialog — Paper: US Letter · Margins: None · Scale: 100% · Print backgrounds: ON" onclick="window.print()">Print / PDF</button><span class="print-hint">US Letter · Margins: None · Scale: 100% · Print backgrounds</span></span><span class="page-mark">01 / __TOTAL__</span></div>
 </section>
 
 <!-- PAGES — assembler injects the LLM-authored <section class="page"> sequence -->

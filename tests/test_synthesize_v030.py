@@ -160,8 +160,10 @@ def test_inject_page_chrome(tmp_path):
     html = path.read_text(encoding="utf-8")
     assert html.count('class="sheet-head"') == 3          # cover + 2 content pages
     assert html.count('class="reg reg-tl"') == 3
-    assert html.count('class="print-btn no-print"') == 3  # Print / PDF on every page
+    assert html.count('class="print-center no-print"') == 3  # centered print cluster
+    assert html.count('class="print-btn"') == 3           # Print / PDF on every page
     assert html.count('onclick="window.print()"') == 3
+    assert html.count('class="print-hint"') == 3          # dialog guidance on every page
     assert "02 / 03" in html                              # page marks
     assert "__TOTAL__" not in html and "__SLUG__" not in html
     assert "AGENTII THESIS REPORT · 001" in html          # cover kicker

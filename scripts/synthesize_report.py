@@ -395,8 +395,13 @@ def _inject_page_chrome(pages_html: str, total: int, slug: str, thesis_num: str)
                 + '<i class="reg reg-tl"></i><i class="reg reg-tr"></i>'
                   '<i class="reg reg-bl"></i><i class="reg reg-br"></i>'
                 + f'<div class="sheet-foot"><span>{_html.escape(slug)}</span>'
-                  '<button type="button" class="print-btn no-print" '
+                  '<span class="print-center no-print">'
+                  '<button type="button" class="print-btn" '
+                  'title="Safari print dialog — Paper: US Letter · Margins: None · '
+                  'Scale: 100% · Print backgrounds: ON" '
                   'onclick="window.print()">Print / PDF</button>'
+                  '<span class="print-hint">US Letter · Margins: None · '
+                  'Scale: 100% · Print backgrounds</span></span>'
                   f'<span class="page-mark">{n:02d} / {total:02d}</span></div>')
 
     return re.sub(r'(<section\b[^>]*data-report-page="(\d+)"[^>]*>)', _chrome, pages_html)
