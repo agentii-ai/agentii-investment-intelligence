@@ -203,6 +203,52 @@ def test_clarify_scanner_clean_spec_yields_fewer_questions(tmp_path):
     assert not any(q["id"] == "wrongif-0" for q in qs)
 
 
+def test_clarify_subscription_scanner_is_line_anchored_and_ticker_prefixed(tmp_path):
+    """Regression (2026-09-10, found dogfooding T-001): two defects in check #5.
+
+    (a) The regex used `([^$]+)`. Inside a character class `$` is a LITERAL
+        dollar, not an end anchor, and it matches newlines — so with no '$' in
+        the file the capture ran to EOF and every spec reported one bogus
+        "malformed subscription" assembled from unrelated trailing lines.
+    (b) The predicate was `" × " not in s`, which accepts `skill × mode`. A
+        ticker-less token contains ' × ' as well, so the real Q79 violation was
+        never reported at all.
+
+    Net effect: the only candidate emitted was a false positive, and the true
+    violations were invisible.
+    """
+    # (a) line-anchoring: content AFTER the Subscribed line must not bleed in.
+    spec = tmp_path / "spec.md"
+    spec.write_text(
+        "### Pillar 1 — A (Priority: P1)\n"
+        "**Subscribed**: `NVDA × business-model`\n"
+        "\n"
+        "### Pillar 2 — B (Priority: P2)\n"
+        "**Subscribed**: `secular-trends × default`\n"
+        "\n"
+        "## 2. Universe Definition\n"
+        "| TSLA | Tesla | Tech | 20% | rationale |\n"
+    )
+    qs = agentii_cmd.clarify_questions(spec)
+    sub_qs = [q for q in qs if q["id"] == "subscriptions"]
+    # exactly one pillar is malformed — P1 must NOT be swept up by P2's capture
+    assert len(sub_qs) == 1, f"expected 1 flagged pillar, got {len(sub_qs)}"
+    assert "secular-trends" in sub_qs[0]["question"]
+    assert "business-model" not in sub_qs[0]["question"]
+
+    # (b) ticker-less `skill × mode` IS a violation; the old predicate passed it.
+    assert " × " in "`secular-trends × default`"
+
+    # and a fully correct spec yields no subscription question at all
+    clean = tmp_path / "clean.md"
+    clean.write_text(
+        "### Pillar 1 — A (Priority: P1)\n"
+        "**Subscribed**: `NVDA × business-model`, `TSLA × risk`\n"
+    )
+    assert not any(q["id"] == "subscriptions"
+                   for q in agentii_cmd.clarify_questions(clean))
+
+
 def test_clarify_encode_appends_clarifications_section(tmp_path):
     spec = tmp_path / "spec.md"
     spec.write_text(SPEC_UNDERSPEC)

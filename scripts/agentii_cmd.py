@@ -209,15 +209,27 @@ def clarify_questions(spec_path: Path) -> list[dict]:
                                       "[earnings_release]",
                                       "[earnings_release, constitution_bump, skill_version_mix]"]})
     # 5. subscriptions not in TICKER × skill form (Q9/Q79)
-    for m in __import__("re").finditer(r"Subscribed\*\*:\s*([^$]+)", text):
+    # NOTE (2026-09-10): two defects fixed here.
+    #   (a) `[^$]+` — inside a character class `$` is a LITERAL dollar, not an
+    #       end-of-string anchor — and it matches newlines. With no '$' in the
+    #       file the capture ran to EOF, so every spec reported one bogus
+    #       "malformed subscription" made of fragments from unrelated lines.
+    #   (b) the test was `" × " not in s`, which accepts `skill × mode`. A
+    #       ticker-less token contains ' × ' too, so the real Q79 violation was
+    #       never caught. The ticker must be anchored on the left.
+    for m in __import__("re").finditer(r"Subscribed\*\*:\s*([^\n]+)", text):
         subs = [s.strip() for s in m.group(1).split(",") if s.strip()]
-        malformed = [s for s in subs if " × " not in s]
+        malformed = [s for s in subs
+                     if not __import__("re").match(r"^`?[A-Z0-9.]{1,6} × ", s)]
         if malformed:
             questions.append({
                 "id": "subscriptions", "target": "pillar subscriptions",
                 "question": "Subscription tokens must be 'TICKER × skill' pairs "
                             f"(got: {', '.join(malformed[:3])}) — they are the "
-                            f"consistency statement (Q9) and the task identity (Q79).",
+                            f"consistency statement (Q9) and the task identity (Q79). "
+                            f"dispatch.py matches `ticker in subs` for earnings-trigger "
+                            f"flips and thesis_status.py regex-extracts tickers from "
+                            f"these, so a ticker-less token silently breaks both.",
                 "options": None})
     return questions[:MAX_CLARIFY_QUESTIONS]
 
