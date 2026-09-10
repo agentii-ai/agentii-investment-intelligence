@@ -50,6 +50,10 @@
 - Cross-Stock: `_cross/{sector}_synthesis.md`
 - Snapshot: `snapshots/{nnn}-{slug}/YYYY-MM-DD_thesis.md`
 
+## Clarifications *(filled by agentii.clarify — append-only)*
+
+- [YYYY-MM-DD] Q: … → A: …
+
 ## 7. Thesis Phases
 | Phase | Tasks | Duration | Dependencies |
 |:---:|------|:---:|------|

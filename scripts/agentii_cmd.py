@@ -160,9 +160,109 @@ def tasks_from_spec(spec_path: Path, registry: dict) -> list[str]:
     return expand_tasks(entries)
 
 
+# --- clarify (the 8th kit command — D75 #4) -----------------------------------
+
+MAX_CLARIFY_QUESTIONS = 5  # upstream v1.0.4's tightened per-round limit
+
+
+def clarify_questions(spec_path: Path) -> list[dict]:
+    """Phase 1 — a DETERMINISTIC scanner, never vibes. Candidate questions for
+    underspecified spec items, each naming the field it unblocks."""
+    text = spec_path.read_text(encoding="utf-8")
+    questions: list[dict] = []
+    # 1. prose wrong_if (Q8 contract 4: must be machine-checkable)
+    for m in __import__("re").finditer(r"\*\*wrong_if\*\*:\s*(.+)$", text,
+                                       flags=__import__("re").MULTILINE):
+        w = m.group(1).strip()
+        if not ("metric=" in w and "threshold=" in w and "source=" in w):
+            questions.append({
+                "id": f"wrongif-{len(questions)}",
+                "target": "pillar wrong_if",
+                "question": "Convert this prose wrong_if into machine-checkable form "
+                            "— metric=<…> threshold=<…> source=<…> [op=<</>/<=/>=/==>] "
+                            "(Q8 contract 4 rejects prose).",
+                "options": None})
+    # 2. universe rows without inclusion rationale
+    for m in __import__("re").finditer(
+            r"^\|\s*([A-Z0-9]{1,5})\s*\|[^|]*\|[^|]*\|[^|]*\|\s*\|",
+            text, flags=__import__("re").MULTILINE):
+        questions.append({
+            "id": f"rationale-{m.group(1)}",
+            "target": f"universe row {m.group(1)}",
+            "question": f"Write the inclusion rationale for {m.group(1)} — every "
+                        f"ticker's membership must be justified (spec-template §2).",
+            "options": None})
+    # 3. budget undeclared (Q58)
+    if "max_tasks" not in text:
+        questions.append({"id": "budget", "target": "thesis budget",
+                          "question": "Declare the thesis budget — "
+                                      "{max_tasks, max_retries_per_task} (Q58).",
+                          "options": ["{max_tasks: 80, max_retries_per_task: 2}",
+                                      "{max_tasks: 40, max_retries_per_task: 2}",
+                                      "{max_tasks: 160, max_retries_per_task: 3}"]})
+    # 4. expiry_triggers undeclared (Q59)
+    if "expiry_triggers" not in text:
+        questions.append({"id": "expiry", "target": "expiry triggers",
+                          "question": "Declare expiry_triggers — which events should "
+                                      "auto-flag claims for re-review (Q59).",
+                          "options": ["[earnings_release, fda_decision]",
+                                      "[earnings_release]",
+                                      "[earnings_release, constitution_bump, skill_version_mix]"]})
+    # 5. subscriptions not in TICKER × skill form (Q9/Q79)
+    for m in __import__("re").finditer(r"Subscribed\*\*:\s*([^$]+)", text):
+        subs = [s.strip() for s in m.group(1).split(",") if s.strip()]
+        malformed = [s for s in subs if " × " not in s]
+        if malformed:
+            questions.append({
+                "id": "subscriptions", "target": "pillar subscriptions",
+                "question": "Subscription tokens must be 'TICKER × skill' pairs "
+                            f"(got: {', '.join(malformed[:3])}) — they are the "
+                            f"consistency statement (Q9) and the task identity (Q79).",
+                "options": None})
+    return questions[:MAX_CLARIFY_QUESTIONS]
+
+
+def clarify_encode(spec_path: Path, answers: list[dict]) -> str:
+    """Phase 2 — append answers to the spec's `## Clarifications` section, then
+    re-evaluate checklists/thesis-quality.md (Q32 bidirectional maintenance)."""
+    import datetime
+
+    today = datetime.date.today().isoformat()
+    block = "\n".join(f"- [{today}] Q: {a.get('question', '')} → A: {a.get('answer', '')}"
+                      for a in answers)
+    text = spec_path.read_text(encoding="utf-8")
+    if "## Clarifications" in text:
+        text = text.replace("## Clarifications", f"## Clarifications\n\n{block}", 1)
+    else:
+        text = text.rstrip() + f"\n\n## Clarifications\n\n{block}\n"
+    spec_path.write_text(text, encoding="utf-8")
+
+    # Q32: the machine-maintained checklist is bidirectional — report the pass
+    # count + regressions after the write.
+    try:
+        import converge  # same-directory module
+
+        regressions = converge.re_evaluate_checklist(spec_path.parent)
+        checklist_note = f"; checklist regressions: {len(regressions)}"
+    except (ImportError, OSError):
+        checklist_note = "; checklist re-evaluation skipped (no checklist)"
+    return f"encoded {len(answers)} answer(s) into {spec_path.name}{checklist_note}"
+
+
 # --- constitution (Q33/Q83) ---------------------------------------------------
 
-def constitution_scaffold(workspace: Path) -> list[Path]:
+def constitution_scaffold(workspace: Path, *, force: bool = False) -> list[Path]:
+    """Scaffold is for EMPTY workspaces only (Q83). A ratified constitution —
+    one whose [WORKSPACE_NAME] placeholder has been replaced — must never be
+    silently overwritten: the doctrine in it is the single source of truth for
+    every thesis. Amend it instead; --force overrides (deliberate reset)."""
+    existing = workspace / "constitution.md"
+    if existing.is_file() and "[WORKSPACE_NAME]" not in existing.read_text(encoding="utf-8"):
+        if not force:
+            raise SystemExit(
+                "SCAFFOLD REFUSED: constitution.md is already ratified — use "
+                "`agentii.constitution amend` (or pass --force to deliberately "
+                "reset the workspace's doctrine)")
     written = []
     for out_name, template_name in L1_FILES.items():
         template = TEMPLATES / template_name
@@ -202,6 +302,13 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--workspace", required=True)
     sp.add_argument("--slug", required=True)
 
+    cl = sub.add_parser("clarify")
+    cl.add_argument("--thesis", required=True)
+    cl.add_argument("--questions", action="store_true",
+                    help="phase 1: emit candidate clarification questions (JSON)")
+    cl.add_argument("--answers", default=None,
+                    help="phase 2: JSON list of {question, answer} to encode")
+
     tp = sub.add_parser("tasks")
     tp.add_argument("--matrix", default=None,
                     help="JSON list of {pillar, ticker, skill, mode(s), purpose} "
@@ -213,6 +320,8 @@ def main(argv: list[str] | None = None) -> int:
     cp = sub.add_parser("constitution")
     cp.add_argument("action", choices=["scaffold", "amend"])
     cp.add_argument("--workspace", required=True)
+    cp.add_argument("--force", action="store_true",
+                    help="deliberately reset a ratified constitution (Q83 guard override)")
     cp.add_argument("--bump", default=None)
     cp.add_argument("--note", default="")
 
@@ -220,6 +329,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "specify":
         print(specify(Path(args.workspace), args.slug))
+    elif args.cmd == "clarify":
+        thesis = Path(args.thesis)
+        spec_path = thesis / "spec.md"
+        if args.answers is not None:
+            print(clarify_encode(spec_path, json.loads(args.answers)))
+        elif args.questions:
+            print(json.dumps(clarify_questions(spec_path), indent=2))
+        else:
+            raise SystemExit("clarify: pass --questions or --answers")
     elif args.cmd == "tasks":
         if args.matrix:
             rows = expand_tasks(json.loads(args.matrix))
@@ -231,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
             print(row)
     elif args.cmd == "constitution":
         if args.action == "scaffold":
-            for f in constitution_scaffold(Path(args.workspace)):
+            for f in constitution_scaffold(Path(args.workspace), force=args.force):
                 print("scaffolded", f)
         else:
             constitution_amend(Path(args.workspace), args.bump, args.note)

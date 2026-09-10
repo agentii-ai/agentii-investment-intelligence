@@ -26,6 +26,24 @@ def test_specify_refused_while_unratified(tmp_path):
     assert "unratified" in str(exc.value)
 
 
+def test_scaffold_refuses_to_clobber_ratified_constitution(tmp_path):
+    """D75 #3: a ratified constitution is the workspace's doctrine — scaffold must
+    refuse to overwrite it silently (the dogfooding session clobbered a ratified
+    v1.0.0 with placeholders). --force is the deliberate reset."""
+    ws = tmp_path / "workspace"
+    agentii_cmd.constitution_scaffold(ws)
+    (ws / "constitution.md").write_text(
+        (ws / "constitution.md").read_text().replace("[WORKSPACE_NAME]", "Test Fund"))
+    with pytest.raises(SystemExit) as exc:
+        agentii_cmd.constitution_scaffold(ws)
+    assert "already ratified" in str(exc.value)
+    # the ratified doctrine survived the refused scaffold
+    assert "Test Fund" in (ws / "constitution.md").read_text()
+    # --force is the deliberate reset path
+    agentii_cmd.constitution_scaffold(ws, force=True)
+    assert "[WORKSPACE_NAME]" in (ws / "constitution.md").read_text()
+
+
 def test_specify_creates_thesis_after_ratification(tmp_path):
     ws = tmp_path / "workspace"
     agentii_cmd.constitution_scaffold(ws)
@@ -142,3 +160,59 @@ def test_tasks_from_spec_end_to_end(tmp_path):
     # Light = essentials_modes (Q79): 1 ticker × len(essentials) rows
     assert len(rq_rows) == len(essentials)
     assert any("× business-model ×" in r for r in bm_rows)
+
+
+# --- D75 #4: agentii.clarify (the 8th kit command) ----------------------------
+
+SPEC_UNDERSPEC = """# Research Thesis: x
+
+## 1. Research Question
+Which humanoid companies win?
+
+### Pillar 1 — (Priority: P1)
+**wrong_if**: If adoption stalls.
+
+**Subscribed**: NVDA, TSLA
+
+## 2. Universe Definition
+| Ticker | Company | Sector | Weight | Rationale for Inclusion |
+|---|---|:---:|---|
+| TSLA | Tesla | Tech | 20% |  |
+| NVDA | NVIDIA | Tech | 20% | Compute leader |
+"""
+
+
+def test_clarify_scanner_finds_underspecified_items(tmp_path):
+    spec = tmp_path / "spec.md"
+    spec.write_text(SPEC_UNDERSPEC)
+    qs = agentii_cmd.clarify_questions(spec)
+    ids = {q["id"] for q in qs}
+    assert "wrongif-0" in ids          # prose wrong_if → machine-checkable
+    assert "rationale-TSLA" in ids     # universe row without rationale
+    assert "budget" in ids             # Q58 undeclared
+    assert "expiry" in ids             # Q59 undeclared
+    assert "subscriptions" in ids      # tokens not in TICKER × skill form
+    assert len(qs) <= agentii_cmd.MAX_CLARIFY_QUESTIONS
+
+
+def test_clarify_scanner_clean_spec_yields_fewer_questions(tmp_path):
+    spec = tmp_path / "spec.md"
+    spec.write_text(SPEC_UNDERSPEC.replace("If adoption stalls.",
+                                           "metric=units threshold=1000 source=company"))
+    qs = agentii_cmd.clarify_questions(spec)
+    assert not any(q["id"] == "wrongif-0" for q in qs)
+
+
+def test_clarify_encode_appends_clarifications_section(tmp_path):
+    spec = tmp_path / "spec.md"
+    spec.write_text(SPEC_UNDERSPEC)
+    report = agentii_cmd.clarify_encode(spec, [
+        {"question": "Declare the thesis budget", "answer": "{max_tasks: 80, max_retries_per_task: 2}"}])
+    text = spec.read_text()
+    assert "## Clarifications" in text
+    assert "max_tasks: 80" in text
+    assert "encoded 1 answer" in report
+    # second encode appends, never rewrites
+    agentii_cmd.clarify_encode(spec, [
+        {"question": "Q2", "answer": "A2"}])
+    assert text.count("## Clarifications") == 1

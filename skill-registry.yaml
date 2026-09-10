@@ -2368,6 +2368,43 @@ skills:
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
+- skill_name: clarify
+  vertical: scenarios
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: null
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: false
+  spec_037_references: 0
+  requires: []
+  role: kit
+  modes:
+  - slug: two-phases
+    market_data_stage: none
+  - slug: analyze-deterministic
+    market_data_stage: none
+  - slug: encode-after-human-answers
+    market_data_stage: none
+  - slug: rules
+    market_data_stage: none
+  essentials_modes: []
+  sectors: []
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
 - skill_name: constitution
   vertical: scenarios
   layer_tags:
