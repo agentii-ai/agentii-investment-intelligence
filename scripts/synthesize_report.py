@@ -411,7 +411,7 @@ def _quality_advisories(content: str) -> list[str]:
     elif not re.search(r'<section\b[^>]*class="[^"]*page[^"]*"[^>]*>'
                        r'(?:(?!</section>).)*?class="stat-row"', content, re.DOTALL):
         advisories.append("the first page (executive summary) has no .stat-row tile row")
-    if not re.search(r'class="badge-(supported|indeterminate|refuted)"', content):
+    if not re.search(r'class="[^"]*badge-(supported|indeterminate|refuted)[^"]*"', content):
         advisories.append("no pillar verdict badges "
                           "(.badge-supported/.badge-indeterminate/.badge-refuted)")
     if 'class="timeline"' not in content:
