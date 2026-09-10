@@ -36,6 +36,7 @@ class _Estimator(html.parser.HTMLParser):
         self._text_buf: list[str] = []
         self._row_max = 0.0  # tallest cell of the current table row
         self._skip = False  # inside assembler chrome (sheet head/foot, reg marks)
+        self._skip_tag: str | None = None
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -76,6 +77,7 @@ class _Estimator(html.parser.HTMLParser):
         if ((tag in ("div", "span") and {"sheet-head", "sheet-foot"} & set(classes))
                 or (tag == "i" and any("reg" in c for c in classes))):
             self._skip = True
+            self._skip_tag = tag
 
     def handle_data(self, data):
         if self._current is not None and not self._skip and data.strip():
@@ -84,8 +86,11 @@ class _Estimator(html.parser.HTMLParser):
     def handle_endtag(self, tag):
         if self._current is None:
             return
-        if tag in ("div", "span", "i") and self._skip:
-            self._skip = False  # chrome elements carry no nested content
+        if tag == self._skip_tag:
+            # chrome elements (and their inner spans/buttons) never count —
+            # clear only when the element that set the skip closes
+            self._skip = False
+            self._skip_tag = None
         if tag in ("td", "th"):
             # table rows: height is the tallest cell, not the sum (v0.2.0 fix —
             # the old flat +22/tr fee double-counted cell text and made every

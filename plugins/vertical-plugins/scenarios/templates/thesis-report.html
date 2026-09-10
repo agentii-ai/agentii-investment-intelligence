@@ -121,6 +121,17 @@
   .sheet-head { top: 7mm; border-bottom: 0.3mm solid var(--primary); padding-bottom: 1mm; }
   .sheet-foot { bottom: 7mm; border-top: 0.3mm solid #999; padding-top: 1mm; }
   .page-mark { font-weight: 700; color: var(--accent); }
+  /* Print / PDF button — bottom center of every page (AI-Sci-Vi toolbar pattern,
+     per-page variant). Screen-only: hidden from the printed artwork. */
+  .print-btn { font-family: 'Courier New', monospace; font-size: 7pt; font-weight: 600;
+               letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+               color: var(--accent-foreground); background: var(--accent);
+               border: 0.3mm solid var(--primary); border-radius: 999px;
+               padding: 0.8mm 3mm; transition: transform 0.15s ease; }
+  .print-btn:hover { background: var(--primary); color: var(--primary-foreground); }
+  .print-btn:active { transform: scale(0.97); }
+  .cover .print-btn { background: var(--primary); color: var(--primary-foreground); }
+  .cover .print-btn:hover { background: var(--accent-foreground); color: var(--accent); }
   .reg { position: absolute; width: 3mm; height: 3mm; }
   .reg-tl { top: 5mm; left: 5mm; border-top: 0.5mm solid var(--primary); border-left: 0.5mm solid var(--primary); }
   .reg-tr { top: 5mm; right: 5mm; border-top: 0.5mm solid var(--primary); border-right: 0.5mm solid var(--primary); }
@@ -149,6 +160,7 @@
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .page-overflow { page-break-after: always; }
     .stale-bar { display: none !important; }
+    .no-print { display: none !important; }
   }
 </style>
 </head>
@@ -188,7 +200,7 @@
       <path d="M 11.1 0 A 6.9 6.9 0 0 1 4.2 6.9"/>
     </g>
   </svg>
-  <div class="sheet-foot"><span>__SLUG__</span><span class="page-mark">01 / __TOTAL__</span></div>
+  <div class="sheet-foot"><span>__SLUG__</span><button type="button" class="print-btn no-print" onclick="window.print()">Print / PDF</button><span class="page-mark">01 / __TOTAL__</span></div>
 </section>
 
 <!-- PAGES — assembler injects the LLM-authored <section class="page"> sequence -->
