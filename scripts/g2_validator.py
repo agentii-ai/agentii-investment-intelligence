@@ -59,16 +59,32 @@ def write_verdict(verdict: dict[str, Any], path: Path) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     import argparse
+    import shlex
+    import subprocess
 
     p = argparse.ArgumentParser(description="G2 validator harness (Q1/Q8-2)")
     p.add_argument("--artifact", required=True)
     p.add_argument("--validator-cmd", required=True,
                    help="validator executable/command receiving the bounded prompt on stdin")
     args = p.parse_args(argv)
-    # S5-thin: the CLI validates the schema contract; the subprocess wiring is the
-    # caller's (harness packaging) — deterministic scaffolding, no LLM embedded.
-    verdict = make_verdict(artifact=args.artifact, falsifiable=False, supports=False)
-    validate_verdict(verdict)
+    # G3: the documented subprocess wiring — the bounded prompt goes to the
+    # validator on stdin; its stdout must be a verdict JSON (closed schema).
+    proc = subprocess.run(shlex.split(args.validator_cmd), input=BOUNDED_PROMPT,
+                          capture_output=True, text=True, timeout=120)
+    if proc.returncode != 0:
+        print(f"G2 VALIDATOR FAILED: {proc.stderr[-400:]}", file=sys.stderr)
+        return 1
+    try:
+        verdict = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        print("G2 VALIDATOR FAILED: stdout is not JSON", file=sys.stderr)
+        return 1
+    try:
+        validate_verdict(verdict)
+    except ValueError as e:
+        print(f"G2 VALIDATOR FAILED: {e}", file=sys.stderr)
+        return 1
+    verdict["artifact"] = verdict.get("artifact") or args.artifact
     print(json.dumps(verdict, indent=2))
     return 0
 

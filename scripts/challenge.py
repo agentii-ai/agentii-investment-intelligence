@@ -76,9 +76,33 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--nth-converge", type=int, default=1)
     p.add_argument("--constitution-bumped", action="store_true")
     p.add_argument("--subscriptions-changed", action="store_true")
+    p.add_argument("--thesis", default=None,
+                   help="thesis dir — report entity-index contradictions + suspected "
+                        "restatements (the cross-run surface, Q9/Q20)")
     args = p.parse_args(argv)
     print("backstops:", backstop_trigger(args.nth_converge, args.constitution_bumped,
                                          args.subscriptions_changed))
+    if args.thesis:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import reduce_journals  # noqa: E402
+
+        thesis = Path(args.thesis)
+        idx = reduce_journals.build_entity_index(thesis / "artifacts")
+        findings = []
+        for rec in idx["contradictions"]:
+            findings.append(make_finding(rec["entity"], rec["metric"], rec["period"],
+                                        "contradicts", "high",
+                                        values=rec["values"], artifacts=rec["artifacts"]))
+        for rec in idx["suspected_restatements"]:
+            findings.append(make_finding(rec["entity"], rec["metric"], rec["period"],
+                                        "contradicts", "medium",
+                                        restatement=True, values=rec["values"]))
+        kept, overflow = cap_findings(findings)
+        print(f"contradictions: {len(kept)} (dropped {overflow.get('dropped', 0)})")
+        for f in kept:
+            print(f"  - [{f['severity']}] {f['entity']}.{f['metric']}@{f['period']} "
+                  f"values={f.get('values')} id={f['id']}"
+                  f"{' (suspected restatement)' if f.get('restatement') else ''}")
     return 0
 
 

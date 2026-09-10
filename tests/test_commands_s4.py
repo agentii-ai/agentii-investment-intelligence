@@ -85,3 +85,60 @@ def test_constitution_amend_validates_bump_values(tmp_path):
     assert "bump must be one of" in str(exc.value)
     agentii_cmd.constitution_amend(ws, "minor", "added a principle")
     assert "bump: minor" in (ws / "constitution.md").read_text()
+
+
+# --- F1 remediation: the SKILL.md-documented spec-matrix path -----------------
+
+SPEC_MATRIX = """## 3. Skill Deployment Matrix
+| Skill | Vertical | Depth | Tickers | Market Data Stage | Purpose |
+|---|---|:---:|---|---|---|
+| `business-model` | ERC | Full | NVDA, AMD | none | understand |
+| `recent-quarter` | ERC | Light | NVDA | none | earnings |
+"""
+
+
+def test_parse_spec_matrix():
+    rows = agentii_cmd.parse_spec_matrix(SPEC_MATRIX)
+    assert [r["skill"] for r in rows] == ["business-model", "recent-quarter"]
+    assert rows[0]["tickers"] == ["NVDA", "AMD"]
+    assert rows[0]["depth"] == "full"
+    assert rows[1]["depth"] == "light"
+
+
+def test_depth_to_modes_q79_merge():
+    import yaml
+
+    reg = yaml.safe_load((ROOT / "skill-registry.yaml").read_text(encoding="utf-8"))
+    deep_modes = agentii_cmd.depth_to_modes("full", reg, "business-model")
+    assert len(deep_modes) >= 3  # registry-expanded: the skill's real mode slugs
+    light_modes = agentii_cmd.depth_to_modes("light", reg, "business-model")
+    assert light_modes  # essentials_modes (backfilled in S7)
+    assert light_modes != deep_modes or len(light_modes) < len(deep_modes)
+
+
+def test_tasks_from_spec_end_to_end(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    thesis.mkdir(parents=True)
+    spec = tmp_path / "spec.md"
+    spec.write_text(SPEC_MATRIX)
+    import subprocess
+
+    res = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "agentii_cmd.py"), "tasks",
+         "--thesis", str(thesis), "--spec", str(spec)],
+        capture_output=True, text=True)
+    assert res.returncode == 0, res.stderr
+    rows = [l for l in res.stdout.splitlines() if l.startswith("- [ ]")]
+    # Full-depth business-model × {NVDA, AMD} expands to registry modes; the
+    # Light-depth recent-quarter row carries essentials_modes.
+    bm_rows = [r for r in rows if "business-model" in r]
+    rq_rows = [r for r in rows if "recent-quarter" in r]
+    assert len(bm_rows) >= 6  # 2 tickers × ≥3 deep modes
+    import yaml
+
+    reg = yaml.safe_load((ROOT / "skill-registry.yaml").read_text(encoding="utf-8"))
+    essentials = next(s["essentials_modes"] for s in reg["skills"]
+                      if s["skill_name"] == "recent-quarter")
+    # Light = essentials_modes (Q79): 1 ticker × len(essentials) rows
+    assert len(rq_rows) == len(essentials)
+    assert any("× business-model ×" in r for r in bm_rows)

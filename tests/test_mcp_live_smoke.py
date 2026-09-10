@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -44,8 +45,12 @@ def _rpc(method: str, params: dict | None = None, key: str | None = None) -> dic
         headers={"Content-Type": "application/json",
                  "X-API-Key": key or "",
                  "Accept": "application/json, text/event-stream"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        body = resp.read().decode("utf-8")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read().decode("utf-8")
+    except (urllib.error.URLError, TimeoutError) as e:
+        # G2: a network outage is an environment condition, not a pipeline defect
+        pytest.skip(f"network unavailable (environmental): {e}")
     if body.startswith("{"):
         return json.loads(body)
     # SSE transport: the JSON-RPC result arrives as a `data:` line
@@ -78,3 +83,14 @@ def test_live_readonly_tool_call_survives_roundtrip():
     # the result is structured JSON — the CODE-prefix refusal convention applies
     # when an error occurs; a success payload must not carry an error field
     assert isinstance(data, dict)
+
+
+def test_network_outage_skips_not_fails(monkeypatch):
+    """G2: a network outage is an environment condition, not a pipeline defect —
+    offline CI must skip, never fail."""
+    def _unreachable(*args, **kwargs):
+        raise urllib.error.URLError("network unreachable")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _unreachable)
+    with pytest.raises(pytest.skip.Exception):
+        _rpc("tools/list", key="dummy")

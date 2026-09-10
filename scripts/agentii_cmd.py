@@ -99,6 +99,67 @@ def expand_tasks(matrix: list[dict]) -> list[str]:
     return rows
 
 
+# --- spec-matrix parsing (F1 remediation — the SKILL.md-documented path) -------
+
+def parse_spec_matrix(spec_text: str) -> list[dict]:
+    """Parse the spec-template's '## 3. Skill Deployment Matrix' markdown table
+    (Skill | Vertical | Depth | Tickers | Market Data Stage | Purpose) into
+    [{skill, tickers: [...], depth}]."""
+    rows: list[dict] = []
+    in_matrix = False
+    for line in spec_text.splitlines():
+        if "Skill Deployment Matrix" in line and line.lstrip().startswith("#"):
+            in_matrix = True
+            continue
+        if in_matrix and line.startswith("## "):
+            break
+        if not in_matrix or not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 5 or cells[0] in ("Skill", "---", ":"):
+            continue
+        skill = cells[0].strip("`")
+        depth = cells[2]
+        tickers = [t.strip() for t in cells[3].replace("，", ",").split(",")
+                   if t.strip()]
+        rows.append({"skill": skill, "tickers": tickers, "depth": depth.lower()})
+    return rows
+
+
+def depth_to_modes(depth: str, registry: dict, skill: str) -> list[str]:
+    """Q79 Depth-Tier merge: Deep/Full → all (expanded from the registry's mode
+    slugs); Standard/Light → the skill's essentials_modes (fallback default)."""
+    entry = next((s for s in registry.get("skills", [])
+                  if s.get("skill_name") == skill), {})
+    if depth in ("deep", "full"):
+        return [m["slug"] for m in entry.get("modes", [])] or ["default"]
+    return list(entry.get("essentials_modes") or ["default"])
+
+
+def tasks_from_spec(spec_path: Path, registry: dict) -> list[str]:
+    """The documented path: decompose the thesis spec's deployment matrix into
+    ticker × skill × mode rows (Q30/Q79), routing through expand_tasks."""
+    import yaml as _yaml
+
+    if registry is None:
+        registry = _yaml.safe_load(
+            (ROOT / "skill-registry.yaml").read_text(encoding="utf-8")) or {}
+    spec_text = spec_path.read_text(encoding="utf-8")
+    entries: list[dict] = []
+    for row in parse_spec_matrix(spec_text):
+        modes = depth_to_modes(row["depth"], registry, row["skill"])
+        for ticker in row["tickers"]:
+            if row["depth"] in ("deep", "full"):
+                entries.append({"pillar": "P1", "ticker": ticker, "skill": row["skill"],
+                                "modes": ["all"], "all_modes": modes,
+                                "purpose": "per spec deployment matrix"})
+            else:
+                entries.append({"pillar": "P1", "ticker": ticker, "skill": row["skill"],
+                                "modes": modes,
+                                "purpose": "per spec deployment matrix"})
+    return expand_tasks(entries)
+
+
 # --- constitution (Q33/Q83) ---------------------------------------------------
 
 def constitution_scaffold(workspace: Path) -> list[Path]:
@@ -142,7 +203,12 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--slug", required=True)
 
     tp = sub.add_parser("tasks")
-    tp.add_argument("--matrix", required=True, help="JSON list of {pillar, ticker, skill, mode(s), purpose}")
+    tp.add_argument("--matrix", default=None,
+                    help="JSON list of {pillar, ticker, skill, mode(s), purpose} "
+                         "(scripting/tests; alternatively pass --thesis + --spec)")
+    tp.add_argument("--thesis", default=None)
+    tp.add_argument("--spec", default=None,
+                    help="thesis spec.md — decomposes its Skill Deployment Matrix")
 
     cp = sub.add_parser("constitution")
     cp.add_argument("action", choices=["scaffold", "amend"])
@@ -155,7 +221,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "specify":
         print(specify(Path(args.workspace), args.slug))
     elif args.cmd == "tasks":
-        for row in expand_tasks(json.loads(args.matrix)):
+        if args.matrix:
+            rows = expand_tasks(json.loads(args.matrix))
+        elif args.thesis and args.spec:
+            rows = tasks_from_spec(Path(args.spec), None)
+        else:
+            raise SystemExit("tasks: provide --matrix OR both --thesis and --spec")
+        for row in rows:
             print(row)
     elif args.cmd == "constitution":
         if args.action == "scaffold":

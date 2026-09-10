@@ -33,6 +33,12 @@ FIVE_PINS = g1_gate.FIVE_PINS
 
 _TASK_RE = re.compile(r"^- \[[ xX]\] (T\d{3}) .*?(\b[A-Z0-9]{1,5})\s*×\s*([a-z0-9-]+)\s*×\s*([a-z0-9-]+)", re.MULTILINE)
 _CONV_RE = re.compile(r"^## Phase (\d+): Convergence", flags=re.MULTILINE)
+_TASK_ID_RE = re.compile(r"^- \[[ xX]\] T(\d{3}) ", flags=re.MULTILINE)
+
+
+def _max_task_id(tasks_text: str) -> int:
+    ids = [int(m) for m in _TASK_ID_RE.findall(tasks_text)]
+    return max(ids) if ids else 0
 _FINDING_ID_RE = re.compile(r"id=([a-f0-9]{12})")
 _WRONG_IF_DEFAULT_OP = "<"  # falsifier default: "I'm wrong if metric falls below threshold"
 
@@ -255,6 +261,16 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
 
     # Deterministic, uncapped: stale pins + invalidated wrong_if.
     artifacts_root = thesis / "artifacts"
+    # G1: convergence rows join the file's own T-sequence (sequential in execution
+    # order — the plan contract), never a detached 900-range.
+    next_id = _max_task_id(tasks_text) + 1
+
+    def _next_row_id() -> str:
+        nonlocal next_id
+        rid = f"T{next_id:03d}"
+        next_id += 1
+        return rid
+
     if artifacts_root.is_dir():
         for art in sorted(artifacts_root.rglob("*.md")):
             for pin, fid in _evaluate_stale(art, current_pins):
@@ -262,15 +278,16 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
                     continue
                 existing_ids.add(fid)
                 ticker = art.parent.name
-                appended.append(f"- [ ] T9xx [Convergence] Re-run {ticker} artifact "
-                                f"{art.name}: pin {pin} older than current "
+                appended.append(f"- [ ] {_next_row_id()} [Convergence] Re-run {ticker} "
+                                f"artifact {art.name}: pin {pin} older than current "
                                 f"(src: converge:stale id={fid})")
     for ent, metric, fid in _evaluate_wrong_if(thesis):
         if fid in existing_ids:
             continue
         existing_ids.add(fid)
-        appended.append(f"- [ ] T9xx [Convergence] Re-examine claim on {ent}.{metric}: "
-                        f"wrong_if triggered (src: converge:invalidated id={fid})")
+        appended.append(f"- [ ] {_next_row_id()} [Convergence] Re-examine claim on "
+                        f"{ent}.{metric}: wrong_if triggered "
+                        f"(src: converge:invalidated id={fid})")
 
     # Judgment-class, capped: missing artifacts.
     missing_rows, judgment_count = _evaluate_missing(thesis, tasks_text, existing_ids)
@@ -280,9 +297,9 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
     try:
         doc = json.loads((thesis / "thesis.md").read_text(encoding="utf-8"))
         if (doc.get("judgment") or {}).get("budget_paused"):
-            appended.append("- [ ] T9xx [Convergence] Thesis paused on budget — "
-                            "Q39 approval card required to resume "
-                            "(src: converge:budget_paused)")
+            appended.append(f"- [ ] {_next_row_id()} [Convergence] Thesis paused on "
+                            f"budget — Q39 approval card required to resume "
+                            f"(src: converge:budget_paused)")
     except (OSError, ValueError, AttributeError):
         pass
 
@@ -292,7 +309,7 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
 
     # Number the new Convergence section after any existing ones (append-only).
     phase_n = len(_CONV_RE.findall(tasks_text)) + 1
-    section = [f"## Phase {phase_n}: Convergence"] + [r.replace("T9xx", f"T{900+phase_n:03d}") for r in appended]
+    section = [f"## Phase {phase_n}: Convergence"] + appended
     new_text = (tasks_text.rstrip() + "\n\n" + "\n".join(section) + "\n")
     _atomic_append(tasks_path, new_text)
     return {"status": "gaps_found", "findings": len(appended),
