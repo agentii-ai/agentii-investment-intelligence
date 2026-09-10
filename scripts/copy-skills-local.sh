@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # copy-skills-local.sh
-# Copies skills/agentii/ contents into the current project's .claude/skills/agentii/ directory.
+# Copies ALL skills (every vertical) into the target project's .claude/skills/agentii/.
 #
 # Workaround for Claude Code v2.1.143 plugin bug (GitHub issue #15178):
 # Skills installed via 'claude plugin install' may not be injected into the runtime.
@@ -10,6 +10,10 @@
 #   target-dir: Optional project root (defaults to current directory)
 #
 # Feature: 023 — Plugin bug workaround (FR-014b)
+# Fixed 2026-09-10 (spec 046 dogfooding feedback): the previous version hardcoded
+# 5 verticals and copied only SKILL.md — silently skipping 9 verticals (including
+# the scenarios kit skills) and dropping every references/ methodology directory.
+# Now: ALL verticals, FULL skill directory (SKILL.md + references/), idempotent.
 
 set -euo pipefail
 
@@ -23,69 +27,62 @@ fi
 
 SKILLS_SRC="$REPO_ROOT/plugins"
 SKILLS_DST="$TARGET/.claude/skills/agentii"
+COMMANDS_DST="$TARGET/.claude/commands/agentii"
 
-mkdir -p "$SKILLS_DST"
+mkdir -p "$SKILLS_DST" "$COMMANDS_DST"
 
 TOTAL=0
-VERTICALS=(
-  "equity-research-core"
-  "business-intelligence"
-  "industry-analysis"
-  "models-and-pitches"
-  "quantitative-analysis"
-)
+SKIPPED=0
+REF_COUNT=0
 
-for vertical in "${VERTICALS[@]}"; do
-  SRC_DIR="$SKILLS_SRC/vertical-plugins/$vertical/skills/agentii"
-  if [[ -d "$SRC_DIR" ]]; then
-    for skill_dir in "$SRC_DIR"/*/; do
-      [[ -d "$skill_dir" ]] || continue
-      skill_name="$(basename "$skill_dir")"
-      SKILL_FILE="$skill_dir/SKILL.md"
+# ALL verticals — discovered, never hardcoded (the 2026-09-10 fix)
+for SRC_DIR in "$SKILLS_SRC"/vertical-plugins/*/skills/agentii; do
+  [[ -d "$SRC_DIR" ]] || continue
+  vertical="$(basename "$(dirname "$(dirname "$SRC_DIR")")")"
 
-      # Validate SKILL.md before copying (I6 fix)
-      if [[ ! -f "$SKILL_FILE" ]]; then
-        echo "⚠️  Skipping $skill_name: no SKILL.md found"
-        continue
-      fi
-      if ! grep -q "^---$" "$SKILL_FILE" 2>/dev/null; then
-        echo "⚠️  Skipping $skill_name: missing YAML frontmatter"
-        continue
-      fi
-      if ! grep -q "^name:" "$SKILL_FILE" 2>/dev/null; then
-        echo "⚠️  Skipping $skill_name: missing 'name' field in frontmatter"
-        continue
-      fi
-      # Warn if description has fewer than 5 trigger phrases
-      desc_line=$(grep "^description:" "$SKILL_FILE" 2>/dev/null | head -1)
-      trigger_count=$(echo "$desc_line" | tr ',' '\n' | wc -l | xargs)
-      if [[ "$trigger_count" -lt 5 ]]; then
-        echo "⚠️  $skill_name: only $trigger_count trigger phrases (recommend ≥10)"
-      fi
+  for skill_dir in "$SRC_DIR"/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    skill_name="$(basename "$skill_dir")"
+    SKILL_FILE="$skill_dir/SKILL.md"
 
-      DST_DIR="$SKILLS_DST/$skill_name"
-      mkdir -p "$DST_DIR"
-      cp "$SKILL_FILE" "$DST_DIR/SKILL.md" && {
-        TOTAL=$((TOTAL + 1))
-      } || true
-    done
-  fi
+    # Validate SKILL.md before copying (I6 fix)
+    if [[ ! -f "$SKILL_FILE" ]]; then
+      echo "⚠️  Skipping $skill_name: no SKILL.md found"
+      SKIPPED=$((SKIPPED + 1))
+      continue
+    fi
+    if ! grep -q "^---$" "$SKILL_FILE" 2>/dev/null; then
+      echo "⚠️  Skipping $skill_name: missing YAML frontmatter"
+      SKIPPED=$((SKIPPED + 1))
+      continue
+    fi
+    if ! grep -q "^name:" "$SKILL_FILE" 2>/dev/null; then
+      echo "⚠️  Skipping $skill_name: missing 'name' field in frontmatter"
+      SKIPPED=$((SKIPPED + 1))
+      continue
+    fi
 
-  # Copy commands/ into the agentii-namespaced subdir so they invoke as
-  # /agentii:<name> (NOT bare /<name>). This keeps a single unified namespace —
-  # no per-vertical or unnamespaced command surface.
-  COMMANDS_SRC="$SKILLS_SRC/vertical-plugins/$vertical/commands"
-  COMMANDS_DST="$TARGET/.claude/commands/agentii"
+    DST_DIR="$SKILLS_DST/$skill_name"
+    # FULL skill directory — references/ carries the deep methodology (2026-09-10 fix)
+    rm -rf "$DST_DIR"
+    cp -R "$skill_dir" "$DST_DIR"
+    TOTAL=$((TOTAL + 1))
+    REF_COUNT=$((REF_COUNT + $(find "$DST_DIR" -path "*/references/*" -type f | wc -l | tr -d ' ')))
+  done
+
+  # Commands into the agentii-namespaced subdir — /agentii:<name> (unified namespace)
+  COMMANDS_SRC="$(dirname "$(dirname "$SRC_DIR")")/commands"
   if [[ -d "$COMMANDS_SRC" ]]; then
-    mkdir -p "$COMMANDS_DST"
     cp "$COMMANDS_SRC"/*.md "$COMMANDS_DST/" 2>/dev/null || true
   fi
 done
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Copied $TOTAL skills to $SKILLS_DST"
-echo "   Commands namespaced under $TARGET/.claude/commands/agentii/"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Copied $TOTAL skills (all verticals) to $SKILLS_DST"
+echo "   references/ files staged: $REF_COUNT"
+echo "   skipped: $SKIPPED"
+echo "   Commands namespaced under $COMMANDS_DST"
 echo "   Single unified namespace: /agentii:<skill-name>"
 echo "   Type / in Claude Code to see the auto-complete menu"
 echo ""
