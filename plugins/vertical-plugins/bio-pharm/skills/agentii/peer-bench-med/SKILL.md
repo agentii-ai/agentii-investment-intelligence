@@ -1,7 +1,7 @@
 ---
 name: peer-bench-med
 description: "Med peer benchmarking: select actual biotech/pharma peers via the med universe (drug/indication overlap where possible) and compare med-relevant metrics — pipeline depth, catalyst density, cash position, margins, valuation multiples."
-sectors: [med.medicines_biotech, med.medical_devices, med.healthcare_services, med.life_sciences_tools]
+sectors: [med.medicines_biotech, med.medical_devices]
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4
@@ -41,6 +41,8 @@ parameter_free: false
 ## Preflight
 
 Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace per `contracts/x-agentii-trace-header.md`.
+
+Never fabricate a peer metric when the data surface is absent — annotate `coverage_gap` instead (spec 055 FR-B02 discipline).
 
 ## Triggers
 

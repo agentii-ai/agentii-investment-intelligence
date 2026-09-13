@@ -21,3 +21,19 @@ Derived from the skill's own methodology structure (scripts/mode_backfill.py, sp
 ### Mode: data-source-priority
 
 **Objective**: Data Source Priority analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: drug
+
+**Objective**: Drug modality analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: biologic
+
+**Objective**: Biologic modality analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: device
+
+**Objective**: Device modality analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: vaccine
+
+**Objective**: Vaccine modality analysis per the skill's methodology (see SKILL.md sections).

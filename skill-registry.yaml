@@ -1,6 +1,45 @@
 version: 1.0.0
 generated_by: scripts/sync-registry.sh
 skills:
+- skill_name: ct-status-diff
+  vertical: bio-pharm
+  layer_tags:
+  - L1
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus:
+    - medicines biotech
+    - medical devices
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: watchlist
+    market_data_stage: none
+  - slug: single-ticker
+    market_data_stage: none
+  - slug: signal-scan
+    market_data_stage: none
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
 - skill_name: earnings-preview-med
   vertical: bio-pharm
   layer_tags:
@@ -11,8 +50,6 @@ skills:
     sectors_focus:
     - medicines biotech
     - medical devices
-    - healthcare services
-    - life sciences tools
     domains:
     - fundamental
     instrument_scope:
@@ -36,12 +73,18 @@ skills:
     market_data_stage: none
   - slug: data-source-priority
     market_data_stage: none
+  - slug: drug
+    market_data_stage: none
+  - slug: biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
+    market_data_stage: none
   essentials_modes: []
   sectors:
   - med.medicines_biotech
   - med.medical_devices
-  - med.healthcare_services
-  - med.life_sciences_tools
   freshness_window: 7
   market_data_stage: none
   quality_score: null
@@ -55,7 +98,9 @@ skills:
   category_tags: []
   retrieval_scope: unstructured_document_search
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -94,7 +139,9 @@ skills:
   category_tags: []
   retrieval_scope: unstructured_document_search
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -133,7 +180,9 @@ skills:
   category_tags: []
   retrieval_scope: unstructured_document_search
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -170,7 +219,9 @@ skills:
   category_tags: []
   retrieval_scope: unstructured_document_search
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -217,7 +268,9 @@ skills:
   category_tags: []
   retrieval_scope: unstructured_document_search
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -264,7 +317,9 @@ skills:
   category_tags: []
   retrieval_scope: unstructured_document_search
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -314,8 +369,6 @@ skills:
     sectors_focus:
     - medicines biotech
     - medical devices
-    - healthcare services
-    - life sciences tools
     domains:
     - fundamental
     instrument_scope:
@@ -339,12 +392,18 @@ skills:
     market_data_stage: none
   - slug: data-source-priority
     market_data_stage: none
+  - slug: drug
+    market_data_stage: none
+  - slug: biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
+    market_data_stage: none
   essentials_modes: []
   sectors:
   - med.medicines_biotech
   - med.medical_devices
-  - med.healthcare_services
-  - med.life_sciences_tools
   freshness_window: 7
   market_data_stage: none
   quality_score: null
@@ -358,7 +417,9 @@ skills:
   category_tags: []
   retrieval_scope: structured_only
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -395,7 +456,9 @@ skills:
   category_tags: []
   retrieval_scope: structured_only
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -432,7 +495,9 @@ skills:
   category_tags: []
   retrieval_scope: structured_only
   enrichment_axes:
-    sectors_focus: []
+    sectors_focus:
+    - medicines biotech
+    - medical devices
     domains:
     - fundamental
     instrument_scope:
@@ -472,8 +537,6 @@ skills:
     sectors_focus:
     - medicines biotech
     - medical devices
-    - healthcare services
-    - life sciences tools
     domains:
     - fundamental
     instrument_scope:
@@ -497,12 +560,18 @@ skills:
     market_data_stage: none
   - slug: data-source-priority
     market_data_stage: none
+  - slug: drug
+    market_data_stage: none
+  - slug: biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
+    market_data_stage: none
   essentials_modes: []
   sectors:
   - med.medicines_biotech
   - med.medical_devices
-  - med.healthcare_services
-  - med.life_sciences_tools
   freshness_window: 7
   market_data_stage: none
   quality_score: null
@@ -541,6 +610,14 @@ skills:
   - slug: production-grounding
     market_data_stage: none
   - slug: data-source-priority
+    market_data_stage: none
+  - slug: drug
+    market_data_stage: none
+  - slug: biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
     market_data_stage: none
   essentials_modes: []
   sectors:
@@ -584,6 +661,14 @@ skills:
   - slug: production-grounding
     market_data_stage: none
   - slug: data-source-priority
+    market_data_stage: none
+  - slug: drug
+    market_data_stage: none
+  - slug: biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
     market_data_stage: none
   essentials_modes: []
   sectors:

@@ -1,7 +1,7 @@
 ---
 name: earnings-preview-med
 description: "Med-adapted earnings preview: consensus estimates, historical surprises, guidance sensitivities, and the FDA-catalyst overlay (PDUFA/AdCom/trial readouts near the print) for biotech/pharma names."
-sectors: [med.medicines_biotech, med.medical_devices, med.healthcare_services, med.life_sciences_tools]
+sectors: [med.medicines_biotech, med.medical_devices]
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 4

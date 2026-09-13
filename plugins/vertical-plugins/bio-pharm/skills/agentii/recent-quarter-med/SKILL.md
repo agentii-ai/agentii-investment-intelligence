@@ -1,7 +1,7 @@
 ---
 name: recent-quarter-med
 description: "Med-adapted recent-quarter review: last print financials, pipeline-milestone awareness, and FDA-event context — reads the quarter through the med lens (milestones moved, runway, regulatory updates) rather than generic financials alone."
-sectors: [med.medicines_biotech, med.medical_devices, med.healthcare_services, med.life_sciences_tools]
+sectors: [med.medicines_biotech, med.medical_devices]
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 1
