@@ -14,6 +14,8 @@ allowed_tools:
   - get_financial_ratios
   - get_peer_comparison
   - get_company_drugs
+  - search_drugs_by_target
+  - search_drugs_by_indication
   - search_investment_cases
   - get_investment_case
   - search_investment_strategies
@@ -52,19 +54,23 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 - "What are the catalyst-dense names in this peer set?"
 - "Peer analysis for [ticker] with indication overlap."
 - "Which peers have the strongest balance sheets?"
+- "Which same-mechanism competitors matter for [ticker]'s pipeline?"
 
 ## Production Grounding
 
 - Med peers are science-defined: use `get_company_drugs` to find indication/therapy overlap before financial comparison.
+- Launch-analog selection: for commercial-stage names, match same-class (mechanism/indication class) + same-channel (specialty/retail/hospital/device-rep/vaccine-procurement) analogs so launch trajectories compare like-for-like.
+- Mechanism-overlap scoring: rank candidate peers by shared targets/indications via the drug-knowledge reverse lookups; where sources conflict, keep both values with provenance.
 - Med-relevant metrics: pipeline assets by phase, catalyst density (PDUFA/AdCom/trial readouts), cash runway (quarters), R&D productivity; generic margins only as secondary.
 - Grounding frameworks: `references/knowledge-frameworks.md` (道/法 review knowledge + valuation lenses).
 
 ## Data Source Priority
 
 1. `get_company_drugs` / `search_companies` — peer discovery by drug/indication overlap.
-2. `get_financial_ratios` / `search_xbrl_facts` — financial comparison data.
-3. `get_peer_comparison` — platform pre-computed peer metrics.
-4. Knowledge layer: `search_investment_cases`/`search_by_analogue` for historical peer dynamics.
+2. `search_drugs_by_target` / `search_drugs_by_indication` — mechanism competitor mapping + overlap scoring (054 silver reverse lookups).
+3. `get_financial_ratios` / `search_xbrl_facts` — financial comparison data.
+4. `get_peer_comparison` — platform pre-computed peer metrics.
+5. Knowledge layer: `search_investment_cases`/`search_by_analogue` for historical peer dynamics + launch analogs.
 
 ## Methodology
 
@@ -74,8 +80,10 @@ structured_only
 ### Retrieval Strategy
 1. Resolve the target via `get_company_profile`; pull its drugs (`get_company_drugs`).
 2. Find peers by indication/therapy overlap + med industry membership (`search_companies`).
-3. Pull per-peer financials (`get_financial_ratios`) + valuation context.
-4. Ground with historical cases/analogues via knowledge tools.
+3. Map mechanism competitors: `search_drugs_by_indication` / `search_drugs_by_target` per key indication/target; score peers by shared targets/indications (conflicting sources shown with provenance).
+4. Match launch analogs for commercial-stage names: same-class + same-channel; retrieve analog launch history via knowledge tools.
+5. Pull per-peer financials (`get_financial_ratios`) + valuation context.
+6. Ground with historical cases/analogues via knowledge tools.
 
 ### Temporal Scope
 See frontmatter temporal_scope block.
@@ -85,13 +93,16 @@ See frontmatter allowed_tools.
 
 ### Protocol
 1. Target profile
-2. Science-based peer selection
-3. Med-metric comparison
-4. Valuation & risk synthesis
+2. Science-based peer selection (indication/drug overlap)
+3. Mechanism-overlap scoring (reverse lookups)
+4. Launch-analog matching (same-class, same-channel)
+5. Med-metric comparison
+6. Valuation & risk synthesis
 
 ## Modes
 
 - **Science-based** (default): indication/drug-overlap peers.
+- **Launch-analog** (commercial-stage): same-class, same-channel analog peers with launch-trajectory context.
 - **Financial**: margin/valuation peers within the same industry.
 - **Catalyst**: peers ranked by upcoming FDA events.
 
@@ -100,6 +111,7 @@ See frontmatter allowed_tools.
 | Failure | Fallback |
 |---------|----------|
 | get_company_drugs empty | Fall back to industry peers via `search_companies`; annotate |
+| Reverse lookups empty | Score overlap from `get_company_drugs` classes only; annotate mechanism mapping unavailable |
 | get_peer_comparison empty | Build comparison manually from `get_financial_ratios` |
 | Knowledge tools empty | Proceed with structured data only |
 
@@ -111,16 +123,19 @@ See frontmatter allowed_tools.
 
 1. **Executive Summary** — relative standing in 2-3 sentences
 2. **Peer Selection** — peers + selection logic (science overlap)
-3. **Comparison Table** — med metrics + financials + valuation
-4. **Historical Context** — cases/analogues with /v/ citations
-5. **Risk Assessment** — concentration/catalyst risks
-6. **Coverage Gaps** — missing data flags
+3. **Mechanism Overlap** — target/indication overlap matrix from reverse lookups, scored by shared mechanisms; conflicting source values shown with provenance
+4. **Launch-Analog Match** — same-class, same-channel analogs (commercial-stage names)
+5. **Comparison Table** — med metrics + financials + valuation
+6. **Historical Context** — cases/analogues with /v/ citations
+7. **Risk Assessment** — concentration/catalyst risks
+8. **Coverage Gaps** — missing data flags
 
 ## Error Handling
 
 | Error | Fallback |
 |-------|----------|
 | No indication overlap found | Widen to same-industry peers; flag science-overlap unavailable |
+| Mechanism data missing | Score from indication overlap only; flag reverse-lookup coverage gap |
 | Missing financials | Mark N/A in table; do not fabricate |
 
 ## Memory Load

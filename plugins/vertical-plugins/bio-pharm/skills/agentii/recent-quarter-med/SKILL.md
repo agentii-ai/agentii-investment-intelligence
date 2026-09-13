@@ -10,6 +10,7 @@ temporal_scope:
 allowed_tools:
   - search_xbrl_facts
   - get_statement
+  - search_earnings_calendar
   - search_documents
   - read_source_outline
   - read_source_pages
@@ -52,19 +53,22 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 - "Runway update for [ticker] after the last print."
 - "What moved for [ticker] last quarter?"
 - "Quarter in review: financials + catalysts for [ticker]."
+- "What changed in my estimates, thesis, and positioning after [ticker]'s print?"
 
 ## Production Grounding
 
 - A med quarter is judged on BOTH reported financials and pipeline/regulatory progress; milestone slips and CRLs are first-class quarter content.
+- Quarter close-out: model-vs-consensus deltas on key line items (our modeled numbers vs consensus from `search_earnings_calendar`) + the three what's-changed vectors (estimates / thesis / positioning) — estimates move first, thesis and positioning follow only when the facts justify them.
 - Cash runway (quarters of cash) is a primary metric for clinical-stage names.
 - Grounding frameworks: `references/knowledge-frameworks.md` (道/法 review knowledge).
 
 ## Data Source Priority
 
 1. `search_xbrl_facts` / `get_statement` — reported financials.
-2. `search_documents` / `read_source_*` — management commentary, pipeline updates.
-3. `get_company_profile` — company context.
-4. Knowledge layer: `search_investment_cases` for similar quarter dynamics.
+2. `search_earnings_calendar` — consensus values for model-vs-consensus deltas.
+3. `search_documents` / `read_source_*` — management commentary, pipeline updates.
+4. `get_company_profile` — company context.
+5. Knowledge layer: `search_investment_cases` for similar quarter dynamics.
 
 ## Methodology
 
@@ -73,9 +77,11 @@ unstructured_document_search
 
 ### Retrieval Strategy
 1. Pull the latest statements via `get_statement` + key facts via `search_xbrl_facts`.
-2. Read management commentary (`read_source_outline`/`read_source_pages`) for milestones/regulatory.
-3. Assess runway + milestone trajectory.
-4. Ground with historical cases via knowledge tools.
+2. Pull consensus via `search_earnings_calendar`; compute model-vs-consensus deltas on each key line item; annotate coverage_gap where no consensus value exists.
+3. Read management commentary (`read_source_outline`/`read_source_pages`) for milestones/regulatory.
+4. Slot-refresh the three what's-changed vectors: estimates / thesis / positioning.
+5. Assess runway + milestone trajectory.
+6. Ground with historical cases via knowledge tools.
 
 ### Temporal Scope
 See frontmatter temporal_scope block.
@@ -85,9 +91,11 @@ See frontmatter allowed_tools.
 
 ### Protocol
 1. Financial review
-2. Milestone & regulatory review
-3. Runway assessment
-4. Quarter synthesis
+2. Model-vs-consensus deltas
+3. What's-changed vectors (estimates / thesis / positioning)
+4. Milestone & regulatory review
+5. Runway assessment
+6. Quarter synthesis
 
 ## Modes
 
@@ -100,6 +108,7 @@ See frontmatter allowed_tools.
 | Failure | Fallback |
 |---------|----------|
 | get_statement unavailable | Reconstruct from `search_xbrl_facts`; annotate |
+| search_earnings_calendar empty | State deltas vs last-modeled values only; annotate consensus coverage_gap |
 | No commentary found | Note coverage gap; use filings only |
 | Knowledge tools empty | Proceed with structured data only |
 
@@ -111,10 +120,12 @@ See frontmatter allowed_tools.
 
 1. **Executive Summary** — quarter verdict in 2-3 sentences
 2. **Financial Review** — key line items + trends
-3. **Milestone & Regulatory Review** — pipeline progress, FDA updates
-4. **Runway & Cash** — runway assessment
-5. **Historical Context** — cases with /v/ citations
-6. **Coverage Gaps** — degraded flags
+3. **Model vs Consensus** — our modeled numbers vs consensus (`search_earnings_calendar`) with signed deltas and named drivers
+4. **What's Changed** — the three vectors: estimates / thesis / positioning (estimates move first, ratings last)
+5. **Milestone & Regulatory Review** — pipeline progress, FDA updates
+6. **Runway & Cash** — runway assessment
+7. **Historical Context** — cases with /v/ citations
+8. **Coverage Gaps** — degraded flags
 
 ## Error Handling
 

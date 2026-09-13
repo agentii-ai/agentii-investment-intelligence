@@ -48,16 +48,129 @@ skills:
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
-- skill_name: fda-catalyst-analysis
+- skill_name: fda-catalyst-devices
   vertical: bio-pharm
   layer_tags:
   - L2
   category_tags: []
   retrieval_scope: unstructured_document_search
   enrichment_axes:
-    sectors_focus:
-    - medicines biotech
-    - medical devices
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: watchlist
+    market_data_stage: none
+  - slug: single-target
+    market_data_stage: none
+  - slug: event-type
+    market_data_stage: none
+  - slug: risk-scan
+    market_data_stage: none
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: fda-catalyst-medicines
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: watchlist
+    market_data_stage: none
+  - slug: single-target
+    market_data_stage: none
+  - slug: event-type
+    market_data_stage: none
+  - slug: exclusivity-scan
+    market_data_stage: none
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: fda-catalyst-vaccines
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: watchlist
+    market_data_stage: none
+  - slug: single-target
+    market_data_stage: none
+  - slug: acip-gate
+    market_data_stage: none
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: market-share-tracking
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
     domains:
     - fundamental
     instrument_scope:
@@ -80,6 +193,106 @@ skills:
   - slug: production-grounding
     market_data_stage: none
   - slug: data-source-priority
+    market_data_stage: none
+  - slug: drug-biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
+    market_data_stage: none
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: med-event-takeaways
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: defaults
+    market_data_stage: none
+  - slug: preflight
+    market_data_stage: none
+  - slug: triggers
+    market_data_stage: none
+  - slug: production-grounding
+    market_data_stage: none
+  - slug: data-source-priority
+    market_data_stage: none
+  - slug: drug-biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
+    market_data_stage: none
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: med-market-sizing
+  vertical: bio-pharm
+  layer_tags:
+  - L2
+  category_tags: []
+  retrieval_scope: unstructured_document_search
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: defaults
+    market_data_stage: none
+  - slug: preflight
+    market_data_stage: none
+  - slug: triggers
+    market_data_stage: none
+  - slug: production-grounding
+    market_data_stage: none
+  - slug: data-source-priority
+    market_data_stage: none
+  - slug: drug-biologic
+    market_data_stage: none
+  - slug: device
+    market_data_stage: none
+  - slug: vaccine
     market_data_stage: none
   essentials_modes: []
   sectors:
@@ -138,16 +351,14 @@ skills:
   quality_score_prev: null
   last_enriched: null
   enrichment_workflows_applied: []
-- skill_name: pipeline-analysis
+- skill_name: pipeline-devices
   vertical: bio-pharm
   layer_tags:
-  - L2
+  - L1
   category_tags: []
-  retrieval_scope: unstructured_document_search
+  retrieval_scope: structured_only
   enrichment_axes:
-    sectors_focus:
-    - medicines biotech
-    - medical devices
+    sectors_focus: []
     domains:
     - fundamental
     instrument_scope:
@@ -161,15 +372,85 @@ skills:
   requires: []
   role: analysis
   modes:
-  - slug: defaults
+  - slug: phase-scan
     market_data_stage: none
-  - slug: preflight
+  - slug: design-cycle
     market_data_stage: none
-  - slug: triggers
+  - slug: post-market
     market_data_stage: none
-  - slug: production-grounding
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: pipeline-medicines
+  vertical: bio-pharm
+  layer_tags:
+  - L1
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: phase-scan
     market_data_stage: none
-  - slug: data-source-priority
+  - slug: pos-model
+    market_data_stage: none
+  - slug: competitor-map
+    market_data_stage: none
+  essentials_modes: []
+  sectors:
+  - med.medicines_biotech
+  - med.medical_devices
+  freshness_window: 7
+  market_data_stage: none
+  quality_score: null
+  quality_score_prev: null
+  last_enriched: null
+  enrichment_workflows_applied: []
+- skill_name: pipeline-vaccines
+  vertical: bio-pharm
+  layer_tags:
+  - L1
+  category_tags: []
+  retrieval_scope: structured_only
+  enrichment_axes:
+    sectors_focus: []
+    domains:
+    - fundamental
+    instrument_scope:
+    - equity
+    analogue_tags:
+      market_regime: []
+      event_type: []
+      company_situation: []
+  has_knowledge_frameworks: true
+  spec_037_references: 0
+  requires: []
+  role: analysis
+  modes:
+  - slug: phase-scan
+    market_data_stage: none
+  - slug: cohort-bridge
+    market_data_stage: none
+  - slug: competitor-map
     market_data_stage: none
   essentials_modes: []
   sectors:
@@ -238,8 +519,6 @@ skills:
     sectors_focus:
     - medicines biotech
     - medical devices
-    - healthcare services
-    - life sciences tools
     domains:
     - fundamental
     instrument_scope:
@@ -267,8 +546,6 @@ skills:
   sectors:
   - med.medicines_biotech
   - med.medical_devices
-  - med.healthcare_services
-  - med.life_sciences_tools
   freshness_window: 7
   market_data_stage: none
   quality_score: null

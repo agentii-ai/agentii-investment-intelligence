@@ -452,6 +452,11 @@ FR011_TOOLS = {
     "get_upcoming_pdufa", "get_pdufa_decision", "get_device_decision",
     "search_universe_drugs", "search_universe_devices",
     "get_company_drugs", "get_company_devices",
+    # Spec 055 — drug-knowledge + ACIP calendar surface (live in mcp.js P0_TOOLS)
+    "search_drug_knowledge", "get_drug_knowledge",
+    "search_drugs_by_target", "search_drugs_by_indication",
+    "search_acip_events", "get_acip_event",
+    "search_commercial_track", "get_ct_status_changes",
 }
 # Claude Code built-in tools usable by skills (e.g. xlsx-financials runs an
 # openpyxl script via Bash per contracts/office-tooling.md).

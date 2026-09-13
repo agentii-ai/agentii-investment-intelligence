@@ -1,4 +1,4 @@
-# fda-catalyst-analysis — Analyst Mode Definitions
+# med-market-sizing — Analyst Mode Definitions
 
 Derived from the skill's own methodology structure (scripts/mode_backfill.py, spec 046 M1).
 
@@ -21,3 +21,15 @@ Derived from the skill's own methodology structure (scripts/mode_backfill.py, sp
 ### Mode: data-source-priority
 
 **Objective**: Data Source Priority analysis per the skill's methodology (see SKILL.md sections).
+
+### Mode: drug-biologic
+
+**Objective**: Drug/biologic prevalence-based funnel sizing per the skill's methodology (see SKILL.md `## Modes`).
+
+### Mode: device
+
+**Objective**: Device placements/procedures and installed-base funnel sizing per the skill's methodology (see SKILL.md `## Modes`).
+
+### Mode: vaccine
+
+**Objective**: Vaccine cohort, ACIP-gated uptake, and procurement sizing per the skill's methodology (see SKILL.md `## Modes`).

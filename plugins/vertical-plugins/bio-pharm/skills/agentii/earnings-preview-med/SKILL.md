@@ -52,10 +52,12 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 - "Earnings + FDA calendar overlap for [ticker]."
 - "What are the swing factors for [ticker]'s print?"
 - "Historical reaction to [ticker]'s earnings surprises."
+- "What changed in my estimates, thesis, and positioning ahead of [ticker]'s print?"
 
 ## Production Grounding
 
 - Med prints have TWO drivers: financials (revenue/EPS/guidance) and catalysts (PDUFA/AdCom/readouts). The catalyst overlay is mandatory — a clean quarter can be undone by a CRL days earlier.
+- Every preview closes with model-vs-consensus deltas (our modeled numbers vs consensus from `search_earnings_calendar`, signed with the driver named) and the three what's-changed vectors (estimates / thesis / positioning) — estimates move first, thesis and positioning follow only when the facts justify them.
 - For pre-revenue biotechs, the print is mostly about cash runway + pipeline updates; consensus EPS is secondary.
 - Grounding frameworks: `references/knowledge-frameworks.md` (道/法 review knowledge).
 
@@ -72,10 +74,12 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 unstructured_document_search
 
 ### Retrieval Strategy
-1. Resolve the earnings event: `search_earnings_calendar` for dates/estimates/surprises.
-2. Pull fundamentals trend: `search_xbrl_facts` key line items.
-3. Catalyst overlay: nearest PDUFA/AdCom/readout vs print date.
-4. Ground with historical cases (print reactions) via knowledge tools.
+1. Resolve the earnings event: `search_earnings_calendar` for dates/estimates/surprises (consensus values).
+2. Pull fundamentals trend: `search_xbrl_facts` key line items (our modeled numbers).
+3. Compute model-vs-consensus deltas on each key line item; state assumptions; annotate coverage_gap where no consensus value exists.
+4. Slot-refresh the three what's-changed vectors: estimates / thesis / positioning.
+5. Catalyst overlay: nearest PDUFA/AdCom/readout vs print date.
+6. Ground with historical cases (print reactions) via knowledge tools.
 
 ### Temporal Scope
 See frontmatter temporal_scope block.
@@ -86,8 +90,10 @@ See frontmatter allowed_tools.
 ### Protocol
 1. Event & estimates
 2. Fundamental trend
-3. Catalyst overlay
-4. Swing-factor synthesis
+3. Model-vs-consensus deltas
+4. What's-changed vectors (estimates / thesis / positioning)
+5. Catalyst overlay
+6. Swing-factor synthesis
 
 ## Modes
 
@@ -111,10 +117,12 @@ See frontmatter allowed_tools.
 
 1. **Executive Summary** — setup for the print in 2-3 sentences
 2. **Consensus & Surprise History** — estimates table + surprise record
-3. **Guidance & Swing Factors** — guidance risk analysis
-4. **Catalyst Overlay** — FDA events near the print
-5. **Historical Context** — cases with /v/ citations
-6. **Coverage Gaps** — degraded flags
+3. **Model vs Consensus** — our modeled numbers vs consensus (`search_earnings_calendar`) with signed deltas and named drivers
+4. **What's Changed** — the three vectors: estimates / thesis / positioning (estimates move first, ratings last)
+5. **Guidance & Swing Factors** — guidance risk analysis
+6. **Catalyst Overlay** — FDA events near the print
+7. **Historical Context** — cases with /v/ citations
+8. **Coverage Gaps** — degraded flags
 
 ## Error Handling
 

@@ -1,7 +1,7 @@
 ---
 name: sector-overview-med
-description: "Med-sector overview using the 049 taxonomy (med.medicines_biotech, med.medical_devices, med.healthcare_services, med.life_sciences_tools) with med trends, catalysts, and FDA-decision context. Use to frame any biotech/pharma analysis before diving into a single name."
-sectors: [med.medicines_biotech, med.medical_devices, med.healthcare_services, med.life_sciences_tools]
+description: "Med-sector overview across med.medicines_biotech and med.medical_devices with med trends, catalysts, FDA-decision context, and a cross-sector ripple map (quantified sign/magnitude per name). Use to frame any biotech/pharma/device analysis before diving into a single name."
+sectors: [med.medicines_biotech, med.medical_devices]
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 4
@@ -32,7 +32,7 @@ parameter_free: false
 
 | Parameter | Default Value | Rationale |
 |-----------|---------------|-----------|
-| taxonomy_level | industry (4 med industries) | Med sector frames at industry granularity |
+| taxonomy_level | industry (2 med industries) | Med sector frames at industry granularity |
 | include_catalysts | true | FDA decisions are the defining med-sector driver |
 | lookback_quarters | 4 | Standard trend window |
 
@@ -55,8 +55,10 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 
 ## Production Grounding
 
-- Med industry taxonomy (spec 049): `med.medicines_biotech`, `med.medical_devices`, `med.healthcare_services`, `med.life_sciences_tools`; services/tools are out of scope for the bio-pharm vertical (servable by generic skills).
+- Med industry scope: `med.medicines_biotech` and `med.medical_devices`; healthcare services and life-sciences tools are out of scope for the bio-pharm vertical (servable by generic skills).
 - FDA decisions (approve/CRL/AdCom) are the strongest sector catalysts; sector framing must include the catalyst calendar (`search_adcom_meetings`).
+- Cross-sector ripple map: for every sector-level catalyst (FDA decision, pricing action, funding regime, class readout), map the quantified sign and magnitude per covered name — a have/have-not stock map, not a headline. Magnitudes carry sources or `[VIEW]` labels; names with no exposure are listed as have-nots, not omitted.
+- Living-exhibit convention: sector exhibits are append-only — new observations append to the existing exhibit, prior entries are never rewritten. Every fact carries its source line.
 - Grounding frameworks: `references/knowledge-frameworks.md` (道/法 layered review knowledge).
 
 ## Data Source Priority
@@ -91,9 +93,10 @@ See frontmatter allowed_tools.
 
 ## Modes
 
-- **Full sector** (default): all four med industries with catalyst overlay.
+- **Full sector** (default): both med industries with catalyst overlay.
 - **Single industry**: deep-dive one industry (e.g., medicines_biotech).
 - **Catalyst-focused**: sector view organized around upcoming FDA events.
+- **Ripple map**: one sector catalyst propagated to per-name sign/magnitude, appended to the living exhibit.
 
 ## Tool Fallbacks
 
@@ -113,8 +116,9 @@ See frontmatter allowed_tools.
 2. **Taxonomy Map** — industries + representative names + coverage stats
 3. **Catalyst Calendar** — dated FDA/earnings events shaping the sector
 4. **Trends & Structural Drivers** — with evidence
-5. **Knowledge Grounding** — med strategies/cases with /v/ citations
-6. **Coverage Gaps** — data limitations and degraded flags
+5. **Cross-Sector Ripple Map** — per-name quantified sign/magnitude per sector catalyst (have/have-not stock map), appended to the living exhibit
+6. **Knowledge Grounding** — med strategies/cases with /v/ citations
+7. **Coverage Gaps** — data limitations and degraded flags
 
 ## Error Handling
 

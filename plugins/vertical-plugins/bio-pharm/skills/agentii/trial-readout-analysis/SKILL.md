@@ -1,6 +1,6 @@
 ---
 name: trial-readout-analysis
-description: "Clinical-trial readout analysis: pull the trial, evaluate the readout with AdCom-style scrutiny (endpoints, statistics, subgroups, missing data, safety), and size the stock reaction with historical grounding. The judgment core for binary biotech events."
+description: "Clinical-trial readout analysis: pull the trial, evaluate the readout with AdCom-style scrutiny (endpoints, statistics, subgroups, missing data, safety, tolerability/persistence), place it in a cross-trial comparison lattice vs SoC and class peers, and size the stock reaction with historical grounding. The judgment core for binary biotech events."
 sectors: [med.medicines_biotech, med.medical_devices]
 multi_ticker_semantics: single_target
 temporal_scope:
@@ -34,7 +34,10 @@ parameter_free: false
 
 | Parameter | Default Value | Rationale |
 |-----------|---------------|-----------|
-| scrutiny_axes | all six | Safety/stats/subgroups/missing data/endpoints/benefit-risk |
+| scrutiny_axes | all six + tolerability | Safety/stats/subgroups/missing data/endpoints/benefit-risk + tolerability/persistence as co-equal axis |
+| lattice_comparators | SoC + class peers | Every readout is placed against standard of care and same-class peers |
+| safety_imbalance | defer to outcomes | Small-N safety imbalances defer the verdict to a larger outcomes trial |
+| conflict_policy | materiality-rated | Conflicting readings surfaced verbatim, rated by materiality or deferred |
 | outcome_framing | base/bull/bear | Binary readouts need scenario sizing |
 | reaction_context | historical cases | Size moves from past analogues |
 
@@ -58,7 +61,10 @@ Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace
 ## Production Grounding
 
 - Readout ≠ approval: phase-3 success is necessary but not sufficient; FDA re-analyzes sponsor data.
-- Apply the six scrutiny axes (safety signals, statistical adequacy, subgroup analyses, missing data, endpoint appropriateness, benefit-risk) — the 道/法 frameworks in `references/knowledge-frameworks.md` are the authoritative checklist.
+- Apply the six scrutiny axes (safety signals, statistical adequacy, subgroup analyses, missing data, endpoint appropriateness, benefit-risk) plus tolerability/persistence as a co-equal axis — discontinuation rates, dose reductions, and AE-driven dropout often decide commercial uptake. The 道/法 frameworks in `references/knowledge-frameworks.md` are the authoritative checklist.
+- Cross-trial lattice: every readout is placed against standard of care and same-class peers on aligned endpoints; a readout judged in isolation is incomplete.
+- Safety-imbalance deferral: a safety imbalance seen at readout scale defers the verdict to a larger outcomes trial; never over-weight small-N imbalances.
+- Materiality-rated conflicts: conflicting characterizations of the same data are surfaced verbatim and rated by materiality or deferred — never averaged.
 - Readout framing: readout design, then stock sizing (binary-risk expected value), then historical analogue comparison.
 
 ## Data Source Priority
@@ -75,9 +81,10 @@ unstructured_document_search
 
 ### Retrieval Strategy
 1. Pull the trial record (`get_clinical_trial` by NCT id, or `search_clinical_trials` by drug/ticker).
-2. Assess design + endpoint quality against scrutiny axes.
-3. Frame base/bull/bear outcomes with sizing.
-4. Ground in historical readout/adcom cases via knowledge tools.
+2. Assess design + endpoint quality against scrutiny axes, including tolerability/persistence.
+3. Build the cross-trial lattice: comparator trials for SoC and class peers on aligned endpoints.
+4. Frame base/bull/bear outcomes with sizing; defer safety-imbalance verdicts to outcomes trials where needed.
+5. Ground in historical readout/adcom cases via knowledge tools.
 
 ### Temporal Scope
 See frontmatter temporal_scope block.
@@ -87,9 +94,10 @@ See frontmatter allowed_tools.
 
 ### Protocol
 1. Trial record
-2. Scrutiny-axes assessment
-3. Outcome scenarios + sizing
-4. Analogue grounding
+2. Scrutiny-axes assessment (incl. tolerability/persistence)
+3. Cross-trial lattice vs SoC and class peers
+4. Outcome scenarios + sizing
+5. Analogue grounding
 
 ## Modes
 
@@ -113,10 +121,11 @@ See frontmatter allowed_tools.
 
 1. **Executive Summary** — readout stance in 2-3 sentences
 2. **Trial Profile** — design, endpoints, status, dates
-3. **Scrutiny Assessment** — the six axes with evidence
-4. **Outcome Scenarios** — base/bull/bear with sizing
-5. **Historical Analogues** — cases with /v/ citations
-6. **Coverage Gaps** — degraded flags
+3. **Scrutiny Assessment** — the six axes plus tolerability/persistence, with evidence
+4. **Cross-Trial Lattice** — aligned endpoints vs standard of care and class peers
+5. **Outcome Scenarios** — base/bull/bear with sizing; safety-imbalance deferrals flagged
+6. **Historical Analogues** — cases with /v/ citations
+7. **Coverage Gaps** — degraded flags
 
 ## Error Handling
 
@@ -124,6 +133,8 @@ See frontmatter allowed_tools.
 |-------|----------|
 | NCT id unknown | Search by drug/ticker; flag if unresolved |
 | Endpoints undisclosed | Flag explicitly; scrutiny limited to disclosed data |
+| Conflicting readings of the same data | Surface both verbatim; rate materiality or defer to a larger outcomes trial — never average |
+| No comparator data for the lattice | Mark lattice cells unavailable; flag the gap — do not guess |
 
 ## Memory Load
 
