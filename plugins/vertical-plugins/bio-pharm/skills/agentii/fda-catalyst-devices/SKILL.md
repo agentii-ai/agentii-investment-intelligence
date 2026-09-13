@@ -2,6 +2,10 @@
 name: fda-catalyst-devices
 description: "Device-track catalyst analysis: 510(k), PMA, and De Novo decision events, CMS coverage and NTAP milestones, recalls and watch actions as risk signals, and post-market surveillance obligations — dated, verified, and sized per event for any medtech ticker or watchlist."
 sectors: [med.medicines_biotech, med.medical_devices]
+category_tags:
+  - fda-catalysts
+  - device-pathways
+  - 510k-pma
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4

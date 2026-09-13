@@ -5,7 +5,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L1
-  category_tags: []
+  category_tags:
+  - clinical-trials
+  - catalysts
+  - status-diff
   retrieval_scope: structured_only
   enrichment_axes:
     sectors_focus:
@@ -95,7 +98,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L2
-  category_tags: []
+  category_tags:
+  - fda-catalysts
+  - device-pathways
+  - 510k-pma
   retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus:
@@ -136,7 +142,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L2
-  category_tags: []
+  category_tags:
+  - fda-catalysts
+  - pdufa
+  - biosimilars
   retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus:
@@ -177,7 +186,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L2
-  category_tags: []
+  category_tags:
+  - fda-catalysts
+  - acip
+  - vaccines
   retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus:
@@ -216,7 +228,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L2
-  category_tags: []
+  category_tags:
+  - commercial-tracking
+  - launch-curves
+  - loe-erosion
   retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus:
@@ -314,7 +329,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L2
-  category_tags: []
+  category_tags:
+  - market-sizing
+  - patient-flow
+  - tam
   retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus:
@@ -363,7 +381,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L1
-  category_tags: []
+  category_tags:
+  - peer-selection
+  - mechanism-overlap
+  - analogs
   retrieval_scope: structured_only
   enrichment_axes:
     sectors_focus:
@@ -414,7 +435,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L1
-  category_tags: []
+  category_tags:
+  - pipeline
+  - device-pathways
+  - rwe
   retrieval_scope: structured_only
   enrichment_axes:
     sectors_focus:
@@ -453,7 +477,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L1
-  category_tags: []
+  category_tags:
+  - pipeline
+  - pos-modeling
+  - mechanism-maps
   retrieval_scope: structured_only
   enrichment_axes:
     sectors_focus:
@@ -492,7 +519,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L1
-  category_tags: []
+  category_tags:
+  - pipeline
+  - acip
+  - immunogenicity
   retrieval_scope: structured_only
   enrichment_axes:
     sectors_focus:
@@ -582,7 +612,9 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L2
-  category_tags: []
+  category_tags:
+  - sector-analysis
+  - ripple-maps
   retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus:
@@ -633,7 +665,10 @@ skills:
   vertical: bio-pharm
   layer_tags:
   - L2
-  category_tags: []
+  category_tags:
+  - clinical-trials
+  - readouts
+  - cross-trial
   retrieval_scope: unstructured_document_search
   enrichment_axes:
     sectors_focus:

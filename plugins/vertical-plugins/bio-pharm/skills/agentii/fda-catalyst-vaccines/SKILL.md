@@ -2,6 +2,10 @@
 name: fda-catalyst-vaccines
 description: "Vaccine catalyst analysis across the two-gate path: CBER BLA review and the ACIP recommendation gate that turns FDA approval into commercial availability. Lot release, procurement milestones, pediatric bridging, and healthy-population efficacy context — dated, verified, and sized per event."
 sectors: [med.medicines_biotech, med.medical_devices]
+category_tags:
+  - fda-catalysts
+  - acip
+  - vaccines
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4

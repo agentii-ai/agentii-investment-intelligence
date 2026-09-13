@@ -2,6 +2,10 @@
 name: pipeline-medicines
 description: "Medicines pipeline analysis over structured universes: Phase I-III assets with probability-of-success discipline (unadjusted peak x POS = modeled value; POS changes logged with reasons), trial status-diff tracking, and mechanism/competitor mapping via drug-knowledge lookups."
 sectors: [med.medicines_biotech, med.medical_devices]
+category_tags:
+  - pipeline
+  - pos-modeling
+  - mechanism-maps
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 8

@@ -2,6 +2,10 @@
 name: trial-readout-analysis
 description: "Clinical-trial readout analysis: pull the trial, evaluate the readout with AdCom-style scrutiny (endpoints, statistics, subgroups, missing data, safety, tolerability/persistence), place it in a cross-trial comparison lattice vs SoC and class peers, and size the stock reaction with historical grounding. The judgment core for binary biotech events."
 sectors: [med.medicines_biotech, med.medical_devices]
+category_tags:
+  - clinical-trials
+  - readouts
+  - cross-trial
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 4

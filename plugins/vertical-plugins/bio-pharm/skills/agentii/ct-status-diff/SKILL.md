@@ -2,6 +2,10 @@
 name: ct-status-diff
 description: "Weekly clinical-trial status diff — the 11-category change report over the stored weekly snapshots (spec 055 FR-B03). Surfaces exactly what changed on the trial registry for your coverage: New / Suspended / Withdrawn / Terminated / Recruiting / Recruitment-Complete / Completed / Ahead / Delayed / Upsized / Downsized, every row carrying previous and new values, with risk flags on Terminated and Downsized and re-timing flags on Ahead and Delayed. The stored-previous-value discipline makes each week's diff reproducible."
 sectors: [med.medicines_biotech, med.medical_devices]
+category_tags:
+  - clinical-trials
+  - catalysts
+  - status-diff
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4

@@ -2,6 +2,10 @@
 name: fda-catalyst-medicines
 description: "CDER-track catalyst analysis for medicines: PDUFA target dates, AdCom votes, sNDA/sBLA label expansions, biosimilar interchangeability and 180-day exclusivity, Orange Book state, and CRL remediation timelines — enumerated, verified, and sized per event for any biotech/pharma ticker or watchlist."
 sectors: [med.medicines_biotech, med.medical_devices]
+category_tags:
+  - fda-catalysts
+  - pdufa
+  - biosimilars
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4

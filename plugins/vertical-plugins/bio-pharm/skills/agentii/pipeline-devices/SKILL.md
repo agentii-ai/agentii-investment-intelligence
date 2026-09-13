@@ -2,6 +2,10 @@
 name: pipeline-devices
 description: "Device pipeline analysis: feasibility and pivotal study stages, design-iteration cycles, RWE studies, and post-market obligations, with reimbursement-aware value framing and decision-track awareness across the med universe."
 sectors: [med.medicines_biotech, med.medical_devices]
+category_tags:
+  - pipeline
+  - device-pathways
+  - rwe
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 8
