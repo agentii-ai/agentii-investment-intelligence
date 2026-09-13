@@ -2,9 +2,6 @@
 name: sector-overview-med
 description: "Med-sector overview across med.medicines_biotech and med.medical_devices with med trends, catalysts, FDA-decision context, and a cross-sector ripple map (quantified sign/magnitude per name). Use to frame any biotech/pharma/device analysis before diving into a single name."
 sectors: [med.medicines_biotech, med.medical_devices]
-category_tags:
-  - sector-analysis
-  - ripple-maps
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 4

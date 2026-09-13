@@ -2,10 +2,6 @@
 name: pipeline-vaccines
 description: "Vaccine pipeline analysis: immunogenicity and seroconversion studies, lot-consistency trials, healthy-population efficacy designs, and age-cohort bridging, with the ACIP gate built into the value path across the med universe."
 sectors: [med.medicines_biotech, med.medical_devices]
-category_tags:
-  - pipeline
-  - acip
-  - immunogenicity
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 8

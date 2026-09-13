@@ -2,10 +2,6 @@
 name: peer-bench-med
 description: "Med peer benchmarking: select actual biotech/pharma peers via the med universe (drug/indication overlap where possible) and compare med-relevant metrics — pipeline depth, catalyst density, cash position, margins, valuation multiples."
 sectors: [med.medicines_biotech, med.medical_devices]
-category_tags:
-  - peer-selection
-  - mechanism-overlap
-  - analogs
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4

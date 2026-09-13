@@ -2,10 +2,6 @@
 name: med-market-sizing
 description: Patient-flow market sizing for med products — prevalence → diagnosed → interested → affordable → covered → treated → persistent, priced as price × duration per cohort, with capacity constraints, named historical analog anchoring, and always bull/base/bear named-driver grids. Use to size a therapy area or product market before any valuation or share work.
 sectors: [med.medicines_biotech, med.medical_devices]
-category_tags:
-  - market-sizing
-  - patient-flow
-  - tam
 multi_ticker_semantics: single_target
 temporal_scope:
   default_quarters: 4

@@ -2,10 +2,6 @@
 name: market-share-tracking
 description: Weekly product-level commercial tracking — TRx/NRx with current/4-wk/12-wk share and YoY, launch curves overlaid with same-class analogs plus a consensus-implied trajectory, LOE/biosimilar erosion series, GTN/net-price stress brackets, and per-row data-caveat discipline. Use to track any launched drug, biologic, device, or vaccine against its class and consensus.
 sectors: [med.medicines_biotech, med.medical_devices]
-category_tags:
-  - commercial-tracking
-  - launch-curves
-  - loe-erosion
 multi_ticker_semantics: basket_v1_1
 temporal_scope:
   default_quarters: 4
