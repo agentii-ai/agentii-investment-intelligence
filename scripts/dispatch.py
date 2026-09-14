@@ -304,17 +304,22 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("DISPATCH_ERROR: --task must be 'TICKER SKILL MODE'")
     ticker, skill, mode = parts
 
-    if fallback:
-        if not args.journal:
-            raise SystemExit(
-                "DISPATCH_ERROR: cwd fallback used but no --journal given — the "
-                "fallback must be journaled, never silent (Q37)"
-            )
-        journal.append_entry(Path(args.journal),
-                             journal.make_entry(skill, ticker, mode,
-                                                thesis_dir.name, [],
-                                                thesis_resolution=fallback))
-    print(f"DISPATCH {ticker} × {skill} × {mode} → thesis_dir={thesis_dir}")
+    # D75 #5 (T-001 first-run feedback): journal EVERY dispatch — the S1 scope
+    # journaled only the cwd-fallback path, leaving the mandatory explicit-path
+    # dispatches silent and the reducer with an empty journal. thesis_resolution
+    # records the path taken: explicit | cwd_fallback.
+    if not args.journal:
+        raise SystemExit(
+            "DISPATCH_ERROR: --journal required — every dispatch must be journaled "
+            "(Q37; the reducer reads these records)"
+        )
+    journal.append_entry(Path(args.journal),
+                         journal.make_entry(skill, ticker, mode,
+                                            thesis_dir.name, [],
+                                            thesis_resolution=(
+                                                fallback or "explicit")))
+    print(f"DISPATCH {ticker} × {skill} × {mode} → thesis_dir={thesis_dir} "
+          f"(journaled: {fallback or 'explicit'})")
     return 0
 
 

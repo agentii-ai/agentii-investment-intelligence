@@ -103,7 +103,52 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  - [{f['severity']}] {f['entity']}.{f['metric']}@{f['period']} "
                   f"values={f.get('values')} id={f['id']}"
                   f"{' (suspected restatement)' if f.get('restatement') else ''}")
+        # D77: the challenge run PERSISTS a findings file in the thesis dir — the
+        # deterministic scan + backstops, with an IC-findings section for the
+        # analyst's judgment angles (pre-mortem / inversion / wrong_if review).
+        _write_findings_file(thesis, kept, overflow, args)
     return 0
+
+
+def _write_findings_file(thesis: Path, kept: list[dict], overflow: dict,
+                         args) -> Path:
+    import datetime
+    import json
+    import os
+
+    today = datetime.date.today().isoformat()
+    out_dir = thesis / "challenge"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"{today}_findings.md"
+    backstops = backstop_trigger(args.nth_converge, args.constitution_bumped,
+                                 args.subscriptions_changed)
+    lines = [
+        f"# Challenge Findings — {thesis.name} ({today})",
+        "",
+        f"**Backstops triggered**: {', '.join(backstops) or 'none (manual run)'}",
+        f"**Deterministic scan**: {len(kept)} finding(s), "
+        f"{overflow.get('dropped', 0)} dropped (Q40 cap)",
+        "",
+        "## Deterministic findings (content-derived IDs — re-runs byte-identical)",
+        "",
+    ]
+    for f in kept:
+        tag = " (suspected restatement)" if f.get("restatement") else ""
+        lines.append(f"- [{f['severity']}] {f['entity']}.{f['metric']}@{f['period']} "
+                     f"values={f.get('values')} id={f['id']}{tag}")
+    if not kept:
+        lines.append("- (none)")
+    lines += ["",
+              "## IC findings (append the analyst's judgment angles: pre-mortem / "
+              "inversion / wrong_if falsifiability review)",
+              ""]
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    with open(tmp, "rb") as fh:
+        os.fsync(fh.fileno())
+    os.replace(tmp, path)
+    print(f"findings written → {path}")
+    return path
 
 
 if __name__ == "__main__":

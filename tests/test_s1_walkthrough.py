@@ -102,9 +102,9 @@ entity_claims:
                                             "001-mvp", ["get_realtime_quote"],
                                             observed_at="2026-09-08T16:00:00-04:00"))
     doc = reduce_journals.reduce(thesis / "shards", thesis / "thesis.md")
-    # One skill entry — dispatch journals only the cwd-fallback path (Q37: the
-    # fallback must never be silent; explicit thesis_dir needs no journal record).
-    assert doc["mechanical"]["entry_count"] == 1
+    # D75 #5: dispatch journals EVERY dispatch (explicit path included) — the
+    # reducer therefore sees the dispatch record + the skill entry.
+    assert doc["mechanical"]["entry_count"] == 2
     assert (thesis / "thesis.md").is_file()
     assert not (thesis / "thesis.md.tmp").exists()
 

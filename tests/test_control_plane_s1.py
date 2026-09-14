@@ -85,7 +85,8 @@ def test_dispatch_accepts_explicit_thesis_dir(tmp_path, capsys):
     thesis = tmp_path / "theses" / "001-mvp"
     thesis.mkdir(parents=True)
     rc = dispatch.main(["--thesis-dir", str(thesis),
-                        "--task", "NVDA recent-quarter default"])
+                        "--task", "NVDA recent-quarter default",
+                        "--journal", str(tmp_path / "run1.ndjson")])
     assert rc == 0
     assert "thesis_dir=" in capsys.readouterr().out
 

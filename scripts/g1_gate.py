@@ -296,6 +296,23 @@ def check_artifact_full(path: Path, *, constitution_path: Path | None = None,
         if isinstance(flag, dict) and flag.get("severity") == "blocking":
             problems.append(f"DATA_QUALITY_BLOCKING: {flag.get('source')}.{flag.get('metric')} "
                             f"carries a blocking flag (Q78) — artifact must not deliver")
+    # D75 #6 (T-001 first-run feedback): entity_claims must be STRUCTURED — prose
+    # strings defeat the entity index, the contradiction detector and the
+    # value-plausibility gate (the Q20 field is the whole control plane's input).
+    claims = fm.get("entity_claims")
+    if claims is not None:
+        if not isinstance(claims, list):
+            problems.append("SCHEMA_MISMATCH: entity_claims must be a list (Q20)")
+        else:
+            for i, c in enumerate(claims):
+                if not isinstance(c, dict):
+                    problems.append(f"SCHEMA_MISMATCH: entity_claims[{i}] is prose, "
+                                    f"not the structured {{entity, metric, value, unit, "
+                                    f"period, source, retrieved_at}} form (Q20)")
+                elif not (c.get("entity") and c.get("metric")
+                          and isinstance(c.get("value"), (int, float))):
+                    problems.append(f"SCHEMA_MISMATCH: entity_claims[{i}] missing "
+                                    f"entity/metric/value (Q20)")
     if constitution_path and constitution_path.is_file():
         try:
             constitution = yaml.safe_load(constitution_path.read_text(encoding="utf-8")) or {}
