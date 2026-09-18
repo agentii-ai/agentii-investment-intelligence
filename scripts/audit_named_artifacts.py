@@ -158,6 +158,22 @@ def _q_numbers() -> tuple[set[int], list[int]]:
     return nums, gaps
 
 
+def _landing_counts() -> tuple[int, int]:
+    """(items, resolved) from the spec repo's landing-items.yaml.
+
+    The landing-item counts live in the SPEC repo rather than the kit, and C9 is a
+    FLOOR rather than a total — the claim itself carries `floor: true`. A derived
+    number that is nonetheless incomplete is the failure this whole file exists to
+    prevent, one layer down; the flag is what keeps it honest."""
+    import yaml
+    f = (Path(__file__).resolve().parents[2] / "specs"
+         / "046-agentii-research-orchestration" / "landing-items.yaml")
+    if not f.is_file():
+        return (0, 0)
+    items = (yaml.safe_load(f.read_text(encoding="utf-8")) or {}).get("items") or []
+    return (len(items), sum(1 for i in items if i.get("resolved")))
+
+
 def _counts() -> int:
     """Check the spec's asserted quantities against the system.
 
@@ -205,6 +221,12 @@ def _counts() -> int:
         # of distinct numbers is format-independent, and the gap check below makes
         # "Q1..QN with no holes" explicit rather than assumed.
         "question_count": len(_q_numbers()[0]),
+        # The landing-item counts live in the SPEC repo, and C9 is a FLOOR rather
+        # than a total — the claim itself carries `floor: true`. A derived number
+        # that is nonetheless incomplete is the failure this file exists to
+        # prevent, one layer down; the flag is what keeps it honest.
+        "landing_items": _landing_counts()[0],
+        "landing_items_resolved": _landing_counts()[1],
     }
     print(f"spec 046 quantitative claims — {claims_file.name} vs measured\n")
     bad = checked = 0
@@ -215,6 +237,11 @@ def _counts() -> int:
             print(f"  ??   {label:<46} unknown measure {c['measure']!r}", file=sys.stderr)
             return 2
         share = f"  ({got / max(1, tot):.0%} of {tot})" if c.get("as_share") else ""
+        # A claim marked `floor: true` is incomplete by construction. Printing it
+        # as a bare number would present a floor as a total — the same defect the
+        # claim exists to record, reproduced by the check that reads it.
+        if c.get("floor"):
+            label = label + "  [FLOOR — the true count is higher]"
         if claimed is None:
             print(f"  --   {label:<46} measured {got}{share}  (no claim to check)")
             continue

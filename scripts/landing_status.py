@@ -27,8 +27,8 @@ import yaml
 # The header rows this script owns. Each is (regex, template) where the template
 # takes the derived value. Anything else in the header is prose and is left alone.
 ROWS = [
-    (re.compile(r"^\| 落地项（本索引，do-once 粒度） \| \*\*\d+\*\* \|", re.M),
-     "| 落地项（本索引，do-once 粒度） | **{rows}** |"),
+    (re.compile(r"^\| 落地项（本索引，do-once 粒度） \|.*\|$", re.M),
+     "| 落地项（本索引，do-once 粒度） | **{ge}{rows}**{floor_note} |"),
     # `.*` not `[^）]*`: the note itself contains a parenthesised clause, and the
     # first version of this pattern therefore could not re-match its own output.
     (re.compile(r"^\| 其中已解决 \|.*\|$", re.M),
@@ -47,12 +47,28 @@ def derive(index_path: Path) -> dict:
     items = d["items"]
     bt = collections.Counter(i["type"] for i in items)
     resolved = sum(1 for i in items if i.get("resolved"))
+    # The index may be a FLOOR rather than a total. `landing-items.yaml` declares
+    # this about itself when its own construction is known to be incomplete — it
+    # does today, after a `git checkout` destroyed the working file and the
+    # reconstruction recovered 217 of ~230 items from the session transcript.
+    #
+    # A derived header that reports a floor as a total is the defect Q113 exists
+    # to prevent, one layer down: the number would be computed (so it passes the
+    # derivation test) and still wrong (so it fails the point). `items_complete:
+    # false` makes the header say `≥N` instead.
+    complete = bool(d.get("totals", {}).get("items_complete", True))
     return {
         "rows": len(items),
+        "ge": "" if complete else "≥",
+        "complete": complete,
         "resolved": resolved,
         "open": len(items) - resolved,
         "by_type": " · ".join(f"`{k}` {v}" for k, v in sorted(bt.items(), key=lambda x: -x[1])),
         "resolved_note": RESOLVED_NOTE,
+        "floor_note": ("" if complete else
+                       "（**本索引是下限，不是总数** —— 见文件头部的 INCIDENT 记录："
+                       "一次 `git checkout` 毁掉了工作副本，从会话记录重建得 217 条，"
+                       "**约 13 条已确认不可恢复**）"),
         "meta_rules": len(d.get("meta_rules") or []),
     }
 
@@ -89,8 +105,10 @@ def main() -> int:
     text = spec.read_text(encoding="utf-8")
     new, stale = render(text, vals)
 
-    print(f"derived from {index.name}: rows={vals['rows']} resolved={vals['resolved']} "
-          f"open={vals['open']} meta_rules={vals['meta_rules']}")
+    print(f"derived from {index.name}: rows={vals['ge']}{vals['rows']} "
+          f"resolved={vals['resolved']} open={vals['open']} "
+          f"meta_rules={vals['meta_rules']}"
+          + ("" if vals["complete"] else "  [items_complete: false — the count is a FLOOR]"))
     if not stale:
         print("header is current — nothing to do.")
         return 0
