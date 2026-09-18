@@ -67,7 +67,13 @@ You author **only the page sequence** — a fragment, never a document:
    table thead tbody tr th td b strong i em code a div span br hr blockquote`.
 3. No `<img>` and no id starting `cover-` or equal to `stale-bar`.
 4. **Reserved classes — never emit these** (assembler chrome):
-   `sheet-head`, `sheet-foot`, `reg`, `cover`, `page-mark`.
+   `sheet-head`, `sheet-foot`, `reg`, `cover`, `page-mark`, `disclaimer`.
+   A collision is a hard validation error, not a warning.
+   The **disclaimer page** is the newest of these (Q139): one legal tail page,
+   numbered last, injected by `synthesize_report.build_html` from
+   `templates/disclaimer.md` — the single source for that text. Do not author it,
+   do not paraphrase it, and do not put a disclaimer in a page of your own. It is
+   deliberately absent from the contents list: it is a legal tail, not a chapter.
 5. **Citation gate (anti-fabrication):** every viewer link you emit must be
    copied **verbatim** from `report-input.md` — the pack's links have the form
    `…/v/{TICKER}/{citation_id}/{N}` on the agentii viewer. The assembler

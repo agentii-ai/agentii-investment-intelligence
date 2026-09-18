@@ -26,6 +26,16 @@
          font-size: 10px; padding: 2px 6px; white-space: nowrap; }
   input { width: 100%; padding: 6px; margin: 4px 0; }
   .kpi { font-size: 24px; font-weight: bold; color: var(--accent); }
+  /* Q139 — standing legal band. Always present, never behind a tab or a scroll
+     container: a dashboard is interactive, so a "last page" can be missed. */
+  .disclaimer { border-top: 2px solid var(--primary); margin-top: 8px;
+                padding: 14px 16px 18px; font-size: 12px; line-height: 1.55; color: #444;
+                background: #fafaf7; }
+  .disclaimer h3 { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+                   color: var(--primary); margin: 0 0 8px; }
+  .disclaimer p { margin: 0 0 8px; max-width: 110ch; }
+  .disclaimer-meta { font-family: 'Courier New', monospace; font-size: 10.5px; color: #777;
+                     margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -42,6 +52,28 @@
   </section>
   <section class="card"><h2>Scenario Explorer</h2><div id="scenarios"></div></section>
 </main>
+<!-- FOOTER BAND — Q139. Canonical text, copied from templates/disclaimer.md (the single
+     source). This template has no producer yet, so nothing fills __WORKSPACE__ / __AS_OF__
+     / __GENERATED__ and nothing gates it; when a producer is written it must read
+     disclaimer.md via synthesize_report._disclaimer_body() rather than keep this copy. -->
+<footer class="disclaimer">
+  <h3>Disclaimer</h3>
+  <p>This document is <b>research and analysis</b>, produced by an automated research system
+     for internal use. It is <b>not investment advice</b>, and it is <b>not an offer or
+     solicitation</b> to buy or sell any security.</p>
+  <p>It is based on the sources cited inline. Those sources may be incomplete, delayed, or
+     wrong, and the analysis may have misread them; no representation or warranty is made as
+     to accuracy or completeness. Figures are as of their stated <code>as_of</code> date and
+     are not updated.</p>
+  <p><b>This document contains hypotheses, not established conclusions.</b> Where a claim is a
+     projection, an inference, or a judgement rather than a reported fact, it is marked as
+     such. Statements about the future are forward-looking and inherently uncertain. Past
+     performance is not indicative of future results.</p>
+  <p>Recipients must do their own due diligence and consult their own advisers before acting
+     on anything here. The authors and distributors accept no liability for any loss arising
+     from reliance on this document.</p>
+  <p class="disclaimer-meta">© __WORKSPACE__ · __AS_OF__ · generated __GENERATED__</p>
+</footer>
 <script id="dashboard-data" type="application/json">{"positions": [], "scenarios": []}</script>
 <script>
   // zero-dependency rendering from the injected JSON block (offline by design)

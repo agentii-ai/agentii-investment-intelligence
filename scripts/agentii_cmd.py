@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
 """agentii_cmd.py — the implementation core of the `agentii.*` kit commands (S4).
 
-Subcommands: specify / tasks / constitution / plan. The SKILL.md bodies document
-the rules; this script is the deterministic machinery. `challenge` arrives with
-S5; `converge` lives in converge.py; `implement` wraps dispatch.py.
+Subcommands, in two kinds:
+
+  Own implementation  — specify / clarify / tasks / constitution. The SKILL.md
+                        bodies document the rules; this script is the machinery.
+
+  Delegating          — converge / challenge / implement / status. Each already
+                        had a complete `main(argv)` in its own script; this file
+                        supplies only the dispatch entry (see DELEGATING below).
+
+`plan` is intentionally NOT registered. It is an authoring step with a SKILL.md
+and no script, so a verb here would return success and do nothing — the exact
+anti-pattern spec 046 spent 63 decisions hunting. A command that cannot do its
+work must not be invocable, or its absence stops being visible.
 """
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -344,6 +355,38 @@ def constitution_amend(workspace: Path, bump: str, note: str) -> None:
           f"`stale` and dispatches re-examination after the gate-5 budget confirm.")
 
 
+# ── The delegating commands (Phase 11 / Q22 · Q24 · Q26) ─────────────────────
+#
+# Each of these already had a complete implementation — a `main(argv)` with a
+# `__main__` guard in its own script, plus a SKILL.md. What was missing was the
+# dispatch entry. Measured 2026-09-18: four of the five unregistered commands were
+# WIRING-ONLY, not unbuilt; this table is the whole of the work.
+#
+# `plan` is deliberately ABSENT. It is an authoring step with a SKILL.md and no
+# script, so registering it here would create a verb that returns success and does
+# nothing — the exact anti-pattern this spec spent 63 decisions hunting. A command
+# that cannot do its work must not be invocable, or the absence stops being visible.
+DELEGATING = {
+    "converge": ("converge.py", "append `## Phase N: Convergence` to tasks.md (Q26)"),
+    "challenge": ("challenge.py", "findings with content-derived stable IDs (Q9/Q40)"),
+    "implement": ("dispatch.py", "dispatch tasks through the G1 preflight (Q22)"),
+    "status": ("thesis_status.py", "workspace status board (Q24)"),
+}
+
+
+def _delegate(script: str, argv: list[str]) -> int:
+    """Run a backing script's main(argv) in-process and return its exit code.
+
+    In-process rather than subprocess, so the tool's own stdout and status are the
+    command's — a wrapper that swallowed either would be a worse answer than no
+    wrapper. `here` is re-inserted into sys.path because this module is also
+    importable, in which case __file__'s directory is not sys.path[0]."""
+    here = Path(__file__).resolve().parent
+    if str(here) not in sys.path:
+        sys.path.insert(0, str(here))
+    return importlib.import_module(script[:-3]).main(argv)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="agentii.* command core (S4)")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -375,8 +418,25 @@ def main(argv: list[str] | None = None) -> int:
     cp.add_argument("--bump", default=None)
     cp.add_argument("--note", default="")
 
-    args = p.parse_args(argv)
+    # Delegating commands carry no arguments of their own: everything after the verb
+    # is forwarded verbatim (see the parse_known_args call below). add_help=False so
+    # the TOOL's --help wins rather than this wrapper's — a wrapper advertising its
+    # own shallow help over a richer tool is a small lie.
+    #
+    # nargs=REMAINDER was the first attempt and it does NOT work: it fails to capture
+    # a leading optional, so `agentii.converge --help` died on the parent parser's
+    # "unrecognized arguments". Registration is not function; only running it showed.
+    for _name, (_script, _help) in DELEGATING.items():
+        sub.add_parser(_name, help=_help, add_help=False)
 
+    args, extra = p.parse_known_args(argv)
+
+    if args.cmd in DELEGATING:
+        return _delegate(DELEGATING[args.cmd][0], extra)
+    if extra:
+        # Strict everywhere else: silently accepting a mistyped flag on the
+        # non-delegating commands is the failure this codebase keeps finding.
+        p.error("unrecognized arguments: " + " ".join(extra))
     if args.cmd == "specify":
         print(specify(Path(args.workspace), args.slug))
     elif args.cmd == "clarify":

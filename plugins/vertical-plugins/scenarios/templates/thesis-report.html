@@ -161,6 +161,19 @@
   .cover .reg { border-color: var(--primary); }
   .cover-motif { position: absolute; right: 12mm; bottom: 16mm; width: 68mm; opacity: 0.55; }
 
+  /* Q139 — the legal tail page. `.disclaimer` is a RESERVED class: the assembler
+     injects it from disclaimer.md (scripts/synthesize_report.py), the author never
+     emits it — same discipline as sheet-head / sheet-foot / reg / page-mark. */
+  .disclaimer { padding-bottom: 24mm; font-size: 8.6pt; line-height: 1.55; color: #333; }
+  .disclaimer h3 { font-size: 11pt; letter-spacing: 0.04em; text-transform: uppercase;
+                   color: var(--primary); border-bottom: 0.4mm solid var(--primary);
+                   padding-bottom: 1.5mm; margin: 0 0 6mm; }
+  .disclaimer p { margin: 0 0 3.5mm; }
+  .disclaimer b { color: #111; }
+  .disclaimer code { font-family: 'Courier New', monospace; font-size: 0.92em; }
+  .disclaimer-meta { margin-top: 8mm; padding-top: 2mm; border-top: 0.3mm solid #bbb;
+                     font-family: 'Courier New', monospace; font-size: 7.4pt; color: #666; }
+
   @media print {
     /* AI-Sci-Vi print contract (letter): the page box IS the paper — no
        dialog margins, no shrink-to-fit, one section = exactly one sheet. */
@@ -216,6 +229,10 @@
 </section>
 
 <!-- PAGES — assembler injects the LLM-authored <section class="page"> sequence -->
+
+<!-- TAIL — the assembler appends one legal disclaimer page after the pages above,
+     numbered last (Q139). Its markup lives in templates/disclaimer.md, not here.
+     Like the chrome, the author never writes it. The class is reserved. -->
 
 <script>
 // Q47 runtime safety net — warn only, never the gate (the build-time checker

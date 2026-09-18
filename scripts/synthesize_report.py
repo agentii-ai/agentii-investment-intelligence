@@ -55,6 +55,14 @@ SOURCE_GLOBS = ["artifacts/**/*.md", "_cross/**/*.md", "snapshots/**/*.md"]
 PAGES_COMMENT = ("<!-- PAGES — assembler injects the LLM-authored "
                  '<section class="page"> sequence -->')
 
+# Q139: the disclaimer is a presentation-shaped output's legal tail. Its text is
+# authored exactly once — in disclaimer.md — and read from that file here. This
+# script never restates it, so the two renderings cannot drift apart.
+DISCLAIMER_MD = TEMPLATE.parent / "disclaimer.md"
+# Structural and case-insensitive: any [BRACKETED] token surviving substitution
+# fails assembly. Same rule as Q108 — a placeholder that ships is a defect.
+_UNFILLED_RE = re.compile(r"\[[A-Za-z][A-Za-z0-9_ -]{1,60}\]")
+
 
 class ContentMissingError(Exception):
     """report/content.html absent — the LLM authorship step has not run."""
@@ -251,6 +259,12 @@ _CHART_REQUIRED = {
 }
 _FORBIDDEN_DOC_RE = re.compile(r"(?i)<\s*!doctype\b|<\s*/?\s*(html|head|body|style|script)\b")
 _RESERVED_ID_RE = re.compile(r"^(cover-|stale-bar$)")
+
+# Q139: assembler-owned classes. The author writes none of them — the chrome, the
+# cover and the disclaimer tail are injected. A collision is a hard validation
+# error, the same shape as a reserved id.
+_RESERVED_CLASSES = frozenset({"disclaimer", "sheet-head", "sheet-foot", "reg",
+                               "page-mark", "cover", "stale-bar", "draft-banner"})
 _CITE_HREF_RE = re.compile(r"https://agentii\.ai/v/([A-Z0-9]+)/([a-z0-9_-]+)/\S*")
 
 
@@ -285,6 +299,11 @@ class _ContentParser(html.parser.HTMLParser):
             self.ids.append(a["id"])
             if _RESERVED_ID_RE.match(a["id"]):
                 self.problems.append(f"id '{a['id']}' collides with template ids")
+        for cls in (a.get("class") or "").split():
+            if cls in _RESERVED_CLASSES:
+                self.problems.append(
+                    f"class '{cls}' is assembler-owned — the author never emits it "
+                    f"(Q139)")
         if a.get("href"):
             self.hrefs.append(a["href"])
         if tag == "div" and "data-chart" in a:
@@ -430,6 +449,49 @@ def _quality_advisories(content: str) -> list[str]:
     return advisories
 
 
+def _disclaimer_body() -> str:
+    """The canonical HTML disclaimer block, read out of disclaimer.md.
+
+    disclaimer.md is the single source (Q139 rule 1). Reading it rather than
+    copying it into the template makes "never restated, never forked" an enforced
+    property instead of a declared one. A missing or malformed block is a hard
+    error: a presentation output must not ship without its disclaimer."""
+    if not DISCLAIMER_MD.is_file():
+        raise ValueError(f"disclaimer template missing: {DISCLAIMER_MD} (Q139)")
+    src = DISCLAIMER_MD.read_text(encoding="utf-8")
+    blocks = re.findall(r"^```html\n(.*?)^```", src, re.DOTALL | re.MULTILINE)
+    if len(blocks) != 1:
+        raise ValueError(
+            f"{DISCLAIMER_MD} must carry exactly one ```html block "
+            f"(found {len(blocks)}) — it is the single source for the HTML "
+            f"rendering (Q139 rule 1)")
+    return blocks[0].strip()
+
+
+def _disclaimer_section(total: int, thesis: Path, facts: dict,
+                        generated_at: str, slug: str, thesis_num: str) -> str:
+    """The template-owned trailing disclaimer page, numbered last and chromed.
+
+    Position it in `build_html` *after* the TOC is computed: it is a legal tail,
+    not a chapter, so it stays out of the contents list (disclaimer.md, Placement).
+    Q139 rule 3: the clause set is the contract, the wording is not — a workspace
+    declaring another language swaps this file, not this code."""
+    workspace = thesis.parent.parent.name if thesis.parent.name == "theses" \
+        else thesis.parent.name
+    body = (_disclaimer_body()
+            .replace("[WORKSPACE]", _html.escape(workspace))
+            .replace("[AS_OF]", _html.escape(str(facts.get("as_of") or "—")))
+            .replace("[GENERATED]", _html.escape(generated_at)))
+    unfilled = sorted(set(_UNFILLED_RE.findall(body)))
+    if unfilled:
+        raise ValueError(
+            f"disclaimer has unfilled placeholders {unfilled} — placeholders are "
+            f"filled, never shipped (Q139 rule 2, same rule as Q108)")
+    return _inject_page_chrome(
+        f'<section class="page disclaimer" data-report-page="{total}">'
+        f'{body}</section>', total, slug, thesis_num)
+
+
 def _toc_entries(content: str) -> list[tuple[int, str]]:
     """First h1/h2 heading text of each renumbered page → TOC entries."""
     entries: list[tuple[int, str]] = []
@@ -453,7 +515,10 @@ def build_html(thesis: Path, pages_html: str, shash: str, generated_at: str,
     thesis_num = thesis.name.split("-", 1)[0]
     slug = thesis.name.upper()
     # v0.3.0: running sheet head/foot + page marks on every content page.
-    total = 1 + len(re.findall(r'data-report-page="(\d+)"', pages_html))
+    # Q139: total = cover + authored pages + the template-owned disclaimer tail,
+    # so the tail is page-numbered and overflow-checked like any other page.
+    authored = len(re.findall(r'data-report-page="(\d+)"', pages_html))
+    total = 2 + authored
     pages_html = _inject_page_chrome(pages_html, total, slug, thesis_num)
 
     html = TEMPLATE.read_text(encoding="utf-8")
@@ -482,6 +547,9 @@ def build_html(thesis: Path, pages_html: str, shash: str, generated_at: str,
                         for n, t in _toc_entries(pages_html))
     html = html.replace('<div id="cover-toc" class="toc"></div>',
                         f'<div id="cover-toc" class="toc"><h2>Contents</h2><ol>{toc_items}</ol></div>', 1)
+    # Appended after the TOC above was computed from the authored pages only: the
+    # disclaimer is a legal tail, not a chapter.
+    pages_html += _disclaimer_section(total, thesis, facts, generated_at, slug, thesis_num)
     html = html.replace(PAGES_COMMENT, pages_html, 1)
 
     body_attrs = (f'<body data-sources-hash="{shash}" '
