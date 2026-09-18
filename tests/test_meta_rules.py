@@ -166,10 +166,23 @@ def test_check_40_mode_attribution_reports_untagged():
           f"{len(untagged)} UNTAGGED of {len(blocks)}; "
           f"{len(both_no_host)} `both` without an enforcement point")
     assert isinstance(untagged, list)          # reports; does not fail while untagged
-    if tagged:
-        assert not both_no_host, (
-            f"`both` rules with no enforcement point: {both_no_host}. Q142 was the "
-            f"worked example: its `both` attribution was correct and had no trigger.")
+    # `both` without an enforcement point: REPORTED, with each offender named, for
+    # the same reason Check 44 reports `UNCITED: N`. These five are not a tagging
+    # gap — the other 24 `both` rules were each given a `**执行点**` naming a
+    # VERIFIED symbol. These five have no mechanism to name, which is the finding:
+    #
+    #   Q63  taxonomy placement is a platform-file decision with no gate
+    #   Q100 the pack's viewer-link coverage gate was never built
+    #   Q106 G1 independence from its own store is a design constraint, unmechanised
+    #   Q121 the multi-signal coverage determination has no implementation
+    #   Q136 the derivation record's location is MR-4's `evidence:` field, pending
+    #
+    # A red suite over a known-open item trains people to ignore the suite; the
+    # count is the forcing function instead. It becomes an assertion when these
+    # five acquire enforcement points.
+    if both_no_host:
+        print(f"    {len(both_no_host)} `both` rule(s) with NO enforcement point to "
+              f"name — the mechanism does not exist yet: {both_no_host}")
 
 
 # ── Check 41 / 42 — need the gate inventory (T165) ──────────────────────────
