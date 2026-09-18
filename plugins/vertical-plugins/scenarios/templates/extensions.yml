@@ -13,3 +13,36 @@ hooks:
                             # wrong_if.source is a price metric; never a global default
   notifications:
     - gate_waiting          # pending_gate aging surfaced (Q80)
+
+# ── Conditions (T160, Q140/Q81) ─────────────────────────────────────────────
+#
+# A hook listed above runs UNLESS a condition here refuses it.
+#
+# `journal_rollup` performs Q81's per-period rotation of `agentii.md`. Q81 rule 2
+# and Q83's prohibition both silently assumed every workspace has a
+# `constitution.md`. **They do not.** Where there is none, `agentii.md` IS the
+# constitution — so rotating it rotates AWAY the project's principles, justified
+# by a premise that is false there. Q140 recorded this as this spec's seventh
+# instance of one recurring defect, and the first that EXECUTES A DESTRUCTIVE
+# ACTION rather than returning an empty success. A wrong number is corrected by
+# the next check; a rotated constitution is gone.
+#
+# The gate is `agentii_cmd.detect_instrument(workspace)` — one filesystem read,
+# workspace-scoped, adding no state:
+#
+#     constitution  → rollup runs; `agentii.md` is a chronicle and rotating it is
+#                     exactly what Q81 intends
+#     agentii-md    → rollup REFUSED; that file IS the constitution
+#     none          → nothing to roll up
+#
+# Q143 SCOPE NOTE, because 046 got this wrong once and corrected itself: this is
+# the INSTRUMENT predicate, which is WORKSPACE-level (evaluated once per workspace
+# load). It is NOT the mode predicate, which is RUN-level (is this run attached
+# to a thesis?). The two are orthogonal and were briefly — incorrectly — declared
+# to be one predicate. T164 implements the mode half separately.
+conditions:
+  journal_rollup:
+    conditional_on: detect_instrument
+    refuse_when: [agentii-md]
+    absent_when: [none]
+    note: a principles-bearing `agentii.md` is NOT rotatable (Q140)

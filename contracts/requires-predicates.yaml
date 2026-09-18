@@ -1,0 +1,96 @@
+# requires-predicates.yaml — the closed vocabulary of data-side `requires:` predicates.
+#
+# T153 (spec 046, Q12). This file is the DECISION, written where the implementer
+# meets it. Q12 left `requires` under-specified in a way that made the gate wrong
+# in BOTH directions; this is the resolution.
+#
+# ── The problem Q12 states but does not spell out ─────────────────────────────
+#
+# Q12 defines `requires:` in two places, at two LEVELS, checked at two TIMES:
+#
+#   data side  (spec.md:508)  freshness / calc validation / assumption pin
+#                             → checked at COMPILE TIME, over all nodes
+#   edge side  (spec.md:513)  predecessor output schema / completion marker
+#                             → checked ON THE EDGE, between two nodes
+#
+# Q12's own example (spec.md:71-79) shows the data side as `name: value` pairs
+# (`xbrl_coverage: fresh`), and the edge side as a skill name — because that is
+# what an edge is between.
+#
+# `dispatch.py::preflight()` implemented ONE check — `if req not in registry` —
+# and applied it to `requires` entries of both kinds. Measured consequences:
+#
+#   * `requires` populated on 0 of 80 skills → the loop body never ran → `[]`
+#     → every caller read "all good". INERT. (Fixed 2026-09-18: reports VACUOUS.)
+#   * Populate it with Q12's OWN example entries and every one is rejected,
+#     because `xbrl_coverage: fresh` is not a registry key. So the gate is not
+#     merely off — it is WRONG in the direction that would matter next.
+#
+# The two kinds are distinguishable by syntax. `name: value` is a predicate;
+# a bare token is a skill reference. No third form is admitted.
+#
+# ── The vocabulary (closed, from Q12 itself) ─────────────────────────────────
+#
+# Each predicate names its PRODUCER, because a predicate whose value nothing
+# produces is Q105's VACUOUS in a different costume: it would read as declared
+# and be unevaluable. `producer` is required for that reason, not for docs.
+#
+# Adding a value here is an enum extension — it needs the producer to exist
+# first. Same rule as contracts/taxonomy.yaml: one value, one axis, no orphans.
+
+version: 1
+predicates:
+  xbrl_coverage:
+    values: [fresh, stale, missing]
+    satisfied_by: [fresh]
+    producer: get_ticker_coverage / list_coverage
+    note: >-
+      Three tiers. Only `fresh` satisfies the predicate; `stale` and `missing`
+      are both fails, but they are DIFFERENT fails and the error must say which
+      (Q6-A error codes: DATA_STALE vs DEP_MISSING).
+  validate_calculation:
+    values: [pass, warn, fail]
+    satisfied_by: [pass]
+    producer: validate_calculation (MCP tool)
+    note: >-
+      XBRL calculation-tree validation. Only `pass` satisfies. `warn` is NOT a
+      pass — Q21's `CALC_UNVALIDATED` covers the ambiguous middle, and a gate
+      that accepts `warn` is a gate that never fires on the case it exists for.
+      An entry demanding `warn` is therefore self-defeating: it declares a
+      requirement its own wording says cannot be met. That IS checkable here.
+  assumptions_pinned:
+    # QUOTED deliberately. YAML 1.1 reads a bare `true` as the BOOLEAN True, so
+    # `values: [true]` compares a bool against the string `'true'` that appears
+    # in `requires:` entries, and every entry fails. Caught by this contract's
+    # own check on the first run — which is the check earning its keep.
+    values: ["true"]
+    satisfied_by: ["true"]
+    producer: M4 versioned ledger
+    note: >-
+      Single-valued, deliberately: either the assumption set is pinned or the
+      run is not admissible. A `false` value is expressible but never satisfies,
+      so the predicate is written as a requirement rather than a field read.
+  citations_min:
+    # A LIST holding one sentinel, not a bare string — the other half of the
+    # same first-run bug: `values: "<integer>"` made `allowed` a string, while
+    # the check compared it to `["<integer>"]` and never matched.
+    values: ["<integer>"]
+    satisfied_by: ["<integer>"]     # any threshold is satisfiable; range is a runtime matter
+    producer: atomic-claim mode
+    note: >-
+      The only parameterised predicate: the value is a threshold, not an enum.
+      `citations_min: 3` requires at least three atomic claims. Kept in this
+      table so that the SYNTAX is closed even though the value domain is open.
+
+# ── Which side does a predicate belong to? ──────────────────────────────────
+#
+# Every predicate above is DATA-SIDE, and that is not a coincidence: a
+# data-side requirement is always "a fact about the world that must hold",
+# never "another skill must have run". A skill that must have run is an EDGE,
+# and edges are written as bare skill names.
+#
+# This gives the placement rule, and it is the same sentence as MR-1:
+#
+#   A `requires:` entry must state which side it belongs to, and the syntax is
+#   how it states it. If you cannot tell whether an entry is a predicate or a
+#   skill reference, the entry is wrong — not the reader.

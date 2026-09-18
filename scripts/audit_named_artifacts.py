@@ -59,6 +59,13 @@ ABSENT_OK = {
     "checkpoint.json": "Q4 — the filesystem is the checkpoint",
     "entity-index.json": "Q4 — derived view, no persisted ledger",
     "staged.json": "Q? — staged order is a proposal, never a runtime store",
+    # Q37 REJECTED this upstream design in as many words: a single `feature_directory`
+    # key is "共享可变状态" once N theses run concurrently, so 046 uses explicit
+    # parameter passing and "不设单例活动指针". The file that exists in this repo
+    # points at spec-kit's own active feature — it is not spec 046's, and 046's
+    # decision is that it must not be. Reporting it as MISSING inverted a rejection
+    # into a gap, which is the same error ABSENT-OK exists to prevent.
+    "feature.json": "Q37 — rejected upstream singleton; explicit parameter passing instead",
 }
 
 # Command -> the script that would back it, if one is needed.
@@ -406,6 +413,23 @@ def main() -> int:
             else:
                 buckets["MISSING"].append((n, name, "not found in kit, agenzym or either workspace"))
 
+    # PROVENANCE. This script scans plan.md too, and plan.md now contains
+    # remediation notes that NAME the things they say are missing — so writing
+    # "decide `agentii.intake`" CREATES an `agentii.intake` MISSING entry. Left
+    # unfixed, the audit measures its own echo and the more gaps we document, the
+    # more gaps it reports. A name carried only by plan.md is a NOTE; only the
+    # spec-side documents state REQUIREMENTS.
+    spec_side = ["spec.md", "quickstart.md", "data-model.md", "live-data-provider.md"]
+    side_text = "".join((SPEC_DIR / f).read_text(encoding="utf-8")
+                        for f in spec_side if (SPEC_DIR / f).is_file())
+
+    def _provenance(name: str) -> str:
+        bare = name.split("/")[-1]
+        pat = re.escape(bare)
+        if re.search(pat, side_text):
+            return "spec"
+        return "plan-only"
+
     total = sum(len(v) for v in buckets.values())
     print(f"spec 046 named artifacts: {total} distinct\n")
     for label, note in (("BUILT", ""), ("WIRING-ONLY", " <- every part built but the entry point"),
@@ -413,7 +437,9 @@ def main() -> int:
         rows = buckets[label]
         print(f"{label}  ({len(rows)}){note}")
         for n, name, why in sorted(rows, key=lambda x: (-x[0], x[1])):
-            print(f"  {n:>2}x  {name:<34} {why}")
+            prov = _provenance(name) if label == "MISSING" else ""
+            mark = "  [plan-only: a NOTE, not a requirement]" if prov == "plan-only" else ""
+            print(f"  {n:>2}x  {name:<34} {why}{mark}")
         print()
     print("counts: " + " · ".join(f"{k} {len(v)}" for k, v in buckets.items()))
     return 1 if (a.strict and buckets["MISSING"]) else 0

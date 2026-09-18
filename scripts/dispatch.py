@@ -13,6 +13,7 @@ later (tasks T053); S1 only proves the dispatch contract.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -48,21 +49,154 @@ def resume_verdict(thesis_dir: Path, ticker: str, skill: str, mode: str,
     return "skip"
 
 
-def preflight(plan: list[dict], registry: dict) -> list[str]:
-    """Q13 compile-time preflight: every node's data-side `requires:` checked
-    BEFORE the first node is dispatched — fast-fail naming the offending node
-    (the "compiler problem" framing at scenario granularity). Registry entries
-    are keyed by skill_name with their own `requires` lists."""
+VACUOUS = "VACUOUS"
+
+# T153 (Q12). `requires:` entries come in two kinds, at two levels, checked at
+# two times. The syntax distinguishes them and no third form is admitted:
+#
+#   `name: value`  → a data-side CAPABILITY PREDICATE  (`xbrl_coverage: fresh`)
+#   bare token     → a process-side SKILL REFERENCE    (`business-model`)
+#
+# The vocabulary of the first kind is closed and lives in
+# contracts/requires-predicates.yaml. It is read, not restated here — a second
+# copy of a closed enum is the thing Q12 rule 3 exists to prevent.
+PREDICATE_RX = re.compile(r"^([a-z][a-z0-9_]*)\s*:\s*(.+)$")
+
+
+def predicates(path: Path | None = None) -> dict:
+    """Load contracts/requires-predicates.yaml. Returns {} if absent — and the
+    caller reports that as NO VOCABULARY rather than as a pass (Q105)."""
+    import yaml
+    p = path or (Path(__file__).resolve().parent.parent
+                 / "contracts" / "requires-predicates.yaml")
+    try:
+        doc = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except (OSError, ValueError):
+        return {}
+    return doc.get("predicates") or {}
+
+
+def check_predicate(entry: str, vocab: dict) -> str | None:
+    """Validate one data-side entry against the closed vocabulary.
+    Returns a problem string, or None when the entry is well-formed.
+
+    Four ways an entry can be wrong, all reported differently because they need
+    different fixes: unknown predicate (add it to the contract), value not in
+    the enum (the producer never emits that), wrong type (`citations_min: many`),
+    or **a value that can never satisfy** — `validate_calculation: warn` parses,
+    type-checks, and is in the enum, yet the contract's own `satisfied_by` says
+    only `pass` counts. The first version of this function accepted it, which
+    made a self-defeating entry read as admissible.
+
+    What this does NOT do: compare against live data. Whether the predicate is
+    actually met is a run-time question answered by the named producer. This is
+    the compile-time half Q12 scopes it to, and it says so rather than implying
+    a verdict it did not reach."""
+    m = PREDICATE_RX.match(entry)
+    if not m:
+        return None                       # not predicate-shaped; caller decides
+    name, value = m.group(1), m.group(2).strip()
+    spec = vocab.get(name)
+    if spec is None:
+        return (f"predicate '{name}' is not in contracts/requires-predicates.yaml "
+                f"— unknown predicates cannot be evaluated, so declaring one is a "
+                f"promise nothing can keep (Q105)")
+    allowed = spec.get("values") or []
+    if allowed == ["<integer>"]:
+        if not value.isdigit():
+            return f"predicate '{name}' takes an integer threshold, got '{value}'"
+        return None
+    if value not in allowed:
+        return (f"predicate '{name}' got '{value}', which is not one of "
+                f"{allowed}. Produced by {spec.get('producer')}")
+    satisfied_by = spec.get("satisfied_by")
+    if satisfied_by is not None and value not in satisfied_by:
+        return (f"predicate '{name}' = '{value}' can never be satisfied — the "
+                f"contract admits {allowed} but only {satisfied_by} count as met. "
+                f"This entry declares a requirement its own wording says cannot "
+                f"be met, so the node is un-dispatchable by construction.")
+    return None
+
+
+def preflight(plan: list[dict], registry: dict, vocab: dict | None = None) -> list[str]:
+    """Q12/Q13 compile-time preflight, over BOTH kinds of `requires:`.
+
+    Fast-fails before the first node is dispatched, naming the offending node
+    (the "compiler problem" framing at scenario granularity).
+
+    CHANGED 2026-09-18 (Q12 / Phase 12 item 2 / Q105): an empty `requires` is
+    reported as VACUOUS, not as a pass. Two defects made this gate inert:
+
+      1. `for req in node.get("requires") or []` — with no requires the loop body
+         never ran and the function returned `[]`, which every caller reads as
+         "all good". A gate that examines nothing reported success. Measured:
+         `requires` is populated on 0 of 80 registry skills, so this was the
+         case for every node in practice.
+      2. The docstring said registry entries carry the requires, but the code
+         read only the NODE's. Both are legitimate — the registry states what a
+         skill needs, a node may narrow it — so both are now checked, and a
+         problem names which source it came from.
+
+    CHANGED AGAIN 2026-09-18 (T153/T154). The check above was still ONE check
+    applied to both kinds of entry, so it was wrong in the direction that
+    mattered next: Q12's own example entries (`xbrl_coverage: fresh`) would
+    every one be REJECTED as "not resolvable in the registry". The two kinds are
+    now routed separately — predicates against the closed vocabulary, skill
+    references against the registry — and this function is the COMPILE-TIME
+    half, which Q12 scopes to the data side over all nodes.
+
+    VACUOUS is not a failure to be fixed by editing this function; it is the
+    signal that Phase 12's population (0/80) has not run. It is deliberately in
+    the returned list so callers cannot mistake silence for a clean bill.
+    """
     problems: list[str] = []
+    vocab = predicates() if vocab is None else vocab
+    if not vocab:
+        problems.append(
+            f"preflight: NO VOCABULARY — contracts/requires-predicates.yaml is "
+            f"absent or empty, so no data-side predicate can be evaluated. Every "
+            f"predicate below will be reported as unknown; fix the contract "
+            f"first (Q105: this says what it could not examine).")
     for node in plan:
         skill = node.get("skill")
         if skill not in registry:
             problems.append(f"preflight: node '{skill}' has no registry entry")
             continue
-        for req in node.get("requires") or []:
+        node_reqs = node.get("requires")
+        reg_reqs = (registry.get(skill) or {}).get("requires")
+        # T157: `None` (never decided) is NOT `[]` (decided: no preconditions).
+        # The first version wrote `... or []` on both, which collapsed them — the
+        # same collapse sync_registry.py made, in a second place. A skill that has
+        # deliberately declared no preconditions passes; one that has not yet been
+        # examined reports VACUOUS.
+        undecided = (node_reqs is None) and (reg_reqs is None)
+        if undecided:
+            problems.append(
+                f"preflight: {VACUOUS} — node '{skill}' declares no `requires:` "
+                f"and its registry entry declares none either, so this preflight "
+                f"examined NOTHING for it (Q105). Not a pass, and not the same as "
+                f"`requires: []` — an empty list is a decision that there are no "
+                f"preconditions; a missing one is the absence of a decision. "
+                f"Measured 2026-09-18: 80/80 skills are undecided.")
+            continue
+        node_reqs = list(node_reqs or [])
+        reg_reqs = list(reg_reqs or [])
+        for req, source in [(r, "node") for r in node_reqs] + \
+                           [(r, "registry") for r in reg_reqs]:
+            req = str(req)
+            # Data side: `name: value` — validated against the closed vocabulary.
+            if PREDICATE_RX.match(req):
+                bad = check_predicate(req, vocab)
+                if bad:
+                    problems.append(f"preflight: node '{skill}' requires "
+                                    f"'{req}' (from {source}) — {bad}")
+                continue
+            # Process side: a bare token is a skill reference. (The edge check
+            # proper is Q6/Q9's; this is the resolution half.)
             if req not in registry:
-                problems.append(f"preflight: node '{skill}' requires '{req}' — "
-                                f"not resolvable in the registry (fast-fail)")
+                problems.append(f"preflight: node '{skill}' requires '{req}' "
+                                f"(from {source}) — not resolvable in the "
+                                f"registry (fast-fail)")
     return problems
 
 

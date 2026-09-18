@@ -19,11 +19,40 @@ import g1_gate  # noqa: E402
 import dispatch  # noqa: E402
 
 
+def _ratify(ws, name="Test Fund"):
+    """Scaffold a workspace and FILL IT IN, the way a human ratifying would.
+
+    REPLACES `(ws/"constitution.md").read_text().replace("[WORKSPACE_NAME]", ...)`
+    as of 2026-09-18 (T108/Q108). That one-line substitution was enough while
+    ratification checked a single ALL-CAPS token; Q108 made it check EVERY
+    bracketed placeholder case-insensitively, because `[sector focus]` surviving
+    ratification is the same defect as `[WORKSPACE_NAME]` surviving it. A fresh
+    scaffold now reports 26 unfilled placeholders — correctly — so a fixture that
+    wants a ratified workspace must author one.
+
+    Comments and code spans are left alone: they are documentation ABOUT the
+    syntax, and the scaffold's own instruction line says `[ALL_CAPS]` in backticks."""
+    import re as _re
+    import agentii_cmd as _ac
+    _ac.constitution_scaffold(ws)
+    p = ws / "constitution.md"
+    t = p.read_text(encoding="utf-8")
+    t = _re.sub(r"<!--.*?-->", lambda m: m.group(0), t, flags=_re.S)
+    # fill every placeholder that is NOT inside an HTML comment or a code span
+    def fill(segment):
+        return _re.sub(r"\[[A-Za-z][A-Za-z0-9_ -]{2,40}\]",
+                       lambda m: name if "WORKSPACE" in m.group(0) else "authored", segment)
+    parts = _re.split(r"(<!--.*?-->|`[^`\n]*`)", t, flags=_re.S)
+    out = []
+    for i, seg in enumerate(parts):
+        out.append(seg if i % 2 else fill(seg))
+    p.write_text("".join(out), encoding="utf-8")
+    return ws
+
+
 def test_concurrent_specify_gets_distinct_ids(tmp_path):
     ws = tmp_path / "workspace"
-    agentii_cmd.constitution_scaffold(ws)
-    (ws / "constitution.md").write_text(
-        (ws / "constitution.md").read_text().replace("[WORKSPACE_NAME]", "Fund X"))
+    _ratify(ws, "Fund X")
     a = agentii_cmd.specify(ws, "mvp")
     b = agentii_cmd.specify(ws, "mvp")
     assert a.name != b.name and a.is_dir() and b.is_dir()
@@ -59,10 +88,20 @@ def test_consequential_gate_never_delegable():
 
 
 def test_specify_while_unratified_refused(tmp_path):
+    """UPDATED 2026-09-18 (T161). This fixture has NEITHER instrument, so it hits
+    the neither-case — and that case now says so rather than reporting an
+    unratified file that does not exist. T161 split one message into three:
+    no instrument / this instrument is unratified / instrument missing that name
+    (`constitution.md` vs `agentii.md`)."""
     ws = tmp_path / "workspace"
     with pytest.raises(SystemExit) as exc:
         agentii_cmd.specify(ws, "mvp")
-    assert "unratified" in str(exc.value)
+    assert "no constitutional instrument" in str(exc.value)
+    # …and the unratified case still says "unratified"
+    agentii_cmd.constitution_scaffold(ws)
+    with pytest.raises(SystemExit) as exc:
+        agentii_cmd.specify(ws, "mvp")
+    assert "UNRATIFIED" in str(exc.value)
 
 
 def test_early_thesis_bars_schema_requirement_is_declared():

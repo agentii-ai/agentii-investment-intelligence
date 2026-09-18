@@ -45,6 +45,9 @@ Real narrative paragraph one.
         ' "price_freshness": {"fresh": true}}}')
     (thesis / "artifacts" / "NVDA").mkdir(parents=True)
     (thesis / "artifacts" / "NVDA" / "a.md").write_text("""---
+# The extension fields (046) AND the public core (Q145) — this fixture carried
+# only the extension, which is why pack() found no KPIs and now correctly
+# refuses. `key_metrics` is the KPI source; the counts feed the derived totals.
 assumption_pin: 1
 corpus_version: "x"
 as_of: 2026-09-10
@@ -52,6 +55,12 @@ constitution_pin: 1.3.0
 skill_pin: "x:y"
 mode: default
 data_class: slow
+key_metrics:
+  revenue_usd_bn: 215.9
+conclusions: NVDA FY2026 revenue was $215.9B.
+facts_count: 1
+deducted_count: 0
+views_count: 0
 ---
 
 # NVDA body — cited at https://agentii.ai/v/NVDA/sec169/37
@@ -66,15 +75,45 @@ data_class: slow
 """)
 
 
-def _write_minimal_content(thesis: Path, pages: str = "") -> None:
+def _write_outline(thesis: Path) -> None:
+    """Q94/T131: authoring is refused without `report/outline.md`, so every
+    fixture that reaches `assemble` must now author one.
+
+    Added 2026-09-18. The gate is correct and these fixtures were the thing that
+    had to change — they went straight from pack to content.html, which is
+    exactly the behaviour Q94 measured: structure was never chosen, only emerged.
+    The outline must also point its arguments at an investment CONCLUSION, not
+    restate the data, so the fixture's wording is a claim about what the numbers
+    imply rather than a description of them."""
     (thesis / "report").mkdir(parents=True, exist_ok=True)
+    (thesis / "report" / "outline.md").write_text(
+        "# Outline\n\n"
+        "## Key arguments\n"
+        "- NVDA's data-centre mix implies gross margin holds above the peer set, "
+        "which argues for the position size to stay at the cap rather than step "
+        "down.\n\n"
+        "## Evidence\n"
+        "- data-centre revenue split: pack source sec169/37\n"
+        "- peer gross margin: pack source sec12/4\n\n"
+        "## Page plan\n"
+        "- page 1: executive summary (the margin claim)\n"
+        "- page 2: the evidence table\n\n"
+        "## Story line\n"
+        "The reader starts at the margin claim, meets the split that supports it, "
+        "and ends at the sizing conclusion.\n",
+        encoding="utf-8")
+
+
+def _write_minimal_content(thesis: Path, pages: str = "") -> None:
+    _write_outline(thesis)
     (thesis / "report" / "content.html").write_text(pages or """
 <section class="page">
-<h2>Executive Summary</h2>
-<p>Condensed narrative.</p>
+<h2>Margin holds above the peer set despite the mix shift</h2>
+<p>The quarter's revenue mix implies gross margin holds above the peer set, which argues for keeping the position at its cap rather than stepping down into the print. The mix shift accounts for most of the delta, so the conclusion does not depend on the one-off timing effect.</p>
 </section>
 <section class="page">
-<h2>Evidence</h2>
+<h2>Revenue mix moved 6 points toward the higher-margin line</h2>
+<p>The quarter's revenue mix implies gross margin holds above the peer set, which argues for keeping the position at its cap rather than stepping down into the print. The mix shift accounts for most of the delta, so the conclusion does not depend on the one-off timing effect.</p>
 <table>
 <thead><tr><th>Ticker</th><th>Value</th></tr></thead>
 <tbody>
@@ -132,7 +171,11 @@ def test_assemble_synthesizes_with_pins_and_passes_overflow_gate(tmp_path):
     html = path.read_text(encoding="utf-8")
     assert "www.agentii.ai" in html and "hello@agentii.xyz" in html
     assert f'data-sources-hash="{shash}"' in html          # Q50 pins embedded
-    assert 'data-template-version="0.3.0"' in html
+    # Q50: the version is DERIVED (`0.3.0+<sha7>`) so it moves when the template
+    # does. Hand-maintained it did not, which made converge's template-staleness
+    # check inert. Assert the derived shape, not a frozen literal.
+    assert f'data-template-version="{synthesize_report.TEMPLATE_VERSION}"' in html
+    assert synthesize_report.TEMPLATE_VERSION.startswith("0.3.0+")
     assert "Test Baseline — agentii Thesis Report" in html  # cover title
     assert "Data binds, not compute." in html               # cover claim
     assert '<td id="cover-universe">NVDA ~16.7%</td>' in html
@@ -148,7 +191,7 @@ def test_assemble_rejects_fabricated_citations(tmp_path):
     _write_report_sources(thesis)
     _write_minimal_content(thesis, """
 <section class="page">
-<h2>Evidence</h2>
+<h2>Revenue mix moved 6 points toward the higher-margin line</h2>
 <p><a href="https://agentii.ai/v/NVDA/sec999/1">invented</a></p>
 </section>
 """)
@@ -164,7 +207,8 @@ def test_chart_token_rendered(tmp_path):
     _write_report_sources(thesis)
     _write_minimal_content(thesis, """
 <section class="page">
-<h2>Peers</h2>
+<h2>Margin holds above the peer set despite the mix shift</h2>
+<p>The peer comparison implies NVDA's premium is justified by the mix rather than by sentiment, which argues for holding the position at its cap.</p>
 <div data-chart="peer_bars" data-spec='{"labels":["NVDA"],"values":[215.9]}' data-height="200"></div>
 </section>
 """)
@@ -179,8 +223,12 @@ def test_overflow_tier_fallback_and_degrade(tmp_path):
     thesis = tmp_path / "theses" / "001-x"
     _write_report_sources(thesis)
     word = "word " * 20
-    # ~38 paragraphs → above the tier-1 limit, below tier-2 (Q47 3-tier loop).
-    mid = "<section class=\"page\"><h2>Long</h2>" + "".join(f"<p>{word}</p>" for _ in range(38)) + "</section>"
+    # 28 paragraphs: overflows at tiers 0 AND 1, fits at tier 2 — measured against
+    # the REAL engine, not the estimator. The old value (38) was calibrated on the
+    # ±5% estimator, which reported "fits" at tier 2 for a page that in fact never
+    # fits; the test then failed for the right reason once the engine replaced it
+    # (Q99). Do not re-tune this by reading — re-measure.
+    mid = "<section class=\"page\"><h2>Margin holds above the peer set despite the mix shift</h2>" + "".join(f"<p>{word}</p>" for _ in range(27)) + "<p>This implies the mix shift is structural, which argues for holding the position at its cap.</p>" + "</section>"
     _write_minimal_content(thesis, mid)
     path, _shash, degraded = synthesize_report.assemble(thesis)
     assert not degraded
@@ -188,7 +236,7 @@ def test_overflow_tier_fallback_and_degrade(tmp_path):
     assert 'data-font-tier="2"' in html and "font-size:9.0pt" in html
 
     # unresolvable → markdown fallback (the full pack) + HTML draft banner
-    huge = "<section class=\"page\"><h2>Long</h2>" + "".join(f"<p>{word}</p>" for _ in range(60)) + "</section>"
+    huge = "<section class=\"page\"><h2>Margin holds above the peer set despite the mix shift</h2>" + "".join(f"<p>{word}</p>" for _ in range(59)) + "<p>This implies the mix shift is structural, which argues for holding the position at its cap.</p>" + "</section>"
     _write_minimal_content(thesis, huge)
     path, _shash, degraded = synthesize_report.assemble(thesis)
     assert degraded

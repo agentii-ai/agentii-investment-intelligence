@@ -13,8 +13,11 @@ from __future__ import annotations
 
 import argparse
 import html.parser
+import os
 import re
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 LETTER_HEIGHT_PX = 1056.0  # 279.4mm @ 96dpi (screen approximation; print uses mm)
@@ -121,13 +124,96 @@ def estimate_heights(html_text: str) -> list[dict]:
     return est.pages
 
 
-def check(html_text: str, *, font_tier: int = 0) -> list[int]:
-    """Returns the list of overflowing page indexes (1-based)."""
+# ── Q99: the real layout engine, with the estimator demoted to a stamped fallback ──
+#
+# The ±5% estimator was the gate until it was measured: it passed **five genuinely
+# overflowing pages**. A tolerance calibrated on prose cannot see a table that
+# overflows by 3%, and a gate that reports "fits" for a page that does not is
+# worse than no gate, because the overflow then ships.
+#
+# The estimator is kept, not deleted — it is the only thing that works with no
+# browser — but it now STAMPS which check ran (`data-overflow-check`), so a
+# report can never claim a precision it did not have. That is Q105's discipline
+# applied to this gate: an un-run check must say it has not run.
+
+OVERFLOW_PROBE_ID = "__overflow_probe__"
+DEFAULT_CHROME = Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+
+_PROBE_JS = """
+(function () {
+  var out = [];
+  document.querySelectorAll('.page').forEach(function (pg, i) {
+    out.push((i + 1) + ':' + (pg.scrollHeight - pg.clientHeight));
+  });
+  var el = document.createElement('div');
+  el.id = '%s';
+  el.textContent = out.join(',');
+  document.body.appendChild(el);
+})();
+""" % OVERFLOW_PROBE_ID
+
+
+def chrome_bin() -> Path:
+    return Path(os.environ.get("CHROME_BIN", str(DEFAULT_CHROME)))
+
+
+def engine_available() -> bool:
+    """Whether the real engine can run. Cheap, so the assembler can stamp the
+    mode BEFORE building the html (the stamp lives in the html itself)."""
+    return chrome_bin().is_file()
+
+
+def check_engine(html_text: str, *, font_tier: int = 0) -> list[int] | None:
+    """Per-page `scrollHeight - clientHeight` in headless Chrome. None on failure.
+
+    Chrome's `--print-to-pdf` yields a PDF, not layout metrics, so the probe is
+    evaluated IN the page and read back out of the dumped DOM — the same trick
+    render_report.py uses to get pixels out of Chrome without a CDP client."""
+    chrome = chrome_bin()
+    if not chrome.is_file():
+        return None
+    probe = html_text.replace("</body>", "<script>%s</script></body>" % _PROBE_JS)
+    with tempfile.TemporaryDirectory() as d:
+        page = Path(d) / "probe.html"
+        page.write_text(probe, encoding="utf-8")
+        try:
+            out = subprocess.run(
+                [str(chrome), "--headless", "--disable-gpu", "--no-sandbox",
+                 "--virtual-time-budget=4000", "--dump-dom", page.as_uri()],
+                capture_output=True, text=True, timeout=120).stdout
+        except (subprocess.SubprocessError, OSError):
+            return None
+    m = re.search(r'id="%s"[^>]*>([^<]*)<' % re.escape(OVERFLOW_PROBE_ID), out)
+    if not m:
+        return None
+    over: list[int] = []
+    for pair in m.group(1).split(","):
+        if ":" not in pair:
+            continue
+        idx, _, delta = pair.partition(":")
+        try:
+            if float(delta) > 0.5:      # sub-pixel noise is not an overflow
+                over.append(int(idx))
+        except ValueError:
+            return None
+    return over
+
+
+def check_with_mode(html_text: str, *, font_tier: int = 0) -> tuple[list[int], str]:
+    """(overflowing page indexes, which check produced them)."""
+    over = check_engine(html_text, font_tier=font_tier)
+    if over is not None:
+        return over, "engine"
     base = FONT_TIERS[font_tier]
     pages = estimate_heights(html_text)
-    over = [p["index"] + 1 for p in pages
-            if p["height"] > LETTER_HEIGHT_PX * TOLERANCE * (FONT_TIERS[0] / base)]
-    return over
+    return ([p["index"] + 1 for p in pages
+             if p["height"] > LETTER_HEIGHT_PX * TOLERANCE * (FONT_TIERS[0] / base)],
+            "approximate")
+
+
+def check(html_text: str, *, font_tier: int = 0) -> list[int]:
+    """Returns the list of overflowing page indexes (1-based)."""
+    return check_with_mode(html_text, font_tier=font_tier)[0]
 
 
 def main(argv: list[str] | None = None) -> int:

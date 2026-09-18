@@ -15,15 +15,22 @@ import agentii_cmd  # noqa: E402
 
 def test_specify_refused_while_unratified(tmp_path):
     ws = tmp_path / "workspace"
-    # no constitution.md at all → refused
+    # no constitution.md AND no agentii.md → refused (T161: the NEITHER case,
+    # which now names the missing instrument rather than calling it unratified —
+    # "absent" and "unratified" are different problems with different fixes)
     with pytest.raises(SystemExit) as exc:
         agentii_cmd.specify(ws, "mvp")
-    assert "unratified" in str(exc.value)
-    # scaffolded-but-placeholder → still refused
+    assert "no constitutional instrument" in str(exc.value)
+    assert "constitution.md" in str(exc.value) and "agentii.md" in str(exc.value)
+    # scaffolded-but-placeholder → still refused. T161: the message now names
+    # WHICH file is unratified, so the assertion is case-insensitive and checks
+    # the file name rather than one exact spelling.
     agentii_cmd.constitution_scaffold(ws)
     with pytest.raises(SystemExit) as exc:
         agentii_cmd.specify(ws, "mvp")
-    assert "unratified" in str(exc.value)
+    msg = str(exc.value).lower()
+    assert "unratified" in msg
+    assert "constitution.md" in msg
 
 
 def test_scaffold_refuses_to_clobber_ratified_constitution(tmp_path):
@@ -46,9 +53,7 @@ def test_scaffold_refuses_to_clobber_ratified_constitution(tmp_path):
 
 def test_specify_creates_thesis_after_ratification(tmp_path):
     ws = tmp_path / "workspace"
-    agentii_cmd.constitution_scaffold(ws)
-    (ws / "constitution.md").write_text(
-        (ws / "constitution.md").read_text().replace("[WORKSPACE_NAME]", "Test Fund"))
+    _ratify(ws)
     thesis = agentii_cmd.specify(ws, "mvp")
     assert thesis.name == "001-mvp"
     assert (thesis / "spec.md").is_file()
@@ -319,3 +324,33 @@ def test_clarify_encode_appends_clarifications_section(tmp_path):
     agentii_cmd.clarify_encode(spec, [
         {"question": "Q2", "answer": "A2"}])
     assert text.count("## Clarifications") == 1
+
+def _ratify(ws, name="Test Fund"):
+    """Scaffold a workspace and FILL IT IN, the way a human ratifying would.
+
+    REPLACES `(ws/"constitution.md").read_text().replace("[WORKSPACE_NAME]", ...)`
+    as of 2026-09-18 (T108/Q108). That one-line substitution was enough while
+    ratification checked a single ALL-CAPS token; Q108 made it check EVERY
+    bracketed placeholder case-insensitively, because `[sector focus]` surviving
+    ratification is the same defect as `[WORKSPACE_NAME]` surviving it. A fresh
+    scaffold now reports 26 unfilled placeholders — correctly — so a fixture that
+    wants a ratified workspace must author one.
+
+    Comments and code spans are left alone: they are documentation ABOUT the
+    syntax, and the scaffold's own instruction line says `[ALL_CAPS]` in backticks."""
+    import re as _re
+    import agentii_cmd as _ac
+    _ac.constitution_scaffold(ws)
+    p = ws / "constitution.md"
+    t = p.read_text(encoding="utf-8")
+    t = _re.sub(r"<!--.*?-->", lambda m: m.group(0), t, flags=_re.S)
+    # fill every placeholder that is NOT inside an HTML comment or a code span
+    def fill(segment):
+        return _re.sub(r"\[[A-Za-z][A-Za-z0-9_ -]{2,40}\]",
+                       lambda m: name if "WORKSPACE" in m.group(0) else "authored", segment)
+    parts = _re.split(r"(<!--.*?-->|`[^`\n]*`)", t, flags=_re.S)
+    out = []
+    for i, seg in enumerate(parts):
+        out.append(seg if i % 2 else fill(seg))
+    p.write_text("".join(out), encoding="utf-8")
+    return ws

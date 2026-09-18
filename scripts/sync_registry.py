@@ -200,7 +200,22 @@ def build_entries() -> list[dict]:
                 "has_knowledge_frameworks": kf_exists,
                 "spec_037_references": _count_spec037_refs(skill_dir),
                 # --- spec 046 fields (all optional at this stage, M-a) ---
-                "requires": list(meta.get("requires") or []),
+                # T157 (Q12/Q105). `requires` distinguishes THREE states, and the
+                # first version collapsed two of them:
+                #
+                #   ["xbrl_coverage: fresh"]  preconditions declared
+                #   []                        DECLARED none — a decision
+                #   None                      NOT YET DECIDED
+                #
+                # The old `list(meta.get("requires") or [])` turned the third into
+                # the second, so an undecided skill was indistinguishable from one
+                # that had deliberately examined its preconditions and found none.
+                # It also made the schema's `required: [... "requires" ...]` clause
+                # meaningless: jsonschema checks key PRESENCE, so 80 auto-generated
+                # empty lists satisfied it while the gate stayed inert. Presence is
+                # not content — the same distinction Q145 had to make about modes.
+                "requires": (None if meta.get("requires") is None
+                             else list(meta.get("requires"))),
                 "role": meta.get("role", "analysis"),
                 "modes": derive_modes(skill_dir, meta, vertical),
                 "essentials_modes": list(meta.get("essentials_modes") or []),

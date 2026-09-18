@@ -113,6 +113,41 @@ def _evaluate_wrong_if(thesis: Path) -> list[tuple[str, str, str]]:
     return out
 
 
+def _evaluate_refuted(thesis: Path) -> list[tuple[str, str, str]]:
+    """T120 (Q87): `epistemic_state: refuted` routes on the SAME path as a fired
+    `wrong_if` — no second path.
+
+    Q87's argument for one path rather than two: a refuted claim and a fired
+    falsifier are the same event with different instrumentation. A second path
+    would need its own finding ID scheme, its own dedup, and its own convergence
+    section — and the two would then diverge, which is Q12 rule 3's failure. So
+    this returns the SAME tuple shape and the caller appends it identically.
+
+    The finding ID is content-derived the same way (`refuted` sits where
+    `invalidated` does), so a re-run appends nothing for an unchanged refutation
+    (Q40)."""
+    thesis_md = thesis / "thesis.md"
+    if not thesis_md.is_file():
+        return []
+    try:
+        doc = json.loads(thesis_md.read_text(encoding="utf-8"))
+    except (ValueError, AttributeError):
+        return []
+    out: list[tuple[str, str, str]] = []
+    for c in (doc.get("judgment") or {}).get("claims") or []:
+        if not isinstance(c, dict):
+            continue
+        if str(c.get("epistemic_state") or "").lower() != "refuted":
+            continue
+        ent = c.get("entity") or c.get("subject") or "*"
+        metric = c.get("metric") or (c.get("falsifier") or {}).get("metric") \
+            if isinstance(c.get("falsifier"), dict) else c.get("metric")
+        period = str(c.get("period") or "unknown")
+        out.append((str(ent), str(metric or "unknown"),
+                    finding_id(str(ent), str(metric or "unknown"), period, "invalidated")))
+    return out
+
+
 def _evaluate_missing(thesis: Path, tasks_text: str, existing_ids: set[str]) -> tuple[list[str], int]:
     """Judgment-class, capped (Q40): task rows whose artifact does not exist.
     Returns (appended_rows, finding_count)."""
@@ -290,6 +325,19 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
                         f"{ent}.{metric}: wrong_if triggered "
                         f"(src: converge:invalidated id={fid})")
 
+    # T120 (Q87): `epistemic_state: refuted` routes on the SAME path. Identical
+    # tuple shape, identical dedup, identical row template — only the reason text
+    # differs, and it differs because a reader needs to know WHICH instrument
+    # fired. A second path would have needed its own ID scheme and its own
+    # convergence section, and the two would then have diverged (Q12 rule 3).
+    for ent, metric, fid in _evaluate_refuted(thesis):
+        if fid in existing_ids:
+            continue
+        existing_ids.add(fid)
+        appended.append(f"- [ ] {_next_row_id()} [Convergence] Re-examine claim on "
+                        f"{ent}.{metric}: epistemic_state refuted "
+                        f"(src: converge:invalidated id={fid})")
+
     # Judgment-class, capped: missing artifacts.
     missing_rows, judgment_count = _evaluate_missing(thesis, tasks_text, existing_ids)
     appended.extend(missing_rows)
@@ -319,6 +367,17 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
                     f"- [ ] {_next_row_id()} [Convergence] Re-run synthesis "
                     f"(pack → author content.html → assemble): thesis-report.html "
                     f"pins stale (src: converge:html_stale id={fid})")
+            # Q101: stamp the verdict INTO the artifact as static markup. This is
+            # the only place that can — converge is the only reader of the disk.
+            # The template used to decide this in open-time JS against
+            # `body.dataset.diskHash`, a value NOTHING ever wrote, so its
+            # condition was always false and the bar could never appear: an
+            # inert gate that looked like enforcement for as long as nobody
+            # printed a stale report.
+            if 'data-stale="false"' in text:
+                report.write_text(
+                    text.replace('data-stale="false"', 'data-stale="true"', 1),
+                    encoding="utf-8")
 
     # Q58: a thesis paused on budget is a finding, not silence.
     try:

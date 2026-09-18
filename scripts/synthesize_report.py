@@ -38,12 +38,36 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import write_boundary  # noqa: E402 — the single write boundary (T172)
 import check_page_overflow  # noqa: E402
 import chart_render  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "plugins" / "vertical-plugins" / "scenarios" / "templates" / "thesis-report.html"
-TEMPLATE_VERSION = "0.3.0"
+
+
+def _template_version() -> str:
+    """`<semantic>+<content-hash>` — the version MOVES when the template does.
+
+    Hand-maintained, it did not: the template changed by 23+/17- in one session
+    while the constant stayed "0.3.0", so converge.py's
+    `emb_tv != TEMPLATE_VERSION` was False for a report built from the OLD
+    template — a template-staleness gate that could not fire. That is the
+    Q101 defect one layer down, and the same reason landing-items.yaml and the
+    spec header are derived rather than declared (Q113/Q134).
+
+    The semantic half is kept for humans; the hash half is what enforces.
+
+    CONSEQUENCE, deliberate and stated: reports generated before this change
+    now compare unequal and converge will flag them stale. That is correct —
+    they WERE built from an older template — but it does mean the first converge
+    after this lands proposes a regeneration for every existing thesis report.
+    """
+    digest = hashlib.sha256(TEMPLATE.read_bytes()).hexdigest()[:7]
+    return f"0.3.0+{digest}"
+
+
+TEMPLATE_VERSION = _template_version()
 PACK_VERSION = "2.0"
 
 # Q50: all source markdown artifacts — artifacts, the cross-stock synthesis and
@@ -232,14 +256,62 @@ def extract_metrics(thesis: Path) -> dict:
             "tickers": tickers, "synthesis": synthesis}
 
 
+class MetricsMissingError(ValueError):
+    """Q97(1) — a metrics bundle with no series is a FAILURE, not a result."""
+
+
+def _require_metrics(metrics: dict, thesis: Path) -> None:
+    """Refuse to write a `metrics.json` that carries no series (Q97(1)).
+
+    Before this check, `pack()` wrote whatever `extract_metrics()` returned. A
+    thesis whose artifacts lacked FR-090 frontmatter therefore produced an EMPTY
+    `metrics.json` **and a success exit** — the report then rendered with no KPI
+    tiles and nothing anywhere said why. Measured on
+    `agentii-space-tech-SPACE/theses/001-technology-baseline`, which is the run
+    the plan calls the single measurable proof that Part II is real.
+
+    The message names what was examined and what would populate it, because a
+    hard failure that does not say where to look just moves the silence.
+    """
+    tickers = metrics.get("tickers") or {}
+    with_kpi = [t for t, e in tickers.items() if e.get("key_metrics")]
+    if with_kpi:
+        return
+    artifacts = sum(len(e.get("artifacts") or []) for e in tickers.values())
+    raise MetricsMissingError(
+        f"PACK REFUSED (Q97(1)): the metrics bundle has no series.\n"
+        f"  thesis    : {thesis}\n"
+        f"  scanned   : {len(tickers)} ticker dir(s), {artifacts} artifact(s) "
+        f"under {thesis / 'artifacts'}\n"
+        f"  with KPIs : 0\n"
+        + (f"  tickers   : {', '.join(sorted(tickers)) or '(none)'}\n"
+           if tickers else "")
+        + "  an artifact contributes metrics only through FR-090 frontmatter: "
+          "`key_metrics` (the KPI source), `conclusions`, `entity_claims`.\n"
+          "  An EMPTY bundle means the artifacts are missing those fields — not "
+          "that the thesis has no metrics.\n"
+          "  Fix the artifacts, then re-run pack. Nothing was written.")
+
+
 def pack(thesis: Path, body_limit: int | None = None) -> tuple[Path, str]:
     thesis = Path(thesis)
+    # Q97(1) runs BEFORE any write. The first version checked after writing
+    # report-input.md and still told the user "Nothing was written" — a message
+    # asserting something the code did not do, which is the defect this whole
+    # spec is about arriving inside its own fix.
+    metrics = extract_metrics(thesis)
+    _require_metrics(metrics, thesis)
     out = thesis / "report-input.md"
-    _atomic_write(out, pack_text(thesis, body_limit))
+    write_boundary.write(
+        out,
+        pack_text(thesis, body_limit),
+        producer='synthesize_report')
     metrics_path = thesis / "report" / "metrics.json"
-    _atomic_write(metrics_path, json.dumps(extract_metrics(thesis), indent=2,
-                                           ensure_ascii=False,
-                                           default=_json_default) + "\n")
+    write_boundary.write(
+        metrics_path,
+        json.dumps(metrics, indent=2, ensure_ascii=False,
+                                           default=_json_default) + "\n",
+        producer='synthesize_report')
     return out, sources_hash(thesis)
 
 
@@ -329,6 +401,301 @@ class _ContentParser(html.parser.HTMLParser):
     def handle_endtag(self, tag):
         if tag == "section":
             self.section_depth -= 1
+
+
+# ── the report gates (T131–T134; Q94/Q115/Q118) ─────────────────────────────
+#
+# Four deterministic gates on the authored fragment. Each exists because the
+# defect it catches was MEASURED in a live report, and each is placed here
+# because Q115's argument generalises: the report is a NEW document assembled
+# AFTER every existing gate has run, so nothing before this point can see
+# in-document inconsistency.
+
+# Q118: the measured defect — every chart in three reports had `alt="kpi_trend"`,
+# the chart KIND's name, never a description of the data. In a print-first PDF
+# that leaves the figure with no textual content at all: text search cannot find
+# it, accessibility tools cannot see it, and a reader who does not "decode the
+# shape" has no way to learn what the axes mean.
+_CHART_KIND_ALTS = {
+    "kpi_trend", "peer_bars", "waterfall", "scatter", "line", "bar", "chart",
+    "trend", "sparkline", "area", "column", "pie", "donut", "histogram",
+}
+
+# A caption must name UNITS. Q118 pairs this with Q97(2)'s axis requirement: the
+# geometric layer and the textual layer together are what make a chart readable,
+# and either alone leaves a shape occupying space.
+_UNIT_RX = re.compile(
+    r"(?i)(%|percent|pp\b|bps?\b|basis points?|USD|US\$|\$|EUR|GBP|JPY|"
+    r"metric tons?|tonnes?|shares?|units?|x\b|\bmm\b|\bbn\b|\bbillion\b|"
+    r"\bmillion\b|thousand|per cent|×)")
+
+# Q115: a headline figure must trace to the pack, and two pages must not give one
+# metric two values. The extraction is deliberately narrow — it reads the
+# machine-readable attributes the renderer already emits rather than parsing
+# prose, because Q146's rule applies here too: making a determinism gate parse
+# prose injects non-determinism into the gate.
+_METRIC_RX = re.compile(
+    r'data-metric\s*=\s*["\']([^"\']+)["\'][^>]*?'          # data-metric="x"
+    r'data-period\s*=\s*["\']([^"\']*)["\'][^>]*?'
+    r'data-value\s*=\s*["\']([^"\']+)["\']', re.I)
+
+
+def _gate_page_shape(content: str) -> list[str]:
+    """T132 (Q115): a page that is ONLY a table + caption is not an argument.
+
+    Q142's page contracts put the table SUBORDINATE to the argument — a page
+    whose entire content is a grid of numbers states no claim, so a reader
+    cannot tell what it is evidence FOR. Measured: report pages that were
+    tables with a one-line caption above them."""
+    problems: list[str] = []
+    for i, page in enumerate(re.findall(r'<section[^>]*class="[^"]*page[^"]*"[^>]*>(.*?)</section>',
+                                        content, re.S | re.I), 1):
+        # ONLY a page that HAS a table is this gate's subject. The first version
+        # flagged any page under 80 chars of non-table text, which also caught a
+        # short-but-legitimate prose page — over-reach, caught by
+        # test_quality_advisories_non_blocking, whose whole purpose is a
+        # deliberately minimal fragment. Q115 says "a page that is only a table
+        # + caption"; a page with no table is a different question.
+        if not re.search(r"<table\b", page, re.I):
+            continue
+        stripped = re.sub(r"<table\b.*?</table>", "", page, flags=re.S | re.I)
+        stripped = re.sub(r"<[^>]+>", " ", stripped)
+        stripped = re.sub(r"\s+", " ", stripped).strip()
+        if len(stripped) < 80:
+            problems.append(
+                f"page {i} is only a table (with caption): {len(stripped)} chars of "
+                f"non-table text. A table states no claim — Q142's page contracts "
+                f"make it SUBORDINATE to an argument that says what the numbers are "
+                f"evidence for (Q115/T132).")
+    return problems
+
+
+def _gate_page_argument(content: str) -> list[str]:
+    """T135 (Q95 contracts 1 and 2).
+
+    Q95's measured failure was PAGE-LEVEL, so the fix is too: PA 001's corpus
+    pages were not "bad content" — they were **structurally specified as
+    enumerations** (`.stat-row` + a 22–28 cell table + one caption). The user's
+    ask that key arguments lead to investment decisions had nowhere to land.
+
+    Contract 1 — the heading is a CLAIM, not a label. Measured: the three shipped
+    reports already do this ("Launch is 12.3% of revenue at the launch company"),
+    so this is a KEEP, not a new requirement — the gate exists to stop the
+    practice regressing, which is the only way a satisfied constraint stays
+    satisfied.
+
+    Contract 2 — every page carries explanatory prose that lands on investment
+    meaning. The measured counter-example: "badge census is not an argument" — a
+    page reporting how many facts it contains, rather than what they mean.
+    """
+    problems: list[str] = []
+    # A heading made only of a noun phrase is a label. Two independent signals,
+    # because either alone misfires: very short headings, and headings that are a
+    # bare ticker/company/section name.
+    _LABEL_RX = re.compile(r"^(?:[A-Z]{2,5}|[A-Z][a-z]+(?: [A-Z][a-z]+)?|"
+                           r"Evidence|Summary|Overview|Introduction|Background|"
+                           r"Appendix|Details|Analysis|Data)$")
+    for i, page in enumerate(re.findall(
+            r'<section[^>]*class="[^"]*page[^"]*"[^>]*>(.*?)</section>', content, re.S | re.I), 1):
+        h = re.search(r"<h[12][^>]*>(.*?)</h[12]>", page, re.S | re.I)
+        if h:
+            head = re.sub(r"<[^>]+>", "", h.group(1))
+            head = re.sub(r"\s+", " ", head).strip().rstrip(".")
+            if _LABEL_RX.match(head) or len(head.split()) < 4:
+                problems.append(
+                    f"page {i}'s heading is a LABEL, not a claim: {head!r}. Q95 "
+                    f"contract 1 — a heading must state what the page argues, e.g. "
+                    f"'Launch is 12.3% of revenue at the launch company', not "
+                    f"'Evidence' or the ticker.")
+
+        # contract 2: PARAGRAPH prose, and it must land somewhere.
+        #
+        # Counted from `<p>` elements only — NOT every non-table word. The first
+        # version stripped tags from the whole page, which counted the HEADING as
+        # explanatory prose; a page could then clear the threshold with its title
+        # alone, which is the badge-census failure in another costume. Q95 says
+        # 解释性正文 — explanatory body text — and a heading is not that.
+        paras = re.findall(r"<p\b[^>]*>(.*?)</p>", page, re.S | re.I)
+        prose = " ".join(re.sub(r"<[^>]+>", " ", p) for p in paras)
+        prose = re.sub(r"\s+", " ", prose).strip()
+        words = len(re.findall(r"\S+", prose))
+        # THRESHOLD CALIBRATION, stated because Q95 gives no number and I picked
+        # one. Two corrections got it here, and both are recorded because the
+        # number is a judgement dressed as a measurement:
+        #
+        #   40 -> rejected a genuine 35-word argument (too high)
+        #   25 -> counted the HEADING as prose; once the count is `<p>`-only, 25
+        #         rejects ordinary argument paragraphs (too high again)
+        #   20 -> sits above nothing in particular and below real prose. It is
+        #         deliberately NOT tuned to catch the measured failure, because
+        #         CONTRACT 3 already catches it: PA 001's page was 4 tiles + a
+        #         28-cell table, which fails the table-only rule outright. Setting
+        #         this threshold high enough to catch that page would fail normal
+        #         argument pages, and a gate that fails good pages gets disabled.
+        if words < 20:
+            problems.append(
+                f"page {i} carries {words} words of explanatory prose — Q95 "
+                f"contract 2 requires the page to say what its numbers mean, and a "
+                f"badge census is not an argument (the measured case: 35 words, "
+                f"half of them a badge census).")
+        elif not _CONCLUSION_RX.search(prose):
+            problems.append(
+                f"page {i}'s prose never lands on an investment implication (no "
+                f"'implies / means / therefore / argues for'). Q95 contract 2: the "
+                f"explanatory text must point at what this means for the position, "
+                f"not restate the data.")
+    return problems
+
+
+def _gate_charts(content: str) -> list[str]:
+    """T133 (Q118): caption present and human-readable; `alt` not a kind name."""
+    problems: list[str] = []
+    for m in re.finditer(r"<img\b[^>]*>", content, re.I):
+        tag = m.group(0)
+        alt = re.search(r'alt\s*=\s*["\']([^"\']*)["\']', tag, re.I)
+        alt_v = (alt.group(1) if alt else "").strip()
+        if not alt_v:
+            problems.append("a chart has no non-empty `alt` (Q118)")
+        elif alt_v.lower().replace("-", "_") in _CHART_KIND_ALTS:
+            problems.append(
+                f"a chart's `alt` is the chart KIND's name ({alt_v!r}), not a "
+                f"description of the data — in a print-first PDF that leaves the "
+                f"figure with no textual content at all (Q118)")
+    # captions: every figure must carry one naming what it draws, units, source
+    for fm in re.finditer(r"<figure\b.*?</figure>", content, re.S | re.I):
+        fig = fm.group(0)
+        cap = re.search(r"<figcaption\b[^>]*>(.*?)</figcaption>", fig, re.S | re.I)
+        if not cap:
+            problems.append("a chart has no <figcaption> (Q118)")
+            continue
+        text = re.sub(r"<[^>]+>", " ", cap.group(1))
+        text = re.sub(r"\s+", " ", text).strip()
+        if len(text) < 20:
+            problems.append(f"a chart caption is too short to name anything: {text!r}")
+        if not _UNIT_RX.search(text):
+            problems.append(
+                f"a chart caption names no UNIT: {text[:70]!r}. Q118 requires the "
+                f"caption to name what is drawn, its units, and its source — the "
+                f"textual half of what Q97(2) requires geometrically.")
+    return problems
+
+
+def _gate_self_consistency(content: str, metrics: dict) -> list[str]:
+    """T134 (Q115): one metric, one value — in-document AND against metrics.json.
+
+    Measured before this existed: a report contradicted itself by 15.3 pp, and
+    carried three competing 'best gross margin' superlatives. The cost is
+    specific to reports: a reader who meets one metric at two values on pages 6
+    and 11 stops believing the rest of the numbers, INCLUDING the correct ones.
+    That is not "a page is wrong" — it is "the document is no longer
+    trustworthy", which is why it fails assembly rather than warning."""
+    problems: list[str] = []
+    seen: dict[tuple[str, str], tuple[str, int]] = {}
+    for i, m in enumerate(_METRIC_RX.finditer(content), 1):
+        metric, period, value = (m.group(1).strip(), m.group(2).strip(),
+                                 m.group(3).strip())
+        key = (metric, period)
+        if key in seen:
+            prev, _ = seen[key]
+            if _num_of(prev) != _num_of(value):
+                problems.append(
+                    f"the document contradicts itself on {metric!r} ({period}): "
+                    f"{prev} vs {value}. A reader who meets one metric at two "
+                    f"values distrusts every other number too (Q115/T134)")
+        else:
+            seen[key] = (value, i)
+    # TRACEABILITY is a separate question, and it is about the HEADLINE figure
+    # only. Q115: "头条数字无法溯源到 pack" — the headline cannot be traced. The
+    # first version compared EVERY occurrence against `metrics.json`, which holds
+    # ONE period-less value per metric, so a document showing revenue for Q1 and
+    # Q2 was flagged for the Q1 row — a false positive that would fire on every
+    # real multi-period report.
+    #
+    # So: for each metric named in `key_metrics`, the document's value at its
+    # LATEST period must match the pack. Earlier periods are history, not
+    # headline.
+    mj = metrics.get("key_metrics") if isinstance(metrics, dict) else None
+    if isinstance(mj, dict):
+        by_metric: dict[str, list[tuple[str, str]]] = {}
+        for m in _METRIC_RX.finditer(content):
+            by_metric.setdefault(m.group(1).strip(), []).append(
+                (m.group(2).strip(), m.group(3).strip()))
+        for metric, ref_raw in mj.items():
+            rows = by_metric.get(metric)
+            if not rows:
+                continue
+            _period, latest = sorted(rows, key=lambda r: r[0])[-1]
+            ref = _num_of(str(ref_raw))
+            got = _num_of(latest)
+            if ref is not None and got is not None and ref != got:
+                problems.append(
+                    f"{metric!r} is {latest} in the report but {ref_raw!r} in "
+                    f"metrics.json — a headline figure that cannot be traced to the "
+                    f"pack fails assembly (Q115)")
+    return problems
+
+
+def _load_metrics(thesis: Path) -> dict:
+    """`report/metrics.json` — the pack's own numbers, and T134's second operand.
+    Absent or empty is not an error here: `pack` already hard-fails on that
+    (Q97(1)), so reaching assemble with no metrics means pack was bypassed."""
+    f = thesis / "report" / "metrics.json"
+    if not f.is_file():
+        return {}
+    try:
+        return json.loads(f.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _num_of(s: str) -> float | None:
+    m = re.search(r"-?\d+(?:\.\d+)?", str(s).replace(",", ""))
+    return float(m.group(0)) if m else None
+
+
+# Q94: the outline elements a report must have decided BEFORE writing pages.
+_OUTLINE_ELEMENTS = {
+    "argument": re.compile(r"(?im)^\s*#{1,4}\s*.*(argument|论断|论点)"),
+    "evidence": re.compile(r"(?im)^\s*#{1,4}\s*.*(evidence|证据)"),
+    "pages":    re.compile(r"(?im)^\s*#{1,4}\s*.*(page|页)"),
+    "storyline": re.compile(r"(?im)^\s*#{1,4}\s*.*(story|叙事|故事线)"),
+}
+# An argument that restates a fact is not an argument. Q94: each key argument
+# must point at an investment CONCLUSION — "what this means for expectations or
+# returns" — not repeat what the data says.
+_CONCLUSION_RX = re.compile(
+    r"(?i)(implies|means|suggests|therefore|so that|argues for|supports a|"
+    r"warrants|justifies|points to|应当|意味着|因此|支持|指向)")
+
+
+def gate_outline(thesis: Path) -> list[str]:
+    """T131 (Q94): authoring is REFUSED without report/outline.md.
+
+    Q94's measured basis: the render-and-optimize loop was proven for LAYOUT and
+    had no counterpart for the ARGUMENT — the author step went from a 333 KB pack
+    to content.html in one pass, and every iteration after it checked clipping,
+    density and orphan headings. So structure was never chosen, only emerged. A
+    corpus-wide search for outline/abstract/story-line/key-argument in the
+    scenarios vertical returned ZERO hits."""
+    f = thesis / "report" / "outline.md"
+    if not f.is_file():
+        return [f"report/outline.md not found. Q94: the outline is written and "
+                f"FINALISED before any page is authored — without it the structure "
+                f"of the argument is never chosen, only emerges. Minimum content: "
+                f"key arguments (each a claim pointing at an investment conclusion), "
+                f"argument -> evidence, argument -> page plan, and the story line."]
+    text = f.read_text(encoding="utf-8")
+    problems = [f"outline.md has no {name} section (Q94)"
+                for name, rx in _OUTLINE_ELEMENTS.items() if not rx.search(text)]
+    args = re.findall(r"(?im)^\s*#{1,4}\s*.*(?:argument|论断|论点).*$\n((?:.*\n)*?)(?=#|\Z)",
+                      text)
+    body = " ".join(args)
+    if body.strip() and not _CONCLUSION_RX.search(body):
+        problems.append(
+            "outline.md's arguments never point at an investment conclusion — "
+            "Q94: each key argument must say what this means for expectations or "
+            "returns, not restate what the data says")
+    return problems
 
 
 def _validate_content(content: str, pack_txt: str) -> list[str]:
@@ -449,7 +816,33 @@ def _quality_advisories(content: str) -> list[str]:
     return advisories
 
 
-def _disclaimer_body() -> str:
+def _workspace_language(thesis: Path) -> str | None:
+    """Q126/T138: the language a WORKSPACE declares, from its own `style.md`.
+
+    `contracts/preflight.md` step 2 already reads `style.md` for per-workspace
+    overrides (`default_lookback_quarters`, `reporting_currency`, …), so the
+    language is one more declaration in a file the pipeline already reads —
+    no new mechanism, no new file, no registry (Q4).
+    """
+    for candidate in (thesis.parent.parent / "style.md", thesis.parent / "style.md"):
+        if not candidate.is_file():
+            continue
+        m = re.search(r"^language\s*:\s*(\S+)\s*$",
+                      candidate.read_text(encoding="utf-8"), re.M)
+        if m:
+            return m.group(1).strip().strip("'\"")
+    return None
+
+
+def _disclaimer_clauses(body: str) -> list[str]:
+    """The clause ids a rendering carries. Stable ids are what make Q139 rule 3
+    ENFORCEABLE — without them 'the clause set is the contract' cannot be checked,
+    and a translation could silently drop the liability clause and still read as
+    compliant."""
+    return re.findall(r'data-clause\s*=\s*["\']([^"\']+)["\']', body)
+
+
+def _disclaimer_body(thesis: Path | None = None) -> str:
     """The canonical HTML disclaimer block, read out of disclaimer.md.
 
     disclaimer.md is the single source (Q139 rule 1). Reading it rather than
@@ -458,14 +851,50 @@ def _disclaimer_body() -> str:
     error: a presentation output must not ship without its disclaimer."""
     if not DISCLAIMER_MD.is_file():
         raise ValueError(f"disclaimer template missing: {DISCLAIMER_MD} (Q139)")
-    src = DISCLAIMER_MD.read_text(encoding="utf-8")
-    blocks = re.findall(r"^```html\n(.*?)^```", src, re.DOTALL | re.MULTILINE)
+    # T138 (Q126): language follows the WORKSPACE. The canonical file is English;
+    # a workspace declaring another language supplies its own rendering of the
+    # SAME clauses, and the clause SET is verified. Resolution order: the
+    # workspace's own file, then the kit's canonical one.
+    canonical = DISCLAIMER_MD.read_text(encoding="utf-8")
+    source, src_path = canonical, DISCLAIMER_MD
+    lang = _workspace_language(thesis) if thesis is not None else None
+    if lang and lang.lower() not in ("en", "english"):
+        for cand in ((thesis.parent.parent / f"disclaimer.{lang}.md"),
+                     (thesis.parent.parent / "disclaimer.md")):
+            if cand.is_file():
+                source, src_path = cand.read_text(encoding="utf-8"), cand
+                break
+        else:
+            raise ValueError(
+                f"workspace declares language {lang!r} but supplies no "
+                f"disclaimer.{lang}.md (or disclaimer.md) — Q126: the clause set is "
+                f"the contract and the wording is the workspace's rendering, so the "
+                f"rendering must exist. Shipping the English text into a workspace "
+                f"that declared another language is the failure this prevents.")
+
+    blocks = re.findall(r"^```html\n(.*?)^```", source, re.DOTALL | re.MULTILINE)
     if len(blocks) != 1:
         raise ValueError(
-            f"{DISCLAIMER_MD} must carry exactly one ```html block "
+            f"{src_path.name} must carry exactly one ```html block "
             f"(found {len(blocks)}) — it is the single source for the HTML "
             f"rendering (Q139 rule 1)")
-    return blocks[0].strip()
+
+    body = blocks[0].strip()
+    # the clause set must match EXACTLY (rule 3b). Missing a clause fails;
+    # adding one is allowed only by adding it to the canonical file first, which
+    # is what keeps the canonical set the contract rather than the translation.
+    want = _disclaimer_clauses(
+        re.findall(r"^```html\n(.*?)^```", canonical, re.DOTALL | re.MULTILINE)[0])
+    got = _disclaimer_clauses(body)
+    if set(got) != set(want):
+        missing, extra = sorted(set(want) - set(got)), sorted(set(got) - set(want))
+        raise ValueError(
+            f"{src_path.name} does not carry the canonical clause set: "
+            f"missing {missing}, extra {extra}. Q139 rule 3b — the CLAUSE SET is "
+            f"the contract and the wording is the workspace's, so a rendering that "
+            f"drops the liability clause is not a translation, it is a different "
+            f"disclaimer.")
+    return body
 
 
 def _disclaimer_section(total: int, thesis: Path, facts: dict,
@@ -478,7 +907,7 @@ def _disclaimer_section(total: int, thesis: Path, facts: dict,
     declaring another language swaps this file, not this code."""
     workspace = thesis.parent.parent.name if thesis.parent.name == "theses" \
         else thesis.parent.name
-    body = (_disclaimer_body()
+    body = (_disclaimer_body(thesis)
             .replace("[WORKSPACE]", _html.escape(workspace))
             .replace("[AS_OF]", _html.escape(str(facts.get("as_of") or "—")))
             .replace("[GENERATED]", _html.escape(generated_at)))
@@ -506,7 +935,8 @@ def _toc_entries(content: str) -> list[tuple[int, str]]:
 
 
 def build_html(thesis: Path, pages_html: str, shash: str, generated_at: str,
-               *, font_tier: int = 0, draft: bool = False) -> str:
+               *, font_tier: int = 0, draft: bool = False,
+               overflow_check: str = "unknown") -> str:
     """Template + cover fill + page injection + chrome + pins. Deterministic
     except the generated_at output metadata (never a pin)."""
     facts = _header_facts(thesis)
@@ -552,7 +982,11 @@ def build_html(thesis: Path, pages_html: str, shash: str, generated_at: str,
     pages_html += _disclaimer_section(total, thesis, facts, generated_at, slug, thesis_num)
     html = html.replace(PAGES_COMMENT, pages_html, 1)
 
+    # Q99/Q105: record WHICH overflow check ran. The ±5% estimator passed five
+    # genuinely overflowing pages, so a report must never imply a precision it
+    # did not have — "approximate" is the estimator, "engine" is headless Chrome.
     body_attrs = (f'<body data-sources-hash="{shash}" '
+                  f'data-overflow-check="{overflow_check}" '
                   f'data-template-version="{TEMPLATE_VERSION}"')
     if font_tier > 0:
         body_attrs += (f' data-font-tier="{font_tier}" '
@@ -592,9 +1026,24 @@ def assemble(thesis: Path, out_path: Path | None = None, *,
             "  2. author report/content.html from report-input.md "
             "(contract in skills/agentii/synthesize/SKILL.md)\n"
             "  3. python3 scripts/synthesize_report.py assemble --thesis <thesis-dir>")
+    # T131 (Q94): the outline gate runs FIRST, before the content is even read.
+    # Order matters: Q94 says the outline is finalised BEFORE any page is
+    # authored, so refusing here refuses the premise, not just the output.
+    outline_problems = gate_outline(thesis)
+    if outline_problems:
+        raise ValueError("outline gate failed (Q94/T131):\n- "
+                         + "\n- ".join(outline_problems))
+
     content = content_path.read_text(encoding="utf-8")
     pack_txt = pack_text(thesis)
     problems = _validate_content(content, pack_txt)
+    # T132/T133/T134 — the in-document gates. They live here because Q115's
+    # argument is that the report is a NEW document assembled AFTER every other
+    # gate has run; nothing upstream can see a document contradicting itself.
+    problems += _gate_page_shape(content)
+    problems += _gate_page_argument(content)   # T135 (Q95 contracts 1, 2)
+    problems += _gate_charts(content)
+    problems += _gate_self_consistency(content, _load_metrics(thesis))
     if problems:
         raise ValueError("content.html validation failed:\n- " + "\n- ".join(problems))
     for advisory in _quality_advisories(content):
@@ -605,37 +1054,46 @@ def assemble(thesis: Path, out_path: Path | None = None, *,
     report_path = out_path or (thesis / "thesis-report.html")
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
+    mode = "engine" if check_page_overflow.engine_available() else "approximate"
     for tier in range(len(check_page_overflow.FONT_TIERS)):
-        html = build_html(thesis, pages_html, shash, generated_at, font_tier=tier)
-        over = check_page_overflow.check(html, font_tier=tier)
+        html = build_html(thesis, pages_html, shash, generated_at, font_tier=tier,
+                          overflow_check=mode)
+        over, used = check_page_overflow.check_with_mode(html, font_tier=tier)
+        if used != mode:
+            # Chrome died between the probe and the run. Rebuild once with the
+            # mode that actually ran, so the artifact cannot claim the engine.
+            mode = used
+            html = build_html(thesis, pages_html, shash, generated_at,
+                              font_tier=tier, overflow_check=mode)
         if check_only:
             _print_heights(html, tier, over)
             if not over:
                 return None, shash, False
             continue
         if not over:
-            _atomic_write(report_path, html)
+            write_boundary.write(
+                report_path,
+                html,
+                producer='synthesize_report')
             return report_path, shash, False
 
     # Q47 failure semantics: markdown fallback + HTML draft with a banner.
     if not check_only:
         facts = _header_facts(thesis)
         md_path = report_path.with_suffix(".md")
-        _atomic_write(md_path, f"# {facts['name']} — Markdown Report "
-                               f"(HTML overflow gate unresolved)\n\n{pack_txt}")
+        write_boundary.write(
+            md_path,
+            f"# {facts['name']} — Markdown Report "
+                               f"(HTML overflow gate unresolved)\n\n{pack_txt}",
+            producer='synthesize_report')
         html = build_html(thesis, pages_html, shash, generated_at,
-                          font_tier=len(check_page_overflow.FONT_TIERS) - 1, draft=True)
-        _atomic_write(report_path, html)
+                          font_tier=len(check_page_overflow.FONT_TIERS) - 1,
+                          draft=True, overflow_check=mode)
+        write_boundary.write(
+            report_path,
+            html,
+            producer='synthesize_report')
     return report_path, shash, True
-
-
-def _atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(content, encoding="utf-8")
-    with open(tmp, "rb") as f:
-        os.fsync(f.fileno())
-    os.replace(tmp, path)
 
 
 def main(argv: list[str] | None = None) -> int:

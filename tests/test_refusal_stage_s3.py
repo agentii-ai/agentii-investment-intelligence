@@ -54,9 +54,67 @@ def test_compile_time_preflight_fast_fails_naming_the_node():
 
 
 def test_preflight_passes_when_all_requires_resolve():
-    registry = {"business-model": {"requires": []}, "dcf": {"requires": ["business-model"]}}
-    plan = [{"skill": "business-model"}, {"skill": "dcf", "requires": ["business-model"]}]
+    """Every node declares requires, and every one resolves.
+
+    CHANGED 2026-09-18 (Q12/Q105). The fixture used to be
+    `plan = [{"skill": "business-model"}, {"skill": "dcf", "requires": [...]}]`
+    with `assert preflight(...) == []` — and the FIRST node had no `requires` at
+    all. So the test asserted that examining nothing produces no problems, i.e.
+    it froze the silent pass in place as the expected behaviour. Its own name
+    said "when all requires resolve" while the node it was passing doesn't
+    resolve, it doesn't exist.
+
+    NOTE: the entries here are REGISTRY KEYS (skill names), because that is what
+    the implementation checks (`if req not in registry`). Q12's spec shows
+    `requires` as capability predicates instead — `xbrl_coverage: fresh`,
+    `validate_calculation: pass` — which would EVERY ONE fail this check. That
+    mismatch is real and recorded as a landing item; this test pins the current
+    model rather than pretending the two agree."""
+    registry = {"business-model": {"requires": ["dcf"]},
+                "dcf": {"requires": ["business-model"]}}
+    plan = [{"skill": "business-model", "requires": ["dcf"]},
+            {"skill": "dcf", "requires": ["business-model"]}]
     assert dispatch.preflight(plan, registry) == []
+
+
+def test_preflight_now_accepts_a_capability_predicate():
+    """RETIRED 2026-09-18 (T153/T154). This test used to pin the mismatch, with
+    the instruction: *"if this ever passes, the predicate model has been
+    implemented — update Q12's landing item and delete this test."* It passes;
+    this is that deletion, kept as a positive assertion so the regression cannot
+    silently return.
+
+    The old body asserted the OPPOSITE — that Q12's own example entry
+    `xbrl_coverage: fresh` is rejected. Full coverage of the model is in
+    tests/test_preflight_vacuous.py."""
+    registry = {"dcf": {"requires": ["xbrl_coverage: fresh"]}}
+    plan = [{"skill": "dcf"}]
+    assert dispatch.preflight(plan, registry) == [], (
+        "Q12's own example entry must be ACCEPTED. If this fails, the predicate "
+        "model has regressed to checking registry keys for both kinds of entry.")
+
+
+def test_preflight_reports_vacuous_when_requires_is_undecided():
+    """Q105/T157: a gate that examined nothing must say so, not return `[]`.
+
+    UPDATED 2026-09-18 (T157): the fixture was `{"requires": []}`, which is now
+    a deliberate "no preconditions" and passes. VACUOUS belongs to the key being
+    ABSENT. Full three-state coverage is in tests/test_preflight_vacuous.py."""
+    registry = {"business-model": {}}                  # absent = undecided
+    plan = [{"skill": "business-model"}]
+    problems = dispatch.preflight(plan, registry)
+    assert problems, "an undecided requires must not read as a clean pass"
+    assert any(dispatch.VACUOUS in p for p in problems)
+    assert any("business-model" in p for p in problems)
+
+
+def test_preflight_reads_the_registry_as_well_as_the_node():
+    """The old docstring claimed registry requires were checked; the code read
+    only the node's. Both are checked now, and the message says which."""
+    registry = {"business-model": {"requires": ["ghost-from-registry"]}}
+    plan = [{"skill": "business-model"}]          # node declares none
+    problems = dispatch.preflight(plan, registry)
+    assert any("ghost-from-registry" in p and "registry" in p for p in problems)
 
 
 def test_retry_policy_by_failure_class():

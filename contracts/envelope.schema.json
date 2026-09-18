@@ -5,55 +5,160 @@
   "description": "Normative envelope for all data-tools/*.py scripts and unified agentii MCP tools (spec 039 Part II, AGENT_CONTRACT.md).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["status", "data", "source", "cache_hit", "rate_limit_remaining", "error"],
+  "required": [
+    "status",
+    "data",
+    "source",
+    "cache_hit",
+    "rate_limit_remaining",
+    "error"
+  ],
   "properties": {
     "status": {
       "type": "string",
-      "enum": ["ok", "degraded", "error"]
+      "enum": [
+        "ok",
+        "degraded",
+        "error",
+        "skipped"
+      ],
+      "description": "ok | degraded | error | skipped. T180 (Q104): `skipped` means the source was NOT ATTEMPTED — a missing API key, typically — and is never a failure. The zero-key path must always work: keys are not present on every machine, and conflating 'no key' with 'broken' makes a working keyless deployment look like an outage."
     },
     "data": {
-      "type": ["object", "array", "null"]
+      "type": [
+        "object",
+        "array",
+        "null"
+      ]
     },
     "source": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "Concrete provider used behind the ~~category placeholder; null only allowed on error."
     },
     "cache_hit": {
       "type": "boolean"
     },
     "rate_limit_remaining": {
-      "type": ["integer", "null"],
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 0
     },
     "error": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "allOf": [
     {
       "description": "Invariant 1: status=ok => data != null",
-      "if": { "properties": { "status": { "const": "ok" } } },
-      "then": { "properties": { "data": { "not": { "type": "null" } } } }
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "not": {
+              "type": "null"
+            }
+          }
+        }
+      }
     },
     {
       "description": "Invariant 2: status=error => data=null AND error!=null",
-      "if": { "properties": { "status": { "const": "error" } } },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "error"
+          }
+        }
+      },
       "then": {
         "properties": {
-          "data": { "type": "null" },
-          "error": { "type": "string" }
+          "data": {
+            "type": "null"
+          },
+          "error": {
+            "type": "string"
+          }
         }
       }
     },
     {
       "description": "Invariant 3: status=degraded => error explains why",
-      "if": { "properties": { "status": { "const": "degraded" } } },
-      "then": { "properties": { "error": { "type": "string" } } }
+      "if": {
+        "properties": {
+          "status": {
+            "const": "degraded"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
     },
     {
       "description": "Invariant 4 (partial): source required unless status=error",
-      "if": { "properties": { "status": { "enum": ["ok", "degraded"] } } },
-      "then": { "properties": { "source": { "type": "string", "minLength": 1 } } }
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    {
+      "description": "Invariant 5 (T180): status=skipped => data=null and `error` names the missing prerequisite in the fixed form `SKIPPED: <prerequisite>`. No second field carries it — `error` is the single source, parseable by prefix, because two fields holding one fact is the divergence Q12 rule 3 forbids.",
+      "if": {
+        "properties": {
+          "status": {
+            "const": "skipped"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "null"
+          },
+          "error": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
     }
   ]
 }

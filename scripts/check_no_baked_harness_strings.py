@@ -94,30 +94,61 @@ def check_a(verbs: set[str]) -> list[str]:
 
 
 def check_b(sources: dict[str, Path]) -> tuple[list[str], dict[str, int]]:
-    """Every package target file must be byte-identical to its source (Q34 rule 4)."""
+    """The build output must be COMPLETE and CURRENT relative to its sources.
+
+    Two distinct failures, and the first version could only see the second:
+
+      MISSING  a source skill with no packaged counterpart at all
+      STALE    a packaged file that differs from its source
+
+    The first version iterated the files that EXIST under packaging/targets/, so
+    it reported 220 files x 40 stale and was structurally blind to the 25 skills
+    per target that had never been packaged. 5 of the 8 findings were the ones it
+    could not see.
+
+    `packaging/targets/` is GITIGNORED build output (.gitignore:18) — it is not
+    repo content, so staleness here is not a defect and the fix is `python3
+    packaging/export.py`, never a hand edit. Saying that in the report matters:
+    without it, "40 files differ" reads as 40 tracked files having drifted."""
     problems: list[str] = []
-    per: dict[str, list[int]] = {}
+    per: dict[str, dict[str, int]] = {}
     if not TARGETS.is_dir():
-        return [f"{TARGETS} does not exist — Q34 has nothing to check"], {}
-    for t in sorted(TARGETS.glob("*/*/SKILL.md")):
-        harness, skill = t.parts[-3], t.parent.name
-        src = sources.get(skill)
-        per.setdefault(harness, [0, 0])
-        per[harness][1] += 1
-        if src is None:
-            problems.append(f"{t.relative_to(KIT)} — no source skill named {skill!r}")
-            continue
-        a = hashlib.sha256(src.read_bytes()).hexdigest()
-        b = hashlib.sha256(t.read_bytes()).hexdigest()
-        if a != b:
-            per[harness][0] += 1
-            problems.append(f"{t.relative_to(KIT)} — stale or rewritten vs {src.relative_to(KIT)}")
-    stale = sum(v[0] for v in per.values())
-    tot = sum(v[1] for v in per.values())
-    print(f"  B. target == source — {tot} packaged SKILL.md files, {stale} differ")
+        # NOT-BUILT-YET IS A STATE, NOT A DEFECT. `packaging/targets/` is
+        # gitignored build output, so a fresh clone legitimately has none — and
+        # reporting that as a failure made `check.py` red on any clean checkout.
+        # Caught by tests/test_check_extensions.py::test_baseline_green, whose
+        # sandbox copies only the tracked tree. This is T180's SKIPPED≠FAIL rule
+        # applied to the build: a missing API key and an unrun build are both
+        # "not attempted", and neither is "broken".
+        #
+        # What still fails is a targets directory that EXISTS and is stale or
+        # incomplete — because that means someone built it and it drifted.
+        print(f"  B. build output — NOT BUILT (`{TARGETS.name}/` absent; gitignored "
+              f"build output). Run `python3 packaging/export.py` to verify it.")
+        return [], {"__not_built__": 0}
+    for harness in sorted(d.name for d in TARGETS.iterdir() if d.is_dir()):
+        stat = per.setdefault(harness, {"ok": 0, "stale": 0, "missing": 0})
+        for skill, src in sorted(sources.items()):
+            t = TARGETS / harness / skill / "SKILL.md"
+            if not t.is_file():
+                stat["missing"] += 1
+                problems.append(f"{harness}/{skill}/SKILL.md — MISSING (never packaged)")
+                continue
+            if hashlib.sha256(src.read_bytes()).hexdigest() != \
+               hashlib.sha256(t.read_bytes()).hexdigest():
+                stat["stale"] += 1
+                problems.append(f"{harness}/{skill}/SKILL.md — STALE vs {src.name}")
+            else:
+                stat["ok"] += 1
+    tot = sum(sum(v.values()) for v in per.values())
+    tot_bad = sum(v["stale"] + v["missing"] for v in per.values())
+    print(f"  B. build output — {tot} expected, {tot_bad} stale-or-missing")
     for h in sorted(per):
-        print(f"       {h:<14} {per[h][0]:>3} / {per[h][1]}")
-    return problems, {h: v[0] for h, v in per.items()}
+        v = per[h]
+        print(f"       {h:<14} ok {v['ok']:>3}  stale {v['stale']:>3}  missing {v['missing']:>3}")
+    print("       (packaging/targets/ is gitignored build output — fix with"
+          " `python3 packaging/export.py`)")
+    return problems, {h: v["stale"] + v["missing"] for h, v in per.items()}
 
 
 def main() -> int:

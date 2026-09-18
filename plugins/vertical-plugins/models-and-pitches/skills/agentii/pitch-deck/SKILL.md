@@ -83,6 +83,27 @@ Per frontmatter `allowed_tools`:
 4. **Output**: write the artifact path per `## Output File`.
 5. **Next**: append to `agentii.md`; hand off to a downstream pitch/review skill if requested.
 
+## Disclaimer (Q139/T137) — REQUIRED, template-owned
+
+This output is **presentation-shaped**, so it MUST carry the canonical disclaimer from
+`scenarios/templates/disclaimer.md` — verbatim, not restated or paraphrased. The
+clause set is the contract; the wording is the workspace's rendering (Q126).
+
+- **Rule 1**: include the block as authored. Do not write your own.
+- **Rule 2**: `[WORKSPACE]` / `[AS_OF]` / `[GENERATED]` are FILLED, never shipped.
+  An unfilled placeholder fails the output gate.
+- **Rule 4**: the disclaimer states what the document IS; the badges, `epistemic_state`
+  and coverage-gaps sections state what each claim IS. Do not let the disclaimer carry
+  a burden the body should.
+
+**Why this is written here rather than assumed.** This skill has **no template and no
+producer** (measured 2026-09-18 — `scenarios/templates/` holds neither). So there is
+nothing yet to mount the disclaimer ON, and `check_disclaimer.py` reports this output as
+`nothing to gate yet` rather than as compliant. Recording the requirement in the output
+contract means it is already binding when a template or producer is written, instead of
+being rediscovered afterwards — which is how the thesis report's own disclaimer came to
+be retrofitted rather than designed in.
+
 ## Output File
 
 Primary deliverable: `{ticker}/{YYYY-MM-DD_HHMM}_pitch-deck_{affix}.pptx` — real PowerPoint binary via `Bash` + `python-pptx` per `contracts/office-tooling.md`. Degraded fallback: `{ticker}/{YYYY-MM-DD_HHMM}_pitch-deck_{affix}.md` when `python-pptx` is absent (FR-044).

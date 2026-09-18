@@ -17,6 +17,7 @@ presentation-shaped outputs (`thesis-report.html`, `dashboard.html`, `pitch-deck
 | 1 | Every presentation-shaped output **includes this block verbatim**. It is template-owned where the output has a template; the author does not write it. |
 | 2 | **Placeholders are filled, never shipped.** `[WORKSPACE]` / `[AS_OF]` / `[GENERATED]` must resolve — an unfilled placeholder fails the output gate (the same structural, case-insensitive check as Q108). |
 | 3 | **Language follows the workspace** (Q126). This file carries the canonical English text; a workspace declaring another language uses its own rendering of the *same* clauses. The clause set is the contract; the wording is not. |
+| 3b | **The CLAUSE SET is what rule 3 is checked against.** Every `<p>` carries `data-clause="…"`; a workspace rendering in another language must carry the **same id set, exactly**. Missing a clause fails the output gate; adding one is allowed only by adding it here first. Without stable ids, "the clause set is the contract" is unenforceable — a translation could silently drop the liability clause and still read as compliant. |
 | 4 | **A disclaimer is not a substitute for the document's own epistemic discipline.** It states what the document *is*; the badges, `epistemic_state` and coverage-gaps sections state what each claim *is*. Do not let the disclaimer carry a burden the body should. |
 | 5 | **Never present the disclaimer as a substitute for an absent one.** If a rendering cannot carry it (a format with no text layer), the output is not presentation-ready and must not be disseminated. |
 
@@ -56,18 +57,18 @@ injects it, the author never emits it (same reserved-class discipline as `sheet-
 ```html
 <section class="disclaimer">
   <h3>Disclaimer</h3>
-  <p>This document is <b>research and analysis</b>, produced by an automated research system
+  <p data-clause="not-advice">This document is <b>research and analysis</b>, produced by an automated research system
      for internal use. It is <b>not investment advice</b>, and it is <b>not an offer or
      solicitation</b> to buy or sell any security.</p>
-  <p>It is based on the sources cited inline. Those sources may be incomplete, delayed, or
+  <p data-clause="sources-fallible">It is based on the sources cited inline. Those sources may be incomplete, delayed, or
      wrong, and the analysis may have misread them; no representation or warranty is made as
      to accuracy or completeness. Figures are as of their stated <code>as_of</code> date and
      are not updated.</p>
-  <p><b>This document contains hypotheses, not established conclusions.</b> Where a claim is a
+  <p data-clause="hypotheses-not-conclusions"><b>This document contains hypotheses, not established conclusions.</b> Where a claim is a
      projection, an inference, or a judgement rather than a reported fact, it is marked as
      such. Statements about the future are forward-looking and inherently uncertain. Past
      performance is not indicative of future results.</p>
-  <p>Recipients must do their own due diligence and consult their own advisers before acting
+  <p data-clause="own-due-diligence">Recipients must do their own due diligence and consult their own advisers before acting
      on anything here. The authors and distributors accept no liability for any loss arising
      from reliance on this document.</p>
   <p class="disclaimer-meta">© [WORKSPACE] · [AS_OF] · generated [GENERATED]</p>

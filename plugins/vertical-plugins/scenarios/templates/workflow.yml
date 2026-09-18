@@ -38,3 +38,104 @@ gates:
     tier: consequential
     shows: "open items, failed artifacts, final conviction"
     on_reject: abort
+
+# ── Machine gates, split by thesis-dependency (T165, Q142) ───────────────────
+#
+# `gates:` above holds the six HUMAN approval cards; every one is anchored to a
+# thesis lifecycle stage (`specify` / `plan` / `tasks` / `mass_dispatch` /
+# `constitution_reexamination_sweep` / `thesis_archive`) and is therefore
+# thesis-only by construction — there is no `tasks.md` to gate before in
+# single-skill mode.
+#
+# This section is the SECOND inventory: the deterministic machine gates. Q142's
+# split is by "does it depend on a thesis", not by age — Q142's reason: a
+# single-skill artifact and a thesis artifact are the SAME KIND of thing (both
+# are claims about agentii.ai data, both carry FACT/DEDUCTED/VIEW, both are held
+# to "≥1 citation per 200 words"). The citation gate protects that kind, so it
+# must cross modes. A gate that reads `tasks.md` cannot.
+#
+# `reads:` is not documentation. Q145's finding was that the citation gate was
+# declared mode-independent while its input (`claim_class`) existed in only ONE
+# mode's schema — a rule can declare `both` and still have no data to read.
+# Check 41 compares this list against where those fields actually exist, so an
+# unsatisfiable declaration is detectable rather than merely embarrassing.
+#
+# `enforcement:` names WHERE it runs. Q142 declared these `both` and named no
+# execution point; Q147 supplied it — the write boundary — and found the named
+# location had four implementations and none of the three gate families.
+machine_gates:
+  # ── mode-independent: both modes ──────────────────────────────────────────
+  - id: citation-integrity
+    mode: both
+    tier: G1
+    reads: [claim_class, citations]
+    enforcement: write_boundary
+    note: Q100/Q102 anti-fabrication. Claims about agentii.ai data are made in both modes.
+  - id: vacuous-reporting
+    mode: both
+    tier: G1
+    reads: [mechanism_outcome]
+    enforcement: write_boundary
+    note: Q105. An un-run gate must say it did not run; independent of any thesis.
+  - id: number-canonical-form
+    mode: both
+    tier: G1
+    reads: [key_metrics]
+    enforcement: write_boundary
+    note: Q102. Rates and ratios as decimals; a presentation-layer rule (style.md) either way.
+  - id: prose-safety
+    mode: both
+    tier: G1
+    reads: [body]
+    enforcement: write_boundary
+    note: Carrier-independent.
+  - id: evidence-class
+    mode: both
+    tier: G1
+    reads: [support]
+    enforcement: write_boundary
+    note: Q84. Refuse promotion when all support is analogy / similarity-retrieval / KOL.
+  - id: citation-density
+    mode: both
+    tier: G1
+    reads: [citations, word_count]
+    enforcement: write_boundary
+    note: ">=1 citation per 200 words, contract citation-and-memory.md."
+
+  # ── thesis-dependent ──────────────────────────────────────────────────────
+  - id: artifact-frontmatter
+    mode: thesis
+    tier: G1
+    reads: [FIVE_PINS]
+    enforcement: dispatch_preflight
+    note: FR-090. Describes a THESIS artifact.
+  - id: boundary-gates
+    mode: thesis
+    tier: G1
+    reads: [requires]
+    enforcement: dispatch_preflight
+    note: Phase 3. Reads thesis claims and `requires:`.
+  - id: assumption-promotion
+    mode: thesis
+    tier: G2
+    reads: [assumptions]
+    enforcement: converge
+    note: Q84. Assumptions live in the thesis register.
+  - id: converge-challenge
+    mode: thesis
+    tier: G2
+    reads: [tasks_md, claims]
+    enforcement: converge
+    note: Q26/Q9. Operate on `tasks.md`.
+  - id: portfolio-aggregation
+    mode: thesis
+    tier: G2
+    reads: [claims]
+    enforcement: portfolio_aggregate
+    note: Q61. Aggregates thesis claims.
+  - id: command-surface
+    mode: thesis
+    tier: G3
+    reads: [thesis_files]
+    enforcement: agentii_cmd
+    note: Q22/Q24/Q26. Operates on thesis / spec / plan / tasks files.

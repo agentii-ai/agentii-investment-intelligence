@@ -105,6 +105,14 @@ Step-by-step execution detail is in `references/methodology.md`.
 
 Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.
 
+## Disclaimer (Q139/T137) — REQUIRED, template-owned
+
+This output is **presentation-shaped** and MUST carry the canonical disclaimer from
+`scenarios/templates/disclaimer.md` — verbatim, not restated. The clause set is the
+contract; the wording is the workspace's rendering (Q126). Placeholders are filled,
+never shipped. **The full requirement, the clause-set rule, and the per-slide footer
+rule for price targets are in `references/disclaimer.md`.**
+
 ## Output File
 
 Primary deliverable: `{ticker}/{YYYY-MM-DD_HHMM}_earnings-preview_{affix}.pptx` — real PowerPoint binary via `Bash` + `python-pptx` per `contracts/office-tooling.md`. Degraded fallback: `{ticker}/{YYYY-MM-DD_HHMM}_earnings-preview_{affix}.md` when `python-pptx` is absent (FR-044).

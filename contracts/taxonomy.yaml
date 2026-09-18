@@ -9,7 +9,29 @@
 #   insufficient_history → error_code   (Q42 — tool-side refusal)
 # PRICE_ACCESS_PREMATURE is plan-declared (Q41 late-mode early-quote refusal) per the
 # Q6 closed-enum extension procedure, declared here in v1.
-version: 1
+# ── v1 → v2 (2026-09-18): the Part II enum extension, per Q6/Q8 contract 1 ──────
+# Three axes added, each carrying a value that had no home. All three were found
+# by the same method — reading the spec's decisions against each other — and all
+# three are the SAME defect: a value introduced without naming its axis, which
+# taxonomy's own header forbids ("CI fails on a value appearing on two axes or on
+# none"). See Q129, Q130, Q135.
+#
+#   epistemic_state   supported / indeterminate / refuted   (Q85, corrected by Q129)
+#                     All three mean EVALUATED. Q116's table listed VACUOUS as a
+#                     fourth epistemic value and silently dropped `indeterminate`
+#                     — the orthogonality Q85 exists to keep.
+#   mechanism_outcome EXECUTED / VACUOUS                    (Q129, completed by Q135)
+#                     "Was it examined" is orthogonal to "what is its standing".
+#                     Both values are named: a one-valued axis classifies nothing,
+#                     and naming the normal case explicitly is the whole point of
+#                     Q105 — the prevailing failure is that the normal case was
+#                     silent.
+#   amendment_state   pending_amendment / in_force          (Q130)
+#                     A constitution amendment is NOT a claim. Placing it in
+#                     claim_state would force Q61's aggregation (which scans
+#                     active claims) to learn to skip amendment rows.
+
+version: 2
 axes:
   error_code:        # transient refusal at a boundary
     - DATA_STALE
@@ -47,3 +69,25 @@ axes:
   severity:          # 5th axis — Q78 requires it declared, not inherited
     - blocking
     - warn
+
+  epistemic_state:   # Q85 / Q129 — standing of a proposition; all three EVALUATED
+    - supported
+    - indeterminate
+    - refuted
+  mechanism_outcome: # Q129 / Q135 — was the mechanism examined? orthogonal to the above
+    - EXECUTED
+    - VACUOUS
+  amendment_state:   # Q130 — force-status of a constitution amendment (not a claim)
+    - pending_amendment
+    - in_force
+  # T116 (Q84). The verified/analogical split had NO complement to be measured
+  # against: "all support is analogical" cannot be decided when the class of a
+  # source is not recorded. Measured absent from BOTH taxonomy.yaml and
+  # value-checks.yaml before this.
+  source_classes:
+    - experiment_readout      # a trial readout or experimental result
+    - regulatory_decision     # an approval, rejection or label change
+    - audited_filing          # a filed, audited financial statement
+    - similarity_retrieval    # "this company is like that company"
+    - kol_commentary          # an expert's view, unfalsifiable as stated
+    - analogy                 # structural resemblance, no shared measurement

@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -51,20 +52,321 @@ def _write(path: Path, text: str) -> None:
 
 # --- specify (Q23/Q27/Q30/Q32/Q83) -------------------------------------------
 
+# ── instrument detection (Q140 / T159) ──────────────────────────────────────
+#
+# ONE predicate, reading the filesystem, adding no state. Q140's finding is that
+# the old `constitution_ratified()` returned False when `constitution.md` was
+# absent, and `specify()` read that as "no constitutional governance" — a FALSE
+# BINARY. The user's clarification states the rule:
+#
+#     with `constitution.md`     → `agentii.md` is a CHRONICLE (memory index)
+#     without it                 → `agentii.md` IS THE CONSTITUTION
+#
+# The role follows from `constitution.md`'s EXISTENCE, not from reading
+# `agentii.md`'s content — which is what makes this decidable in one filesystem
+# check rather than a judgment about prose.
+#
+# SCOPE: workspace-level, evaluated once per workspace load. This is NOT the same
+# predicate as mode detection (Q143): mode is RUN-scoped (is this run attached to
+# a thesis?). The two are orthogonal — a constitution-bearing workspace running a
+# standalone skill is constitution-governed AND in single-skill mode — and Q143
+# corrected 046's own earlier claim that they were one predicate. T164 implements
+# the second one separately.
+
+INSTRUMENT_CONSTITUTION = "constitution"
+INSTRUMENT_AGENTII_MD = "agentii-md"
+INSTRUMENT_NONE = "none"
+
+
+def detect_instrument(workspace: Path) -> tuple[str, str]:
+    """(instrument kind, why). Reads the filesystem only."""
+    if (workspace / "constitution.md").is_file():
+        return (INSTRUMENT_CONSTITUTION,
+                "`constitution.md` present — it governs; `agentii.md`, if present, "
+                "is a chronicle and Q81's rotation applies to it")
+    if (workspace / "agentii.md").is_file():
+        return (INSTRUMENT_AGENTII_MD,
+                "no `constitution.md`, but `agentii.md` is present — it IS the "
+                "constitution here, so Q81 rules 1-2 (rotation) do NOT apply to it")
+    return (INSTRUMENT_NONE,
+            "neither `constitution.md` nor `agentii.md` — this workspace has no "
+            "constitutional instrument")
+
+
+# ── mode detection (Q141/Q143 / T164) ───────────────────────────────────────
+#
+# THE SECOND PREDICATE, deliberately NOT merged with the first. Q143 corrected
+# 046's own text, which had declared these "the same predicate, implemented once":
+#
+#     instrument detection   WORKSPACE-scoped  — is there a constitution.md?
+#                                              evaluated once per workspace LOAD
+#     mode detection         RUN-scoped        — is THIS RUN attached to a thesis?
+#                                              evaluated once per RUN
+#
+# They are ORTHOGONAL, and Q143's argument is that all four quadrants are real.
+# A constitution-bearing workspace running a standalone skill is
+# constitution-governed AND in single-skill mode — which is exactly the case a
+# merged predicate gets wrong, because it would report `thesis` for a run that
+# has no thesis.
+#
+# The error was 046's, and its shape is this spec's recurring one: Q141 asserted a
+# SHARED implementation without stating the premise that made sharing valid
+# (shared scope). The premise did not hold. It was the ninth instance, and the
+# second written by the author of the rule it violated.
+
+MODE_THESIS = "thesis"
+MODE_SINGLE_SKILL = "single-skill"
+
+
+def detect_mode(thesis_dir: Path | None, cwd: Path | None = None) -> tuple[str, str]:
+    """(mode, why). RUN-scoped: reads what THIS invocation is attached to.
+
+    A run is in thesis mode when it has a thesis directory. Nothing else makes it
+    so — in particular, the presence of a constitution does NOT, which is the
+    mistake Q143 corrects. `thesis_dir=None` is the standalone case: a user
+    invoking one skill against agentii.ai data, which Q141 says must keep its
+    existing snapshots/ + sessions/ + agentii.md behaviour."""
+    if thesis_dir is not None:
+        thesis = Path(thesis_dir)
+        if thesis.is_dir():
+            return (MODE_THESIS, f"run is attached to {thesis.name}")
+        return (MODE_SINGLE_SKILL,
+                f"--thesis-dir {thesis} was given but is not a directory — treated "
+                f"as a standalone run rather than silently writing into nothing")
+    return (MODE_SINGLE_SKILL,
+            "no thesis attached to this run: a single skill used directly against "
+            "agentii.ai data (Q141) — snapshots/ + sessions/ + agentii.md keep "
+            "their original behaviour")
+
+
+def instrument_and_mode(workspace: Path,
+                        thesis_dir: Path | None = None) -> dict:
+    """Both predicates, reported separately BECAUSE they are orthogonal.
+
+    Returned as one dict for convenience, never as one value: a function that
+    returned a single verdict would be the merge Q143 forbids."""
+    instrument, i_why = detect_instrument(workspace)
+    mode, m_why = detect_mode(thesis_dir)
+    return {"instrument": instrument, "instrument_why": i_why,
+            "mode": mode, "mode_why": m_why}
+
+
+# ── scaffold / ratification gates (T108, Q108/Q112/Q120/Q123) ──────────────
+#
+# FOUR gates, each from a defect the live workspaces produced. They run together
+# because they answer one question — "has a human actually authored this?" — and
+# splitting them would let three pass while the fourth is the one that matters.
+
+# Q108: ANY bracketed placeholder, CASE-INSENSITIVELY. The original checked only
+# `[WORKSPACE_NAME]`, so `[sector focus]` or `[Tier 3 names]` survived
+# ratification — and a lowercase placeholder is exactly what a human types when
+# filling one in partially. Matches the template's own ALL_CAPS form and any
+# lowercase variant of it.
+_PLACEHOLDER_RX = re.compile(r"\[[A-Za-z][A-Za-z0-9_ -]{2,40}\]")
+
+# Q123: a machine-read field may only name an identifier that EXISTS. F2's audit
+# found the Sync Impact Report calling a principle by one name while the body
+# called it another — "drift hazard in a machine-read field".
+_PRINCIPLE_ID_RX = re.compile(r"\bP(\d+)(?:\.(\d+))?\b")
+
+
+def scaffold_problems(workspace: Path) -> list[tuple[str, str]]:
+    """Returns [(code, detail)] — empty means the scaffold is authored.
+
+    Codes are the existing error vocabulary (Q6-A): `UNFRAMED_REFERENCE` for a
+    named-but-nonexistent principle, `SCHEMA_MISMATCH` for prose/YAML
+    disagreement. No new codes — Q76 makes adding enum values a last resort."""
+    import yaml as _yaml
+
+    problems: list[tuple[str, str]] = []
+    kind, _why = detect_instrument(workspace)
+    if kind == INSTRUMENT_NONE:
+        return [("DEP_MISSING", "no instrument to ratify")]
+
+    prose_file = workspace / ("constitution.md" if kind == INSTRUMENT_CONSTITUTION
+                              else "agentii.md")
+    yaml_file = workspace / "constitution.yaml"
+    prose = prose_file.read_text(encoding="utf-8") if prose_file.is_file() else ""
+
+    # ── Q108: placeholders, case-insensitively ──────────────────────────────
+    #
+    # EXCLUDING inline code spans. The scaffold's own instruction line reads
+    # *"Ratify by replacing every `[ALL_CAPS]`"* — inside backticks, because it
+    # is ABOUT the syntax rather than USING it. Flagging it would make a fully
+    # authored constitution permanently unratifiable, and a gate that can never
+    # pass is a gate that gets disabled. Text inside `...` is documentation.
+    #
+    # AND EXCLUDING HTML COMMENTS, for the same reason. The scaffold opens with
+    # `<!-- Sync Impact Report … [OLD_VERSION] → [NEW_VERSION] … -->` — a template
+    # for a FUTURE amendment, spelled out as documentation. A fresh constitution
+    # has no amendment to report, so those placeholders are not unfilled
+    # obligations; they are an example. Found by this gate refusing to ratify a
+    # scaffold it had just produced, which is the gate doing its job on the
+    # template rather than on the author.
+    prose_scannable = re.sub(r"<!--.*?-->", "", prose, flags=re.S)
+    prose_scannable = re.sub(r"`[^`\n]*`", "", prose_scannable)
+    for m in _PLACEHOLDER_RX.finditer(prose_scannable):
+        problems.append(("ASSUMPTION_UNPINNED",
+                         f"{prose_file.name}: unreplaced placeholder {m.group(0)!r} "
+                         f"— ratification requires every one filled in (Q108)"))
+
+    # ── Q112: value-checks.yaml must not be the untouched template ──────────
+    vc = workspace / "value-checks.yaml"
+    if vc.is_file():
+        text = vc.read_text(encoding="utf-8")
+        if _PLACEHOLDER_RX.search(text):
+            problems.append(("SCHEMA_MISMATCH",
+                             "value-checks.yaml still carries template placeholders "
+                             "— it holds template rules, not this workspace's (Q112)"))
+        else:
+            try:
+                doc = _yaml.safe_load(text) or {}
+            except _yaml.YAMLError as e:
+                problems.append(("SCHEMA_MISMATCH", f"value-checks.yaml: {e}"))
+                doc = {}
+            if not doc:
+                problems.append(("SCHEMA_MISMATCH",
+                                 "value-checks.yaml parses to nothing (Q112)"))
+
+    # ── Q123: every named principle must EXIST ──────────────────────────────
+    if yaml_file.is_file():
+        try:
+            ydoc = _yaml.safe_load(yaml_file.read_text(encoding="utf-8")) or {}
+        except _yaml.YAMLError as e:
+            problems.append(("SCHEMA_MISMATCH", f"constitution.yaml: {e}"))
+            ydoc = {}
+        defined = set()
+        for key in ("principles", "sections", "facets"):
+            for entry in (ydoc.get(key) or []):
+                if isinstance(entry, dict):
+                    for k in ("id", "name"):
+                        if entry.get(k):
+                            defined.add(str(entry[k]).strip())
+                elif isinstance(entry, str):
+                    defined.add(entry.strip())
+        if defined:
+            # ids as they appear in the register, e.g. "P1", "P10"
+            ids = {m.group(0) for d in defined for m in _PRINCIPLE_ID_RX.finditer(d)}
+            for m in _PRINCIPLE_ID_RX.finditer(prose):
+                if m.group(0) not in ids:
+                    problems.append(("UNFRAMED_REFERENCE",
+                                     f"{prose_file.name} names {m.group(0)} but the "
+                                     f"register defines {sorted(ids) or 'nothing'} — "
+                                     f"a machine-read field may only name an "
+                                     f"identifier that exists (Q123)"))
+
+    # ── Q120: prose and YAML must not disagree on a value ───────────────────
+    if yaml_file.is_file():
+        try:
+            ydoc = _yaml.safe_load(yaml_file.read_text(encoding="utf-8")) or {}
+        except _yaml.YAMLError:
+            ydoc = {}
+        for key, val in (ydoc.get("constraints") or {}).items() if isinstance(
+                ydoc.get("constraints"), dict) else []:
+            num = re.search(r"[\d.]+", str(val))
+            if not num:
+                continue
+            # prose stating a different number for the same constraint name
+            pat = re.compile(re.escape(str(key)) + r"[^\n]{0,60}?([\d.]+)\s*%")
+            for pm in pat.finditer(prose):
+                if pm.group(1) != num.group(0).rstrip("0").rstrip(".") and \
+                   float(pm.group(1)) != float(num.group(0)):
+                    problems.append(("SCHEMA_MISMATCH",
+                                     f"{key}: prose says {pm.group(1)}%, "
+                                     f"constitution.yaml says {num.group(0)} — prose and "
+                                     f"YAML must agree on every value (Q120)"))
+    return problems
+
+
 def constitution_ratified(workspace: Path) -> bool:
-    """Q83: a constitution whose placeholders remain unreplaced is unratified —
-    thesis creation is forbidden until the human fills the real values."""
-    constitution = workspace / "constitution.md"
-    if not constitution.is_file():
+    """Q83, made instrument-aware (T161).
+
+    Ratification is the same test either way — an unreplaced `[WORKSPACE_NAME]`
+    placeholder means the human has not filled in the real values — but which
+    FILE carries it depends on which instrument governs."""
+    kind, _ = detect_instrument(workspace)
+    if kind == INSTRUMENT_NONE:
         return False
-    text = constitution.read_text(encoding="utf-8")
-    return "[WORKSPACE_NAME]" not in text
+    path = workspace / ("constitution.md" if kind == INSTRUMENT_CONSTITUTION
+                        else "agentii.md")
+    text = path.read_text(encoding="utf-8")
+    if "[WORKSPACE_NAME]" in text:
+        return False
+    # T108: ratified now means AUTHORED, not merely "the one placeholder we
+    # happened to check is gone". The original checked a single ALL-CAPS token,
+    # so `[sector focus]` survived ratification — and a lowercase placeholder is
+    # exactly what a human types when they fill one in partially. A principle
+    # named in the prose but absent from the register is the same class: present,
+    # readable, and not real.
+    return not scaffold_problems(workspace)
+
+
+# ── drift-trigger coverage (T108b, Q67) ─────────────────────────────────────
+#
+# Q67 pairs each declaration with a detector. Measured before this existed:
+# SPCX declared 3 triggers, physical-ai declared 2, and NEITHER covered the
+# yield-curve or credit-spread pairs — so two workspaces had two different,
+# unexamined subsets and nothing could notice the gap.
+#
+# This reports rather than refuses: a workspace may legitimately declare a
+# different regime needing different triggers (that is why the set is
+# workspace-declared, not closed). What it may NOT do is leave a gap silently.
+
+CANONICAL_TRIGGER_COVERS = {
+    "regime": "ISM Manufacturing PMI",
+    "net_long": "US 10Y-2Y Treasury curve",
+    "sector_bias overweight": "US HY credit spread (OAS)",
+}
+
+
+def drift_trigger_coverage(workspace: Path) -> dict:
+    """Which canonical Q67 pairs this workspace declares, and what is missing."""
+    import yaml as _yaml
+
+    out = {"declared": [], "covers": set(), "missing": [], "no_basis": [], "no_covers": []}
+    for name in ("constitution.yaml", "constitution.md"):
+        f = workspace / name
+        if not f.is_file() or f.suffix != ".yaml":
+            continue
+        try:
+            doc = _yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        except (_yaml.YAMLError, OSError):
+            continue
+        for tr in (doc.get("regime") or {}).get("drift_triggers") or []:
+            if not isinstance(tr, dict):
+                continue
+            out["declared"].append(tr.get("indicator"))
+            if tr.get("covers"):
+                out["covers"].add(str(tr["covers"]))
+            else:
+                out["no_covers"].append(tr.get("indicator"))
+            if not str(tr.get("basis") or "").strip():
+                out["no_basis"].append(tr.get("indicator"))
+    out["covers"] = sorted(out["covers"])
+    out["missing"] = [c for c in CANONICAL_TRIGGER_COVERS if c not in out["covers"]]
+    return out
 
 
 def specify(workspace: Path, slug: str) -> Path:
+    # T161: narrowed to the NEITHER-instrument case, and the refusal names which
+    # instrument is missing. Q83's "no `constitution.md` ⇒ no constitutional
+    # governance" was a false binary — it refused a workspace whose `agentii.md`
+    # IS its constitution, i.e. exactly the single-skill projects 046 says to keep
+    # supporting (52 skill files reference `agentii.md`).
+    kind, why = detect_instrument(workspace)
+    if kind == INSTRUMENT_NONE:
+        raise SystemExit(
+            "SPECIFY REFUSED: no constitutional instrument (Q83/Q140).\n"
+            f"  {why}\n"
+            "  A workspace needs EITHER `constitution.md` (thesis mode) OR "
+            "`agentii.md` (which IS the constitution where there is none).\n"
+            "  Run `agentii.constitution` to scaffold, or add `agentii.md`.")
     if not constitution_ratified(workspace):
-        raise SystemExit("SPECIFY REFUSED: constitution unratified (Q83 A+) — "
-                         "run `agentii.constitution` and ratify L1 first")
+        name = ("constitution.md" if kind == INSTRUMENT_CONSTITUTION else "agentii.md")
+        raise SystemExit(
+            f"SPECIFY REFUSED: `{name}` is UNRATIFIED (Q83 A+) — it still contains "
+            f"`[WORKSPACE_NAME]`, so the human has not filled in the real values "
+            f"(detected instrument: {kind}). Run `agentii.constitution`.")
     thesis = alloc_thesis_id.allocate(workspace / "theses", slug)
     _write(thesis / "spec.md", "# Research Thesis: " + slug + "\n\n"
            + "## 1. Research Question\n[TBD]\n\n## 1b. Pillars\n"

@@ -8,7 +8,27 @@ reference this file with a one-line `## Snapshot` pointer.
 | Tier | Path | Auto-load? | Purpose |
 |------|------|-----------|---------|
 | Raw analysis | `{ticker}/{YYYY-MM-DD_HHMM}_{skill}_{affix}.md` | No | Full per-run deliverable |
-| Snapshot (thesis) | `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md` | Yes | Point-in-time investment thesis, restored on session start |
+| Snapshot (thesis) | `snapshots/{ticker}/{YYYY-MM-DD}_{semantic-slug}.md` | Yes | Point-in-time investment thesis, restored on session start |
+
+> **⚠️ THIS FILE IS NOT SUPERSEDED BY SPEC 046, AND ITS KEY WAS RIGHT ALL ALONG (T171/T166, 2026-09-18).**
+>
+> 046 briefly re-keyed `snapshots/` to `{nnn}-{slug}`. **Q144 revoked that**, and this is the record of why:
+> `{nnn}-{slug}` exists **only in thesis mode** — in single-skill mode there is no thesis ID, so the key was
+> **undefined** in the very mode the contract also serves. The published key `{ticker}/` is valid in both
+> modes, because a ticker always exists. **Nothing in this file needed to change**; the narrowing was 046's
+> error, not this contract's omission.
+>
+> **Filename** (Q144): `{YYYY-MM-DD}_{semantic-slug}.md`. The date orders; the slug says what the snapshot is
+> about. The previous fixed `_thesis` is a degenerate slug, not a different convention — a snapshot that is not
+> about the whole thesis (`_guidance-cut`, `_margin-bridge`) is the case the slug exists for.
+>
+> **Thesis attribution goes in FRONTMATTER, never in the path.** The one observed instance in the live
+> evidence base put it in the path (`snapshots/001-physical-ai-technology-baseline/2026-09-10_thesis.md`,
+> `session-history-these001-first-run-0910-1858.md` L157) — which works in thesis mode and has no meaning
+> outside it. `ticker` in the path + thesis in frontmatter is the form that holds in both.
+>
+> **Retained, not deprecated**: `snapshots/` is part of the early instrument set (`agentii.md` + `style.md` +
+> `snapshots/` + `sessions/`) that Q141/Q144 keep. "Replaced by `artifacts/`" happens **only in thesis mode**.
 
 After writing the raw deliverable, synthesize/update the ticker's thesis snapshot
 at `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md`: a concise (≤400 word)

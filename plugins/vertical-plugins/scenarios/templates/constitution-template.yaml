@@ -36,6 +36,43 @@ budgets:
 # go to converge + the IC agenda — detection is deterministic, correction is human.
 regime:
   declared: [EXPANSION_OR_CONTRACTION_OR_STAGFLATION_OR_RECOVERY]
+  # ── drift triggers (T108b, Q67/Q21) ──────────────────────────────────────
+  #
+  # THE SET IS WORKSPACE-DECLARED, with these four as the scaffold default.
+  # Q67 names the canonical declaration→detector pairs; the scaffold shipped only
+  # ONE of them and no `basis`, and the two live workspaces then invented two
+  # different subsets — SPCX declared 3 (adding an ISM prices-paid trigger) and
+  # physical-ai declared 2, and NEITHER covered the yield-curve or credit-spread
+  # pairs. That is the same "closed set vs per-use judgement" problem Q139 solved
+  # for disclaimers, and the cause is traceable: the scaffold under-specified, so
+  # every workspace improvised.
+  #
+  # Why workspace-declared rather than closed: the canonical pairs are
+  # regime-specific. A workspace whose constitution declares a different regime
+  # needs different triggers, and a closed set would force irrelevant ones — which
+  # is how a gate becomes noise. But a fully open set produced two workspaces with
+  # no coverage relationship to Q67 and no way to notice a gap.
+  #
+  # `basis` IS REQUIRED, and it is the field that makes this a decision rather
+  # than a default: it records the reading at ratification and why the threshold
+  # sits there. SPCX wrote it ("Aug 2026 print 54.6 — 8th consecutive month…");
+  # physical-ai omitted it, so its thresholds are unargued. A trigger without a
+  # basis cannot be re-examined later, because nothing says what it was calibrated
+  # against.
+  #
+  # `covers` names WHICH declaration the pair watches (Q67's pairing). Without it
+  # a trigger is a free-floating threshold, and coverage cannot be computed — so a
+  # missing pair is invisible, which is exactly what happened.
   drift_triggers:
     - indicator: ISM Manufacturing PMI
+      covers: regime
       condition: ISM < 50 for 2 consecutive months
+      basis: "[FILL: the reading at ratification and why the threshold sits there]"
+    - indicator: US 10Y-2Y Treasury curve
+      covers: net_long
+      condition: 10Y-2Y < 0 for 10 consecutive trading days
+      basis: "[FILL: the spread at ratification]"
+    - indicator: US HY credit spread (OAS)
+      covers: sector_bias overweight
+      condition: HY OAS > 500bp for 10 consecutive trading days
+      basis: "[FILL: the OAS at ratification]" 

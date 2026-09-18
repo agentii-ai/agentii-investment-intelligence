@@ -280,6 +280,113 @@ def check_sector_native(sector_path: str, matrix_skills: list[str]) -> list[str]
     return []
 
 
+# ── the hypothesis gates (S8; Q84/Q90/Q133) ─────────────────────────────────
+#
+# Four deterministic checks that together make "this is a hypothesis, not a
+# finding" mechanically decidable. Q84's whole argument is that optional
+# verification in finance equals no verification — under token pressure and 8
+# parallel sub-agents an agent will skip it — so the bar has to be structural.
+
+# The verified-class source classes. Q116: this enum was ABSENT from both
+# `taxonomy.yaml` and `value-checks.yaml`, which is why "all support is
+# analogical" had no complement to be measured against.
+VERIFIED_SOURCE_CLASSES = ("experiment_readout", "regulatory_decision",
+                           "audited_filing")
+ANALOGICAL_SOURCE_CLASSES = ("similarity_retrieval", "kol_commentary", "analogy")
+
+
+def check_evidence_class(fm: dict) -> list[str]:
+    """T115 (Q84): if ALL support is analogy / similarity-retrieval / KOL, refuse
+    promotion. The hypothesis is KEPT and marked `support: analogical` — the gate
+    refuses promotion, not the claim.
+
+    The measured basis: the failure Q84 was written against is a claim reaching a
+    trade template on the strength of "this company is like that company". That
+    is not zero evidence; it is evidence of the wrong KIND, and the distinction
+    only exists if the source class is recorded."""
+    problems: list[str] = []
+    claims = fm.get("entity_claims")
+    if not isinstance(claims, list):
+        return problems
+    for c in claims:
+        if not isinstance(c, dict):
+            continue
+        classes = c.get("source_classes") or c.get("support")
+        if isinstance(classes, str):
+            classes = [classes]
+        if not classes:
+            continue          # absence is T121's subject, not this gate's
+        norm = {str(x).strip().lower() for x in classes}
+        if not norm & set(VERIFIED_SOURCE_CLASSES):
+            problems.append(
+                f"claim {c.get('id') or c.get('metric')!r}: every support class is "
+                f"analogical {sorted(norm)} — promotion refused (Q84). Keep the "
+                f"claim and mark it `support: analogical`.")
+    return problems
+
+
+def check_falsifier_completeness(fm: dict) -> list[str]:
+    """T121 (Q133): a claim with NO mechanical falsifier is refused AS A HYPOTHESIS.
+
+    Q133's distinction is the point: an unfalsifiable claim is not a bad
+    hypothesis, it is **not a hypothesis**. It falls back to a narrative note —
+    recorded, not promoted, and not silently deleted."""
+    problems: list[str] = []
+    claims = fm.get("entity_claims")
+    if not isinstance(claims, list):
+        return problems
+    for c in claims:
+        if not isinstance(c, dict):
+            continue
+        f = c.get("falsifier") or c.get("wrong_if")
+        if isinstance(f, dict):
+            ok = all(f.get(k) for k in ("metric", "threshold", "source"))
+        else:
+            # a string falsifier must at least name a metric, a threshold and a
+            # source — the same triple Q42 requires of `wrong_if`
+            ok = bool(f) and f.count("=") >= 2
+        if not ok:
+            problems.append(
+                f"claim {c.get('id') or c.get('metric')!r} carries no MECHANICAL "
+                f"falsifier (needs metric + threshold + source). Q133: this is not "
+                f"a hypothesis — it falls back to a narrative note rather than "
+                f"being promoted.")
+    return problems
+
+
+def check_regulatory_promotion(fm: dict, rows: list[dict] | None = None) -> list[str]:
+    """T118 (Q90): promote on PRESENCE + a non-null `decision`, never on a value
+    match.
+
+    The measured failure: a value match would promote a claim because some row
+    happened to carry the same number, without that row being about the claim's
+    subject at all. So three conditions, all necessary: a row exists AND
+    `decision IS NOT NULL` AND the application_number matches the claim's
+    subject. The third is what stops a coincidental match."""
+    problems: list[str] = []
+    if not rows:
+        return problems
+    claims = fm.get("entity_claims")
+    if not isinstance(claims, list):
+        return problems
+    for c in claims:
+        if not isinstance(c, dict):
+            continue
+        app = c.get("application_number")
+        if not app:
+            continue
+        matched = [r for r in rows
+                   if str(r.get("application_number")) == str(app)
+                   and r.get("decision") is not None]
+        if not matched:
+            problems.append(
+                f"claim {c.get('id') or c.get('metric')!r} cites application "
+                f"{app!r} but no row carries it with a non-null `decision` — "
+                f"promotion requires presence AND a decision, never a value match "
+                f"(Q90)")
+    return problems
+
+
 def check_artifact_full(path: Path, *, constitution_path: Path | None = None,
                         value_checks_path: Path | None = None,
                         with_notices: bool = False):

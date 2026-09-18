@@ -130,7 +130,15 @@ def _install_fake_yfinance(monkeypatch, *, n_hist_rows: int = 2, hist: pd.DataFr
 def test_adapter_extracts_supplementary_fields_from_fast_info(monkeypatch, tmp_path):
     """Every field the contract marks delivered must carry a real value."""
     _install_fake_yfinance(monkeypatch)
-    providers = market_data._real_providers()
+    # UPDATED 2026-09-18 (T178/T179). These tests exercise the YFINANCE adapter
+    # specifically, and used to reach it by calling `_real_providers()` and
+    # relying on it returning nothing else — i.e. they depended on D5 ("the
+    # failover chain has exactly one real source"). Wiring the chain to the
+    # measured adapters put nasdaq at priority 30 and yfinance at 90, so the real
+    # HTTP adapter ran first and the injected fake was never reached. Requesting
+    # the adapter by name is both correct and order-independent.
+    providers = {"yfinance": market_data._yf,
+                 "yfinance_history": market_data._yf_history}
     assert providers, "expected at least one real provider to be constructed"
 
     env = market_data.get_quote("LLY", providers=providers, cache_root=tmp_path)
@@ -150,7 +158,15 @@ def test_adapter_extracts_the_fields_that_do_work_today(monkeypatch, tmp_path):
     `market_cap` (snake_case property) and `open` (no underscore, so a real
     property) are the two that work today. They must keep working."""
     _install_fake_yfinance(monkeypatch)
-    providers = market_data._real_providers()
+    # UPDATED 2026-09-18 (T178/T179). These tests exercise the YFINANCE adapter
+    # specifically, and used to reach it by calling `_real_providers()` and
+    # relying on it returning nothing else — i.e. they depended on D5 ("the
+    # failover chain has exactly one real source"). Wiring the chain to the
+    # measured adapters put nasdaq at priority 30 and yfinance at 90, so the real
+    # HTTP adapter ran first and the injected fake was never reached. Requesting
+    # the adapter by name is both correct and order-independent.
+    providers = {"yfinance": market_data._yf,
+                 "yfinance_history": market_data._yf_history}
     env = market_data.get_quote("LLY", providers=providers, cache_root=tmp_path)
     d = env["data"]
     assert d["market_cap"] == FAST_INFO_VALUES["market_cap"]
@@ -163,7 +179,15 @@ def test_real_adapter_emits_every_documented_key(monkeypatch, tmp_path):
     would need to reproduce for injected providers — see D-contract in
     test_market_data_gates.py."""
     _install_fake_yfinance(monkeypatch)
-    providers = market_data._real_providers()
+    # UPDATED 2026-09-18 (T178/T179). These tests exercise the YFINANCE adapter
+    # specifically, and used to reach it by calling `_real_providers()` and
+    # relying on it returning nothing else — i.e. they depended on D5 ("the
+    # failover chain has exactly one real source"). Wiring the chain to the
+    # measured adapters put nasdaq at priority 30 and yfinance at 90, so the real
+    # HTTP adapter ran first and the injected fake was never reached. Requesting
+    # the adapter by name is both correct and order-independent.
+    providers = {"yfinance": market_data._yf,
+                 "yfinance_history": market_data._yf_history}
     env = market_data.get_quote("LLY", providers=providers, cache_root=tmp_path)
     d = env["data"]
     for key in ("symbol", "price", "market_cap", "day_high", "day_low", "open",
@@ -179,7 +203,15 @@ def test_pinnable_price_comes_from_history_not_fast_info(monkeypatch, tmp_path):
     value must be history()'s daily close, so this is a binding constraint on any
     fix for D2 — do not 'fix' it by adopting fast_info.last_price."""
     _install_fake_yfinance(monkeypatch)
-    providers = market_data._real_providers()
+    # UPDATED 2026-09-18 (T178/T179). These tests exercise the YFINANCE adapter
+    # specifically, and used to reach it by calling `_real_providers()` and
+    # relying on it returning nothing else — i.e. they depended on D5 ("the
+    # failover chain has exactly one real source"). Wiring the chain to the
+    # measured adapters put nasdaq at priority 30 and yfinance at 90, so the real
+    # HTTP adapter ran first and the injected fake was never reached. Requesting
+    # the adapter by name is both correct and order-independent.
+    providers = {"yfinance": market_data._yf,
+                 "yfinance_history": market_data._yf_history}
     env = market_data.get_quote("LLY", providers=providers, cache_root=tmp_path)
     d = env["data"]
     assert d["price"] == pytest.approx(LAST_CLOSE)
@@ -198,7 +230,15 @@ def test_pinnable_price_comes_from_history_not_fast_info(monkeypatch, tmp_path):
 def test_price_history_returns_bars_with_real_providers(monkeypatch, tmp_path):
     """The headline defect: with the real provider dict, get_price_history is dead."""
     _install_fake_yfinance(monkeypatch)
-    providers = market_data._real_providers()
+    # UPDATED 2026-09-18 (T178/T179). These tests exercise the YFINANCE adapter
+    # specifically, and used to reach it by calling `_real_providers()` and
+    # relying on it returning nothing else — i.e. they depended on D5 ("the
+    # failover chain has exactly one real source"). Wiring the chain to the
+    # measured adapters put nasdaq at priority 30 and yfinance at 90, so the real
+    # HTTP adapter ran first and the injected fake was never reached. Requesting
+    # the adapter by name is both correct and order-independent.
+    providers = {"yfinance": market_data._yf,
+                 "yfinance_history": market_data._yf_history}
 
     env = market_data.get_price_history("LLY", period="1y", interval="1d",
                                         providers=providers, cache_root=tmp_path)

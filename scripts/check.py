@@ -68,6 +68,46 @@ errors: list[str] = []
 notices: list[str] = []
 checked = 0
 
+# ── T128: the measured surface of every check ───────────────────────────────
+#
+# `checked` is GLOBAL. A check that examines nothing adds nothing to it and
+# reports no errors — which reads exactly like a clean result. That is Q105's
+# defect (`VACUOUS`) at the level of the gate runner itself, and this file has
+# three of its own instances:
+#
+#   * Check 32 scans `plugins/vertical-plugins/scenarios/**/*` and uses the
+#     LITERAL `"/agentii." in text` form that spec 046's corrected Q34 rule 3
+#     calls unimplementable. It reported 0 findings over 48 files — because the
+#     four files containing `agentii.ai` spell it `mcp.agentii.ai` /
+#     `www.agentii.ai`, which have no preceding `/`. **It does not fire by
+#     luck.** The first `https://agentii.ai/v/...` citation added under
+#     `scenarios/` fires it falsely, and the same rule is implemented a second
+#     time in scripts/check_no_baked_harness_strings.py (URL-aware, verb-aware).
+#     Two implementations of one check is what Q12 rule 3 forbids.
+#   * Check 14 is RETIRED and Check 15-17 are RESERVED — three numbers that
+#     occupy the namespace and examine nothing.
+#
+# So each section declares the size of what it examined.
+#
+# WHAT A ZERO MEANS HERE, stated precisely because the first version of this
+# comment got it wrong: `checked` is incremented only by sections that count
+# their files. A section reporting 0 therefore means **it did not report its
+# surface** — NOT necessarily that it examined nothing. Verified: section 4
+# ("reference resolution") reads every managed-agent yml and counts none of
+# them, so it reports 0 while examining plenty. The two states are
+# indistinguishable from `checked` alone, and the honest label is the one this
+# prints: NO SURFACE REPORTED.
+#
+# Which is still exactly T128's requirement — "report the size and shape of the
+# surface examined" — and 13 of 22 sections do not.
+SURFACES: list[tuple[str, int, str]] = []
+
+
+def _mark(name: str, note: str = "") -> None:
+    """Record the surface examined so far. Called at each section header; the
+    delta from the previous mark is that section's examined count."""
+    SURFACES.append((name, checked, note))
+
 
 def err(msg: str) -> None:
     errors.append(msg)
@@ -87,6 +127,8 @@ def rel(p: Path) -> str:
 
 
 # --- 1. YAML parse ----------------------------------------------------------
+
+_mark('1. YAML parse')
 for yml in sorted(MANAGED.rglob("*.yaml")):
     checked += 1
     try:
@@ -104,6 +146,8 @@ for yml in sorted(CONTRACTS.rglob("*.yaml")):
         err(f"YAML parse: {rel(yml)}: {e}")
 
 # --- 2. JSON parse ----------------------------------------------------------
+
+_mark('2. JSON parse')
 json_globs = [
     ".claude-plugin/marketplace.json",
     "plugins/**/.claude-plugin/plugin.json",
@@ -123,6 +167,8 @@ for pat in json_globs:
             err(f"JSON parse: {rel(jf)}: {e}")
 
 # --- 3. agent.md frontmatter -----------------------------------------------
+
+_mark('3. agent.md frontmatter')
 for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
     checked += 1
     text = md.read_text()
@@ -140,6 +186,8 @@ for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
 
 
 # --- 4. reference resolution -----------------------------------------------
+
+_mark('4. reference resolution')
 def check_refs(yml: Path) -> None:
     try:
         data = yaml.safe_load(yml.read_text()) or {}
@@ -171,6 +219,8 @@ for yml in sorted(MANAGED.rglob("*.yaml")):
     check_refs(yml)
 
 # --- 5. agent-plugin bundled skills match vertical source ------------------
+
+_mark('5. agent-plugin bundled skills match vertical source')
 import filecmp
 
 # Keyed by skill name under the agentii namespace (skills/agentii/<name>/).
@@ -187,6 +237,8 @@ for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/agentii/*")):
         err(f"bundled-skill: {rel(bundled)}: drifted from {rel(src)} (run sync-agent-skills.py)")
 
 # --- 6. agent.md skill references -------------------------------------------
+
+_mark('6. agent.md skill references')
 for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
     slug = md.parents[1].name
     sk_dir = PLUGINS / "agent-plugins" / slug / "skills" / "agentii"
@@ -199,6 +251,8 @@ for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
             )
 
 # --- 7. marketplace source paths resolve ------------------------------------
+
+_mark('7. marketplace source paths resolve')
 mp = ROOT / ".claude-plugin" / "marketplace.json"
 if mp.is_file():
     for p in json.loads(mp.read_text()).get("plugins", []):
@@ -207,6 +261,8 @@ if mp.is_file():
             err(f"marketplace: {p['name']} source -> {p['source']} (no plugin.json)")
 
 # --- 8. required files per managed-agent-cookbook ---------------------------
+
+_mark('8. required files per managed-agent-cookbook')
 # Cookbooks are populated in Phase 7 (US7). At Phase 1, a cookbook directory
 # may exist with only `contracts/` and `subagents/` subdirs and no agent.yaml.
 # Treat the cookbook as "populated" only once agent.yaml exists at the root.
@@ -220,6 +276,8 @@ for d in sorted(MANAGED.iterdir()):
             err(f"missing: {rel(d)}/{req}")
 
 # --- 9-12. SKILL.md structural checks ---------------------------------------
+
+_mark('9-12. SKILL.md structural checks')
 # Skills live under the unified `skills/agentii/<name>/` namespace (Phase 23,
 # FR-014c/e). Globs MUST target that depth — `skills/*/SKILL.md` matches the
 # namespace dir, not the skills, and silently validates zero files.
@@ -308,6 +366,8 @@ for sk in SKILL_FILES:
             )
 
 # --- Check 13: vertical .mcp.json agentii entry == mcp-canonical.json --------
+
+_mark('Check 13: vertical .mcp.json agentii entry == mcp-canonical.json')
 MCP_CANONICAL = CONTRACTS / "mcp-canonical.json"
 if MCP_CANONICAL.exists():
     try:
@@ -348,6 +408,8 @@ else:
 #     Phase 3 essentials.yaml presence.
 
 # --- Check 18: SKILL.md Preflight has agent call tracing instruction (FR-106g(c), Phase 22) ---
+
+_mark('Check 18: SKILL.md Preflight has agent call tracing instruction (FR-106g(c), Phase 22)')
 for sk in SKILL_FILES:
     checked += 1
     text = sk.read_text()
@@ -360,6 +422,8 @@ for sk in SKILL_FILES:
         err(f"agent tracing: {rel(sk)}: ## Preflight section not found")
 
 # --- Check 19: X-Agentii-Trace contract files exist + mcp-canonical.json _trace_note (FR-106g(c), Phase 22) ---
+
+_mark('Check 19: X-Agentii-Trace contract files exist + mcp-canonical.json _trace_note (FR-106g(c), Phase 22)')
 for contract_file in [
     CONTRACTS / "x-agentii-trace-header.md",
     CONTRACTS / "x-agentii-trace-delivery.md",
@@ -381,6 +445,8 @@ else:
     err(f"agent tracing: {rel(canonical_mcp)}: file missing")
 
 # --- Check 20: temporal_scope frontmatter field (FR-058) --------------------
+
+_mark('Check 20: temporal_scope frontmatter field (FR-058)')
 for sk in SKILL_FILES:
     try:
         _, fm_text, _ = sk.read_text().split("---", 2)
@@ -414,6 +480,8 @@ for sk in SKILL_FILES:
         )
 
 # --- Check 21: allowed_tools frontmatter field (FR-060) ---------------------
+
+_mark('Check 21: allowed_tools frontmatter field (FR-060)')
 # Set of models-and-pitches skill names (office-plane tools allowed only here).
 # Sourced from the vertical so it works for the flattened agentii-plugin copies.
 _MODELS_AGENTII = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills" / "agentii"
@@ -556,6 +624,8 @@ for sk in SKILL_FILES:
                 )
 
 # --- Check 22: three-layer protocol presence OR retrieval_scope opt-out (FR-056) ---
+
+_mark('Check 22: three-layer protocol presence OR retrieval_scope opt-out (FR-056)')
 for sk in SKILL_FILES:
     try:
         _, fm_text, _ = sk.read_text().split("---", 2)
@@ -580,6 +650,8 @@ for sk in SKILL_FILES:
         )
 
 # --- Check 23: methodology template subsection conformance (FR-064) ----------
+
+_mark('Check 23: methodology template subsection conformance (FR-064)')
 # Subsections may carry an optional ordinal prefix, e.g. "### 1. Retrieval Scope"
 # (the canonical skill-methodology-template.md numbers them). Match both forms.
 METHODOLOGY_SUBS = [
@@ -605,6 +677,8 @@ for sk in SKILL_FILES:
             )
 
 # --- Check 24: models-and-pitches references/ directory (FR-068) -------------
+
+_mark('Check 24: models-and-pitches references/ directory (FR-068)')
 MODELS_DIR = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills" / "agentii"
 REQUIRED_REFS = {"formula-sheet.md", "validation-checklist.md", "institutional-defaults.md"}
 for sk_dir in sorted(MODELS_DIR.iterdir()) if MODELS_DIR.is_dir() else []:
@@ -624,6 +698,8 @@ for sk_dir in sorted(MODELS_DIR.iterdir()) if MODELS_DIR.is_dir() else []:
             err(f"skill-references: {rel(sk_dir)}: references/{req} is empty or too short (FR-068)")
 
 # --- Check 24: models-and-pitches Deliverable Chain (FR-066) -----------------
+
+_mark('Check 24: models-and-pitches Deliverable Chain (FR-066)')
 for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else []:
     text = sk_md.read_text()
     if "## Deliverable Chain" not in text:
@@ -642,6 +718,8 @@ for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else [
                     err(f"skill-chain: {rel(sk_md)}: Deliverable Chain missing '{step}' sub-step (FR-066)")
 
 # --- Check 25: models-and-pitches Validation Gates (FR-067) ------------------
+
+_mark('Check 25: models-and-pitches Validation Gates (FR-067)')
 for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else []:
     text = sk_md.read_text()
     if "## Validation Gates" not in text:
@@ -657,6 +735,8 @@ for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else [
             err(f"skill-gates: {rel(sk_md)}: Validation Gates has {len(items)} items (max 5 per FR-067)")
 
 # --- Check 27: Namespace gate — no SKILL.md outside skills/agentii/ (FR-014e, Phase 23) ---
+
+_mark('Check 27: Namespace gate — no SKILL.md outside skills/agentii/ (FR-014e, Phase 23)')
 # Recursively enumerates every SKILL.md under any skills/ dir; fails if the file
 # is not located under a skills/agentii/ namespace segment. Recursive glob is
 # required so a stray skills/<name>/SKILL.md (old layout) is actually detected.
@@ -672,6 +752,8 @@ for sk in ALL_SKILL_MD_FILES:
         )
 
 # --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---
+
+_mark('Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23)')
 for sk in SKILL_FILES:
     text = sk.read_text()
     if "## Output File" not in text:
@@ -691,6 +773,8 @@ for sk in SKILL_FILES:
                 )
 
 # --- Check 29: Output Structure gate — ≥5 non-empty lines (FR-014e, Phase 23) ---
+
+_mark('Check 29: Output Structure gate — ≥5 non-empty lines (FR-014e, Phase 23)')
 for sk in SKILL_FILES:
     text = sk.read_text()
     # Count non-empty lines between ## Output Structure and next ## heading
@@ -1022,20 +1106,79 @@ for _idx in sorted(ROOT.rglob("theses/INDEX.md")):
     except Exception as _e:  # noqa: BLE001
         err(f"index-derivative: {rel(_idx)}: could not verify regeneration: {_e}")
 
-# --- spec 046 Check 32: no baked harness strings (Q34) ----------------------
-# Any harness-specific literal in the kit's core tree is a bypass of the control
-# plane's harness-independence — the failure upstream shipped as five divergent
-# "shared" cores. Command references resolve at runtime from one config value.
-for _f in sorted(ROOT.glob("plugins/vertical-plugins/scenarios/**/*")):
-    if not _f.is_file() or _f.suffix not in (".md", ".py", ".yml", ".yaml"):
-        continue
-    _text = _f.read_text(encoding="utf-8")
-    if "/agentii-" in _text or "/agentii." in _text:
-        err(f"baked-harness-string: {rel(_f)}: literal '/agentii[-.]' in the core "
-            f"tree — command references resolve at runtime from one config value (Q34)")
+# --- spec 046 Check 32: no baked harness strings (Q34) ---
+# DELEGATES, as of 2026-09-18 (T128). This block used to carry its OWN copy of
+# Q34's rule, written in the LITERAL form: `"/agentii-" in text or "/agentii." in
+# text`. Spec 046's rule 3 has since been corrected precisely because that form
+# is unimplementable — it matches every `https://agentii.ai/...` citation URL, of
+# which the kit has 547. Measured: this block scanned 48 files under
+# `plugins/vertical-plugins/scenarios/` and reported 0 findings, because the four
+# files there containing `agentii.ai` spell it `mcp.agentii.ai` and
+# `www.agentii.ai`, which have no preceding `/`.
+#
+# **It did not fire by luck.** The first `https://agentii.ai/v/...` citation
+# added under `scenarios/` would have fired it falsely — and the same rule is
+# implemented correctly, URL-aware and verb-aware, in
+# scripts/check_no_baked_harness_strings.py. Two implementations of one check is
+# what Q12 rule 3 forbids, so the second copy is deleted and this one delegates.
+try:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import check_no_baked_harness_strings as _q34
+    for _f in _q34.check_a(_q34._verbs()):
+        err(f"baked-harness-string: {_f}")
+except Exception as _e:                       # noqa: BLE001
+    err(f"check 32 could not run: {type(_e).__name__}: {_e} — a check that "
+        f"cannot execute must say so, not pass (Q105)")
+
+# --- T114: the build output is verified, not just generated ------------------
+# `packaging/targets/` is GITIGNORED build output (.gitignore:18), so nothing
+# version-controlled can prove it is current — a stale copy is invisible to git
+# and to every gate that reads the repo. Measured before this ran here: 55 of 80
+# skills packaged with 40 stale. It is verified by CONTENT HASH against the
+# source, and the check reports the surface it examined so a target list that
+# silently emptied cannot read as a pass.
+try:
+    _sources = _q34._sources()
+    _build_problems, _build_counts = _q34.check_b(_sources)
+    for _b in _build_problems:
+        err(f"build-output: {_b}")
+except Exception as _e:                       # noqa: BLE001
+    err(f"build-output verification could not run: {type(_e).__name__}: {_e}")
 
 
 # --- report ----------------------------------------------------------------
+# T128: the surface table. Delta between consecutive marks = that section's
+# examined count; the final section runs to the end of the file.
+_rows = []
+for _i, (_name, _at, _note) in enumerate(SURFACES):
+    _end = SURFACES[_i + 1][1] if _i + 1 < len(SURFACES) else checked
+    _rows.append((_name, _end - _at, _note))
+
+_vacuous = [r for r in _rows if r[1] == 0]   # "no surface reported", not "examined nothing"
+
+if "-v" in sys.argv or "--surfaces" in sys.argv:
+    print("surface_measured — what each check actually examined")
+    for _name, _n, _note in _rows:
+        _tag = "NO SURFACE REPORTED" if _n == 0 else ""
+        print(f"  {_n:>5}  {_name}{'  <- ' + _tag if _tag else ''}"
+              + (f"   [{_note}]" if _note else ""))
+    # The numbers no section claims. Check 14 is RETIRED and 15-17 RESERVED;
+    # naming them here keeps the namespace honest.
+    print("  —      Check 14 (RETIRED 2026-06-13), Checks 15–17 (RESERVED): "
+          "occupy a number and examine nothing")
+    print("  NOTE   attribution is by `checked` delta, so a section that does not "
+          "count inflates the NEXT section's number; only the total ("
+          f"{checked}) is exact.")
+
+if _vacuous:
+    print(f"surface_measured: {len(_vacuous)} of {len(_rows)} section(s) did not "
+          f"report a surface. A clean result from an unreported surface is "
+          f"indistinguishable from examining nothing — which is Q105's defect, at "
+          f"the level of the gate runner itself:", file=sys.stderr)
+    for _name, _n, _note in _vacuous:
+        print(f"  ! {_name}", file=sys.stderr)
+    print("", file=sys.stderr)
+
 if notices:
     print(f"NOTICE — {len(notices)} non-fatal item(s):", file=sys.stderr)
     for n in notices:

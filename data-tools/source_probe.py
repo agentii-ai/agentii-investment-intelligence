@@ -411,18 +411,15 @@ def _probe_finnhub(ticker: str) -> dict:
 
 # name -> (adapter, keyless-or-env spec)
 SOURCES: dict[str, dict] = {
-    "nasdaq":    {"fn": probe_nasdaq,    "auth": KEYLESS, "license": "unofficial"},
-    "sina":      {"fn": probe_sina,      "auth": KEYLESS, "license": "unofficial"},
-    "tencent":   {"fn": probe_tencent,   "auth": KEYLESS, "license": "unofficial"},
-    "yahoo":     {"fn": probe_yahoo,     "auth": KEYLESS, "license": "Apache-2.0 (geo-blocked)"},
-    "alpaca":    {"fn": _probe_alpaca,   "auth": ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"],
-                  "license": "Apache-2.0", "batch": True},
-    "tiingo":    {"fn": _probe_tiingo,   "auth": ["TIINGO_API_KEY"], "license": "MIT",
-                  "batch": True},
-    "massive":   {"fn": _probe_massive,  "auth": ["POLYGON_API_KEY"], "license": "MIT",
-                  "batch": True},
-    "fmp":       {"fn": _probe_fmp,      "auth": ["FMP_API_KEY"], "license": "BSD-3-Clause"},
-    "finnhub":   {"fn": _probe_finnhub,  "auth": ["FINNHUB_API_KEY"], "license": "Apache-2.0"},
+    "nasdaq": {"fn": probe_nasdaq, "auth": KEYLESS, "license": "unofficial", "caps": ["quote"]},
+    "sina": {"fn": probe_sina, "auth": KEYLESS, "license": "unofficial", "encoding": "gbk", "caps": ["quote"]},
+    "tencent": {"fn": probe_tencent, "auth": KEYLESS, "license": "unofficial", "encoding": "gbk", "caps": ["quote"]},
+    "yahoo": {"fn": probe_yahoo, "auth": KEYLESS, "license": "Apache-2.0 (geo-blocked)", "caps": ["quote"]},
+    "alpaca": {"fn": _probe_alpaca, "auth": ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"], "license": "Apache-2.0", "batch": True, "caps": ["quote"]},
+    "tiingo": {"fn": _probe_tiingo, "auth": ["TIINGO_API_KEY"], "license": "MIT", "batch": True, "caps": ["bars"]},
+    "massive": {"fn": _probe_massive, "auth": ["POLYGON_API_KEY"], "license": "MIT", "batch": True, "caps": ["bars"]},
+    "fmp": {"fn": _probe_fmp, "auth": ["FMP_API_KEY"], "license": "BSD-3-Clause", "caps": ["quote"]},
+    "finnhub": {"fn": _probe_finnhub, "auth": ["FINNHUB_API_KEY"], "license": "Apache-2.0", "caps": ["quote"]},
 }
 
 
@@ -670,3 +667,84 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --------------------------------------------------------------------------
+# Per-source capture (T184)
+# --------------------------------------------------------------------------
+#
+# `{workspace}/{TICKER}-live/sources.ndjson` — one record per source per run,
+# extending the folder contract so per-source results sit alongside the existing
+# capture rather than in a parallel location.
+#
+# THREE REQUIREMENTS, each from a measured defect:
+#
+#   * **UTC timestamps.** The capture is compared across runs and machines; a
+#     local-time stamp silently misorders anything crossing a DST boundary.
+#   * **Explicit encoding.** Sina and Tencent are GBK — declared in `SOURCES` and
+#     recorded per record. The measurement pass hit this: decoding with the
+#     default codec yields mojibake that LOOKS like a parse bug and gets debugged
+#     as one.
+#   * **Auth status recorded, including SKIPPED.** T180: a source that was never
+#     attempted must not look like one that failed. Writing only the attempts
+#     would make a keyless run look like an outage.
+#
+# The write goes through `write_boundary` like every other persistent artifact
+# (T172) — so the credential scan and the second-writer rule apply here too. A
+# probe record can carry an API key in an error string, which is exactly how the
+# one observed leak happened.
+
+CAPTURE_DIR_SUFFIX = "-live"
+
+
+def capture_records(ticker: str, results: dict[str, dict],
+                    skipped: list[str] | None = None) -> list[dict]:
+    """Build the ndjson records for one run. Pure — no I/O, so it is testable."""
+    import datetime as _dt
+
+    stamp = _dt.datetime.now(_dt.timezone.utc).isoformat()
+    records: list[dict] = []
+    for name, env in sorted(results.items()):
+        data = env.get("data") if isinstance(env.get("data"), dict) else {}
+        records.append({
+            "captured_at_utc": stamp,
+            "ticker": ticker.upper(),
+            "source": name,
+            "status": env.get("status"),
+            "price": data.get("price"),
+            "observed_at": data.get("observed_at"),
+            "currency": data.get("currency"),
+            "encoding": (SOURCES.get(name) or {}).get("encoding", "utf-8"),
+            "license": (SOURCES.get(name) or {}).get("license"),
+            "caps": (SOURCES.get(name) or {}).get("caps"),
+            "error": env.get("error"),
+        })
+    for reason in (skipped or []):
+        records.append({
+            "captured_at_utc": stamp,
+            "ticker": ticker.upper(),
+            "source": reason.split()[0],
+            "status": "skipped",
+            "price": None, "observed_at": None, "currency": None,
+            "encoding": None, "license": None, "caps": None,
+            "error": reason,
+        })
+    return records
+
+
+def capture_sources(workspace: Path, ticker: str, results: dict[str, dict],
+                    skipped: list[str] | None = None) -> Path:
+    """Write `{workspace}/{TICKER}-live/sources.ndjson` through the write boundary."""
+    import json as _json
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import write_boundary
+
+    out = Path(workspace) / f"{ticker.upper()}{CAPTURE_DIR_SUFFIX}" / "sources.ndjson"
+    body = "".join(_json.dumps(r, ensure_ascii=False) + "\n"
+                   for r in capture_records(ticker, results, skipped))
+    res = write_boundary.write(out, body, producer="source_probe.capture",
+                               kind="json", writer="source_probe")
+    if not res.ok():
+        raise RuntimeError(res.describe())
+    return out

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://agentii.ai/contracts/skill-registry.schema.json",
   "title": "Skill Registry",
-  "description": "Schema for skill-registry.yaml \u2014 one entry per on-disk skill (spec 039 Part I, data-model.md \u00a71). Bijection with skills/agentii/<name>/ enforced by check.py Check 30.",
+  "description": "Schema for skill-registry.yaml — one entry per on-disk skill (spec 039 Part I, data-model.md §1). Bijection with skills/agentii/<name>/ enforced by check.py Check 30.",
   "type": "object",
   "required": [
     "version",
@@ -131,12 +131,15 @@
           "minimum": 0
         },
         "requires": {
-          "type": "array",
+          "type": [
+            "array",
+            "null"
+          ],
           "items": {
             "type": "string",
             "minLength": 1
           },
-          "description": "spec 046 Q12 \u2014 dispatch preconditions declared in SKILL.md frontmatter (the single source of truth); registry is derived. Optional (M-a)."
+          "description": "spec 046 Q12/T157 — dispatch preconditions declared in SKILL.md frontmatter (the single source of truth); registry is derived. THREE states, and null is not []: an array declares preconditions (possibly none, explicitly); `null` means NOT YET DECIDED and makes the preflight report VACUOUS. The field being present in `required` proves nothing on its own — jsonschema checks key presence, and the previous auto-generated `[]` satisfied it on all 80 skills while the gate examined nothing."
         },
         "role": {
           "type": "string",
@@ -145,11 +148,11 @@
             "analysis",
             "kit"
           ],
-          "description": "spec 046 Q25 \u2014 body type; closed enum. Default 'analysis'."
+          "description": "spec 046 Q25 — body type; closed enum. Default 'analysis'."
         },
         "modes": {
           "type": "array",
-          "description": "spec 046 Q79 \u2014 addressable modes derived from references/modes.md '### Mode: <slug>' headings; implicit single mode 'default' when absent.",
+          "description": "spec 046 Q79 — addressable modes derived from references/modes.md '### Mode: <slug>' headings; implicit single mode 'default' when absent.",
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -187,7 +190,7 @@
           "items": {
             "type": "string"
           },
-          "description": "spec 046 Q79/M1 \u2014 the skill's self-declared default mode subset (Depth Tier Light)."
+          "description": "spec 046 Q79/M1 — the skill's self-declared default mode subset (Depth Tier Light)."
         },
         "sectors": {
           "type": "array",
@@ -195,13 +198,13 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9_]*([.][a-z][a-z0-9_]*)+$"
           },
-          "description": "spec 046 Q53 \u2014 dotted industry_taxonomy.json paths; derives sectors_focus."
+          "description": "spec 046 Q53 — dotted industry_taxonomy.json paths; derives sectors_focus."
         },
         "freshness_window": {
           "type": "integer",
           "minimum": 1,
           "maximum": 365,
-          "description": "spec 046 Q60 \u2014 artifact reuse window in days (structural 30 / earnings 7 / price-sensitive 1 / technical 1)."
+          "description": "spec 046 Q60 — artifact reuse window in days (structural 30 / earnings 7 / price-sensitive 1 / technical 1)."
         },
         "market_data_stage": {
           "type": "string",
@@ -210,7 +213,7 @@
             "late",
             "none"
           ],
-          "description": "spec 046 Q41/Q45 \u2014 skill-level default derived by vertical (Q45 rule); frontmatter override wins; mode-level granularity lands with M2."
+          "description": "spec 046 Q41/Q45 — skill-level default derived by vertical (Q45 rule); frontmatter override wins; mode-level granularity lands with M2."
         }
       }
     },

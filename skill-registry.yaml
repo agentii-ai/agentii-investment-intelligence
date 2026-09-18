@@ -21,7 +21,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: watchlist
@@ -60,7 +60,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -111,7 +111,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: watchlist
@@ -152,7 +152,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: watchlist
@@ -193,7 +193,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: watchlist
@@ -232,7 +232,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -281,7 +281,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -330,7 +330,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -379,7 +379,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -430,7 +430,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: phase-scan
@@ -469,7 +469,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: phase-scan
@@ -508,7 +508,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: phase-scan
@@ -547,7 +547,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -598,7 +598,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -649,7 +649,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -698,7 +698,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -737,7 +737,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -776,7 +776,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -815,7 +815,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -854,7 +854,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: business-model-classification
@@ -896,7 +896,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: direct-competitor-identification-and-analysis
@@ -944,7 +944,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: analyst-sentiment-assessment-current-quarter
@@ -988,7 +988,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: growth-strategy-assessment
@@ -1030,7 +1030,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: consolidated-p-and-l
@@ -1072,7 +1072,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: general-risk-factors-identification-assessment
@@ -1112,7 +1112,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: evaluate-company-s-exposure-to-major-secular-technology-trends
@@ -1160,7 +1160,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: performance-stagnation-detection-and-classification
@@ -1210,7 +1210,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: analyst-valuation-methods-comparison
@@ -1250,7 +1250,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1291,7 +1291,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1331,7 +1331,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1372,7 +1372,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1413,7 +1413,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1452,7 +1452,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -1491,7 +1491,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -1530,7 +1530,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -1569,7 +1569,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -1608,7 +1608,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1647,7 +1647,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1686,7 +1686,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1725,7 +1725,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -1764,7 +1764,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -1803,7 +1803,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -1842,7 +1842,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -1881,7 +1881,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -1920,7 +1920,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -1959,7 +1959,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -1998,7 +1998,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -2037,7 +2037,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -2076,7 +2076,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: triggers
@@ -2116,7 +2116,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2156,7 +2156,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2196,7 +2196,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2236,7 +2236,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2276,7 +2276,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2317,7 +2317,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2358,7 +2358,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2399,7 +2399,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2440,7 +2440,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2479,7 +2479,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -2518,7 +2518,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -2557,7 +2557,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -2596,7 +2596,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -2635,7 +2635,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: preflight
@@ -2674,7 +2674,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -2713,7 +2713,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: method-bodies-four-angles
@@ -2748,7 +2748,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: two-phases
@@ -2785,7 +2785,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: bootstrap-empty-workspace-q83
@@ -2822,7 +2822,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: when-run
@@ -2861,7 +2861,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: orchestrator
   modes:
   - slug: analysis
@@ -2892,7 +2892,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: before-dispatch
@@ -2927,7 +2927,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: ordering-rule-q35-q36
@@ -2964,7 +2964,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: hard-rules
@@ -2999,7 +2999,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: pack
@@ -3036,7 +3036,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: kit
   modes:
   - slug: task-identity-q79
@@ -3071,7 +3071,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -3110,7 +3110,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -3149,7 +3149,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -3188,7 +3188,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: true
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults
@@ -3227,7 +3227,7 @@ skills:
       company_situation: []
   has_knowledge_frameworks: false
   spec_037_references: 0
-  requires: []
+  requires: null
   role: analysis
   modes:
   - slug: defaults

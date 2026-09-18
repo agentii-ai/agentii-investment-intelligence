@@ -20,10 +20,11 @@
   PNGs) — the LLM reads the renders and iterates on content.html; the build-time
   overflow gate (check_page_overflow.py) remains the deterministic gate.
 
-  Pins: sources_hash / template_version are embedded by synthesize_report.py;
-  converge.py flags html_stale on mismatch (the open-time JS bar below is a
-  chrome remnant — an offline file cannot read disk, so converge is the
-  enforcement and the bar only fires when both pins are present).
+  Pins: sources_hash / template_version are embedded by synthesize_report.py.
+  Staleness (Q101) is STATIC: python3 converge.py reads the disk, compares the
+  embedded pins and input mtimes, and rewrites .stale-bar[data-stale] to "true".
+  There is no runtime check, deliberately — an offline file cannot read disk, so
+  a JS bar could only ever be dead code shaped like enforcement.
 -->
 <head>
 <meta charset="utf-8">
@@ -72,9 +73,13 @@
               padding: 2mm 3mm; margin: 4mm 0; }
   .draft-banner { background: #c00; color: #fff; text-align: center;
                   font-size: 10pt; padding: 2mm; }
+  /* Q101: the staleness verdict is STATIC markup, set at build time — never
+     runtime JS. The bar shows iff data-stale="true", which only converge.py
+     writes, because only converge.py can read the disk. */
   .stale-bar { display: none; position: fixed; top: 0; left: 0; right: 0;
                background: #ffd75e; color: #080b14; text-align: center;
                font-size: 10pt; padding: 2mm; z-index: 99; }
+  .stale-bar[data-stale="true"] { display: block; }
   .page-overflow { outline: 1px solid #c00; }
   .page-overflow::after { content: "⚠ overflow"; position: absolute; top: 2mm;
                           right: 2mm; color: #c00; font-size: 9pt; }
@@ -182,7 +187,11 @@
             break-inside: avoid; page-break-inside: avoid; }
     .page:last-child { break-after: auto; page-break-after: auto; }
     .page-overflow { page-break-after: always; }
-    .stale-bar { display: none !important; }
+    /* A stale report that prints without saying so is the failure Q101 exists
+       to prevent. Hidden when fresh; PRINTED when stale. */
+    .stale-bar[data-stale="false"] { display: none !important; }
+    .stale-bar[data-stale="true"] { display: block !important; position: static;
+                                    border-bottom: 0.4mm solid #080b14; }
     .no-print { display: none !important; }
     * { animation: none !important; transition: none !important;
         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -190,8 +199,9 @@
 </style>
 </head>
 <body>
-<div class="stale-bar" id="stale-bar">This report was generated on a previous
-  state of its source data — see reproduce.md before distributing.</div>
+<div class="stale-bar" id="stale-bar" data-stale="false">This report was
+  generated from a PREVIOUS state of its source data — re-run
+  `synthesize_report.py assemble` before distributing.</div>
 
 <!-- ⬇ Page 1: navy ink cover — owned by the template, filled by the assembler -->
 <section class="page cover" data-report-page="1">
@@ -240,16 +250,12 @@
 document.querySelectorAll('.page').forEach(function (pg) {
   if (pg.scrollHeight > pg.clientHeight + 2) { pg.classList.add('page-overflow'); }
 });
-// Q50 open-time pin check: fires only when both pins are present (chrome —
-// converge.py's html_stale finding is the enforcement; an offline file
-// cannot read disk).
-(function () {
-  var bar = document.getElementById('stale-bar');
-  if (document.body.dataset.sourcesHash && document.body.dataset.diskHash &&
-      document.body.dataset.sourcesHash !== document.body.dataset.diskHash) {
-    bar.style.display = 'block';
-  }
-})();
+// Q101: there is deliberately NO runtime staleness check here. It cannot read
+// the disk, so it could only ever be dead code that looks like enforcement —
+// which is what the version it replaces was: it compared body.dataset.diskHash,
+// a value NOTHING in the codebase ever wrote, so its condition was always false
+// and the bar could never appear. The verdict is computed by converge.py and
+// stamped into .stale-bar[data-stale]; see that file for the disk read.
 </script>
 </body>
 </html>

@@ -1,5 +1,26 @@
 # Session Archival Format
 
+> **⚠️ RETAINED — NOT SUPERSEDED BY SPEC 046 (T171, Q141/Q144).** This contract is part
+> of the **early instrument set** (`agentii.md` + `style.md` + `snapshots/` + `sessions/`,
+> defined by three published contracts). 046 does **not** deprecate, delete, or override it.
+>
+> **"Replaced by `artifacts/`" happens ONLY in thesis mode.** In **single-skill mode** —
+> a user invoking one skill against agentii.ai data without creating a thesis — these
+> instruments keep exactly their original behaviour, because in that mode there is no
+> `artifacts/` to replace them with and no thesis ID to key anything on.
+>
+> **Measured scale, so this is not a marginal configuration**: **52** skill files reference
+> `agentii.md` and **32** reference `sessions/`. Deleting or overriding these contracts
+> would break a fifth of the corpus.
+>
+> **Why this note exists at all**: 046 briefly re-keyed `snapshots/` unconditionally
+> (revoked by Q144) and declared rotation rules that assumed every workspace has a
+> `constitution.md` (corrected by Q140). Both errors had one shape — **a rule written
+> without its premise** — and both would have landed on files that are live in a mode
+> neither of the two measured workspaces exercises. A note stating the retention is
+> cheaper than rediscovering it.
+
+
 Session transcripts are stored as archival records in `sessions/{YYYY-MM-DD}/`. They contain the full agent conversation transcript and are accessed only via explicit `read_session` tool call. Sessions are NOT auto-loaded into agent context (transcripts can exceed 50K tokens).
 
 ## Directory Structure

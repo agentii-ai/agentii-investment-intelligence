@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import write_boundary  # noqa: E402 — the single write boundary (T172)
 import journal  # noqa: E402
 
 # Q41: a directional claim needs a fresh price — re-quote or accept a <24h quote;
@@ -150,18 +151,6 @@ def check_aggregate(artifacts_root: Path, constitution_path: Path,
     return (problems, notices) if with_notices else problems
 
 
-def _atomic_write(path: Path, content: str) -> None:
-    """③ tmp → fsync → os.replace — a crash mid-write never leaves a damaged source
-    of truth (same pattern as _registry.save_registry, Q15)."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        f.write(content)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, path)
-
-
 def reduce(shard_dir: Path, thesis_path: Path,
            llm_revise: Callable[[dict[str, Any]], dict[str, Any]] | None = None) -> dict:
     mechanical = _compute_mechanical(shard_dir)
@@ -175,7 +164,12 @@ def reduce(shard_dir: Path, thesis_path: Path,
         "mechanical": mechanical,
         "judgment": judgment,
     }
-    _atomic_write(thesis_path, json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+    write_boundary.write(
+        thesis_path,
+        json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
+        producer='reduce_journals',
+        kind='json',
+        writer='reduce_journals')
     return doc
 
 
