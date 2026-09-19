@@ -21,6 +21,11 @@ it, instead of trusting a comment that says so:
   6. (T202) `dashboard.html` is reported as HALF-live rather than wholly VACUOUS:
      its footer IS drift-checked on every run (item 3). Grouping a live check with
      a dead one made a working gate look absent.
+  7. (T204) `README.md` still carries its `## Disclaimer` section. The README is the
+     project's landing page and its single most-read document, and it had **no
+     disclaimer at all** — zero occurrences of the word — while the four generated
+     outputs were gated. Human-facing docs were outside every rule here; a section
+     added once is a section that can be edited away once.
 
 **Was invoked by nothing until 2026-09-19.** Q139 named this script as the
 disclaimer's enforcement point, it was correct, and no test and no CI step ran it
@@ -151,6 +156,60 @@ def _check_contract_bindings(canonical: dict[str, str]) -> list[str]:
     return problems
 
 
+# ── T204: the human-facing documents ────────────────────────────────────────
+
+# Everything above this line governs MACHINE-GENERATED outputs. The repository's
+# own landing page was outside every rule: README.md contained zero occurrences of
+# the word "disclaimer" while four generated document types were gated, and the only
+# advice-adjacent text on it was an unpoliced `[!IMPORTANT]` callout.
+#
+# The README must NOT paste the canonical block. That block says the document is
+# "research and analysis, produced by an automated research system for internal
+# use" — true of a research report, false of a software README — and Q139 rule 1
+# forbids forking it. So the rule here is weak ON PURPOSE: the section must exist,
+# it must say the thing that matters, and it must POINT at the canonical source
+# rather than restate it. Checking the wording would turn a disclaimer into a
+# template and make the next honest edit a build failure.
+_HUMAN_DOCS = {
+    "README.md": {
+        "section": "## Disclaimer",
+        # The two obligations a software-reader disclaimer cannot drop.
+        "must_say": ["not investment advice", "due diligence"],
+        # …and it must not become a second authored copy of the report block.
+        "must_point": "templates/disclaimer.md",
+    },
+}
+
+
+def _check_human_docs() -> list[str]:
+    """Gate the disclaimer on the repo's own human-facing documents (T204)."""
+    problems: list[str] = []
+    for name, rule in sorted(_HUMAN_DOCS.items()):
+        path = ROOT / name
+        if not path.is_file():
+            problems.append(f"{name}: missing — it is the project's landing page")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if rule["section"] not in text:
+            problems.append(
+                f"{name}: no `{rule['section']}` section. The four generated outputs are "
+                f"gated; this is the document the most people read, and a section added "
+                f"once is a section that can be edited away once.")
+            continue
+        low = text.lower()
+        missing = [s for s in rule["must_say"] if s.lower() not in low]
+        if missing:
+            problems.append(
+                f"{name}: its Disclaimer section no longer states {missing}. These are the "
+                f"obligations, not decorations.")
+        if rule["must_point"] not in text:
+            problems.append(
+                f"{name}: its Disclaimer no longer points at `{rule['must_point']}`. "
+                f"Generated research outputs carry THAT block; this document must not "
+                f"become a second authored copy of it (Q139 rule 1).")
+    return problems
+
+
 def main() -> int:
     problems: list[str] = []
     canonical = _canonical(problems)
@@ -196,6 +255,9 @@ def main() -> int:
     #    canonical source, and must not have authored a second copy of the clauses.
     contract_problems = _check_contract_bindings(canonical)
     problems += contract_problems
+
+    # 7. (T204) The repo's own landing page. See `_check_human_docs`.
+    problems += _check_human_docs()
 
     # 6. (T202) The dashboard's gate is HALF-live and used to be reported as wholly
     #    VACUOUS. Its footer is drift-checked above on every run; what has no

@@ -5,8 +5,8 @@
   },
   "metadata": {
     "description": "Agent-use-ready US equity investment-intelligence skills and plugins for Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar) with three-layer retrieval protocol, code-mode office output (openpyxl/python-pptx + LibreOffice), and workspace memory architecture (v2.3.1).",
-    "version": "2.3.1",
-    "total_skills": 31,
+    "version": "3.3.0",
+    "total_skills": 80,
     "schema_version": "1.0"
   },
   "plugins": [

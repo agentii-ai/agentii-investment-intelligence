@@ -1,13 +1,9 @@
 # agentii-investment-intelligence
 
 <p align="center">
-  <img src="./demo.gif" alt="Claude Code using agentii.ai to search LLY 10-K and receiving real SEC filing data" width="720">
-</p>
-
-<p align="center">
   <strong>The financial data layer for AI agents.</strong><br>
   Open-source alternative to FactSet / Daloopa / S&P Global for AI agents.<br>
-  1,146+ US equities with full SEC filing history. 48 Claude-type skills. 20+ MCP tools.<br>
+  1,146+ US equities with full SEC filing history. 80 skills across 14 verticals. 30 MCP tools.<br>
   One API key. Zero infrastructure. Single entrance: <code>/agentii:skill-name</code>.
 </p>
 
@@ -15,8 +11,13 @@
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License"></a>
   <a href="https://github.com/agentii-ai/agentii-investment-intelligence"><img src="https://img.shields.io/github/stars/agentii-ai/agentii-investment-intelligence" alt="Stars"></a>
   <a href="https://github.com/agentii-ai/agentii-investment-intelligence/discussions"><img src="https://img.shields.io/github/discussions/agentii-ai/agentii-investment-intelligence" alt="Discussions"></a>
-  <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-2.3.1-green" alt="Version"></a>
+  <a href="./CHANGELOG.md"><img src="https://img.shields.io/badge/version-3.3.0-green" alt="Version"></a>
 </p>
+
+> [!WARNING]
+> **Not investment advice.** This repository is software. It produces analyst work
+> product for review by a qualified professional — never a recommendation to trade.
+> Read the full [Disclaimer](#disclaimer) before using anything here.
 
 ---
 
@@ -24,12 +25,9 @@
 
 Wall Street pays $30K+/seat/year for FactSet, Bloomberg, and S&P Global. Those platforms were built for humans clicking through terminals. AI agents need **agent-use-ready data** — structured, citation-backed, page-addressable, API-delivered.
 
-agentii.ai ingests every SEC filing (10-K, 10-Q, 8-K, 20-F, 6-K) and 15K+ earnings call transcripts (2022+) into a Neon PostgreSQL data plane with 15.99M XBRL facts, 51K+ source documents, and 1.34M+ parsed pages. A single `agentii` MCP server at `mcp.agentii.ai` exposes 30+ tools (incl. institutional ownership + insider activity) that Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork consume natively.
+agentii.ai ingests every SEC filing (10-K, 10-Q, 8-K, 20-F, 6-K) and 15K+ earnings call transcripts (2022+) into a Neon PostgreSQL data plane with 15.99M XBRL facts, 51K+ source documents, and 1.34M+ parsed pages. A single `agentii` MCP server at `mcp.agentii.ai` exposes 30 tools (incl. institutional ownership + insider activity) that Claude Code, OpenCode, Goose, Codex, OpenClaw, and Claude Cowork consume natively.
 
 This repository mirrors [`anthropics/financial-services`](https://github.com/anthropics/financial-services) — marketplace plugin system, vertical skill decomposition, agent-plugin bundling. The difference: all skills point at a **single `agentii` MCP server** backed by agentii.ai's own data plane. There is no second MCP — office output uses the same **code-mode** approach (Python + LibreOffice, invoked via `Bash`) that Anthropic's package uses.
-
-> [!IMPORTANT]
-> Nothing in this repository constitutes investment, legal, tax, or accounting advice. These skills produce analyst work product for review by a qualified professional. Every output is staged for human sign-off.
 
 ---
 
@@ -47,17 +45,19 @@ claude mcp add-json --scope user agentii \
   '{"type":"http","url":"https://mcp.agentii.ai/mcp","headers":{"Authorization":"Bearer <YOUR_KEY>"}}'
 ```
 
-Writes to `~/.claude.json`. Restart Claude Code — 30+ tools auto-discover on every session from any directory.
+Writes to `~/.claude.json`. Restart Claude Code — all 30 tools auto-discover on every session from any directory.
 
-### 3. Install Skills (Primary: Local Copy)
+### 3. Install Skills (Claude Code: Local Copy)
 
 ```bash
-bash scripts/copy-skills-local.sh   # Copies all 48 skills + commands to ~/.claude/
+bash scripts/copy-skills-local.sh   # Copies all 80 skills + commands to ~/.claude/
 ```
 
-Restart Claude Code — all 48 skills register under a **single unified namespace, `/agentii:skill-name`** (skills land in `~/.claude/skills/agentii/`, commands in `~/.claude/commands/agentii/`). This is the **recommended install method** — one namespace, no per-vertical prefixes, and it works reliably on all Claude Code versions.
+Restart Claude Code — skills register under a **single unified namespace, `/agentii:skill-name`** (skills land in `~/.claude/skills/agentii/`, commands in `~/.claude/commands/agentii/`). This is the **recommended install method on Claude Code** — one namespace, no per-vertical prefixes, and it works reliably on all Claude Code versions.
 
 > **Single namespace by design**: the local-copy path exposes *only* `/agentii:*`. There is no `/equity-research-core:*` or `/models-and-pitches:*` surface — every skill is reached the same way regardless of which vertical authored it.
+
+> **Other hosts**: `copy-skills-local.sh` writes to `~/.claude/` only. For OpenCode, Codex, Goose, OpenClaw and Cowork, see [For Other CLI Agents](#for-other-cli-agents) — the skills are portable markdown, but the install path differs per host.
 
 <details>
 <summary>Advanced (not recommended): per-vertical plugin installs</summary>
@@ -88,89 +88,103 @@ Expected: structured, citation-backed report with real SEC filing data and click
 
 | Component | Description |
 |-----------|-------------|
-| **Skills** | 48 Claude-type skills across 12 verticals — trigger-phrase auto-activation + `/agentii:skill-name` single entrance |
-| **Meta-Plugin** | `plugins/agentii-plugin/` — unified install bundles all 48 skills under `/agentii:*` namespace (symlinked from verticals) |
+| **Skills** | **80** Claude-type skills across **14 verticals** — trigger-phrase auto-activation + `/agentii:skill-name` single entrance |
+| **Meta-Plugin** | `plugins/agentii-plugin/` — unified install symlinks **70** skills under `/agentii:*` (10 `scenarios` kit skills are installed separately; see [Repository Structure](#repository-structure)) |
 | **Agent Plugin** | `agentii-equity-agent` — managed agent with the `system_v2_7`-ported system prompt, three-layer retrieval protocol, and citation discipline |
-| **MCP Tools** | 30+ tools at `mcp.agentii.ai/mcp` — SEC filings, XBRL financials, entity search, earnings calendar, two-tier page outline, real-time quotes |
+| **MCP Tools** | **30** tools at `mcp.agentii.ai/mcp` — SEC filings, XBRL financials, entity search, earnings calendar, two-tier page outline, real-time quotes, institutional ownership, insider activity |
+| **Governance** (spec 046) | `constitution.md` per workspace, thesis vs single-skill modes, mechanical gates, and a landing index that derives the spec's own status — see [Governance & Research Modes](#governance--research-modes) |
+| **Report Pipeline** (spec 046) | `pack → author → assemble → render`: LLM-authored thesis reports with a render-and-optimize loop, a citation gate, and a template-owned disclaimer |
 | **Office Output** | Code-mode: `openpyxl` (Excel .xlsx), `python-pptx` (PowerPoint .pptx), `python-docx` (Word .docx) + LibreOffice headless recalc — no office MCP server |
 | **Citations** | Every fact links to `agentii.ai/v/{ticker}/{citation_id}/{page}` — clickable, verifiable, inline-after-fact + TUI Key Citations block |
-| **Workspace Memory** | `agentii.md` index, per-ticker outputs with YAML frontmatter, `snapshots/` thesis synthesis with `[FACT]`/`[DEDUCTED]`/`[VIEW]` taxonomy, `sessions/` archive |
-| **Contracts** | 21 shared contracts in `contracts/` — single source of truth for retrieval protocol, citations, office tooling, preflight, memory, and tracing |
+| **Workspace Memory** | `agentii.md` index, per-ticker outputs with YAML frontmatter, `snapshots/` synthesis with a structured `claim_class` field, `sessions/` archive |
+| **Contracts** | **33** shared contracts in `contracts/` — single source of truth for retrieval protocol, citations, office tooling, preflight, memory, and tracing |
 | **Instant Data** (spec 039) | `data-tools/` — zero-key-first macro/market/earnings tools behind `~~category` placeholders, AGENT_CONTRACT envelope, file cache + failover; opt-in `setup_credentials.py` wizard for free API keys |
 | **Enrichment & Quality** (spec 039) | `skill-registry.yaml` + `scripts/enhance-skill.py` (YAML workflow presets) + `scripts/quality-scan.py` (5-dimension 0–10 score, CI gate) |
-| **Packaging** (spec 039) | `packaging/export.py` emits codex/cowork/generic-cli variants from canonical SKILL.md (diff-clean, placeholders preserved) |
+| **Packaging** (spec 039) | `packaging/export.py` emits 4 host variants — claude-code, codex, cowork, generic-cli — from the canonical SKILL.md (diff-clean, placeholders preserved) |
 
 ---
 
 ## Skills
 
-Skills auto-activate when trigger phrases match. Each is a `skills/agentii/<name>/SKILL.md` file with YAML frontmatter and markdown methodology — the single canonical artifact across all 6 CLI hosts (Claude Code, OpenCode, Codex, OpenClaw, Goose, Claude Cowork). Thin `commands/*.md` wrappers are also shipped per vertical for explicit `/agentii:skill-name` slash-command invocation.
+**80 skills across 14 verticals.** Each is a `skills/agentii/<name>/SKILL.md` file with YAML frontmatter and markdown methodology — the single canonical artifact across all hosts. Thin `commands/*.md` wrappers ship for explicit `/agentii:skill-name` slash-command invocation.
 
-Deep methodology and output structure live in per-skill `references/` directories (progressive disclosure) — the SKILL.md body stays lean (~700–900 words), and depth loads on demand. [Full methodology →](./contracts/skill-methodology-template.md)
+| Vertical | Skills | What it covers |
+|----------|:---:|----------------|
+| **equity-research-core** | 9 | Company-level dimensions — quarterly results, business model, competition, growth strategy, secular trends, turnaround, risk, earnings sentiment, valuation methods |
+| **models-and-pitches** | 9 | DCF, trading comps, 3-statement, LBO, SOTP, workbook audit, XBRL→Excel, pitch-deck, earnings-preview |
+| **bio-pharm** | 15 | FDA catalysts, clinical-trial status, pipelines, med-sector analysis (spec 052) |
+| **scenarios** | 10 | The spec-046 research kit — constitution, specify, plan, tasks, clarify, implement, converge, challenge, synthesize, full-equity-research |
+| **quantitative-analysis** | 5 | Ratio analysis, PEG valuation, reverse DCF, DDM, residual income |
+| **idea-generation** | 5 | Qualitative/quantitative screening, consensus-disconnect analysis, catalyst mapping, trade templates |
+| **options-derivatives** | 5 | Options foundations, income strategies, volatility trading, technical execution |
+| **business-intelligence** | 4 | Revenue decomposition, unit economics, what-if scenarios, operational KPIs |
+| **industry-analysis** | 4 | Peer benchmarking, sector overview, competitive positioning, supply-chain map |
+| **macro-strategy** | 4 | Regime detection, rate cycles, currency analysis |
+| **portfolio-strategy** | 4 | Long/short equity, position sizing, portfolio hedging |
+| **technical-analysis** | 4 | Institutional price-action methodologies |
+| **risk-and-psychology** | 1 | Trading risk management and psychology |
+| **trading-as-business** | 1 | Trading infrastructure, review discipline, capital |
 
-### equity-research-core (9 skills)
+### Start here
 
 | Command | Description |
 |---------|-------------|
 | `/agentii:recent-quarter` | Quarterly P&L progression, margin drivers, EPS vs consensus, sequential momentum |
-| `/agentii:business-model` | Revenue model classification, product-line decomposition, distribution channels, customer segments |
-| `/agentii:competitive` | Peer positioning, market-share dynamics, moat assessment, pricing power |
-| `/agentii:growth-strategy` | Organic/inorganic growth decomposition, pipeline analysis, execution tracking |
-| `/agentii:secular-trends` | Technology adoption cycles, disruption risk, strategic positioning |
-| `/agentii:turnaround` | Performance inflection detection, operational metrics, leadership impact |
+| `/agentii:dcf` | DCF with live formulas, WACC decomposition, sensitivity tables → `.xlsx` |
+| `/agentii:comps` | Trading comps with statistical benchmarking → `.xlsx` |
+| `/agentii:3-statement` | Integrated IS/BS/CF with XBRL calculation-arc balancing → `.xlsx` |
 | `/agentii:risk` | Regulatory, competitive, macro, and technology risk assessment |
-| `/agentii:earnings-sentiment` | Analyst estimates vs. guidance, sentiment trends, surprise history |
-| `/agentii:valuation-methods` | Multiples, DCF inputs, PEG integration, valuation assumption extraction |
-
-### models-and-pitches (9 skills)
-
-| Command | Description |
-|---------|-------------|
-| `/agentii:dcf` | DCF valuation with live formulas, WACC decomposition, sensitivity tables → `.xlsx` |
-| `/agentii:comps` | Trading comps with statistical benchmarking (mean/median/high/low) → `.xlsx` |
-| `/agentii:3-statement` | Integrated IS/BS/CF with cross-statement balancing via XBRL calculation arcs → `.xlsx` |
-| `/agentii:lbo` | LBO with sources & uses, debt schedule, returns waterfall → `.xlsx` |
-| `/agentii:sotp-valuation` | Sum-of-the-parts valuation with segment-level multiples |
-| `/agentii:audit-xls` | Workbook auditor: formula errors, hardcoded cells, calculation arc cross-validation |
-| `/agentii:xlsx-financials` | XBRL-to-Excel with number formatting, frozen headers, named ranges, Checks tab → `.xlsx` |
-| `/agentii:pitch-deck` | 12–16 slide investment thesis presentation → `.pptx` (`.md` fallback) |
-| `/agentii:earnings-preview` | 4–6 slide earnings preview with consensus estimates, surprises, catalysts → `.pptx` (`.md` fallback) |
-
-### quantitative-analysis (5 skills)
-
-| Command | Description |
-|---------|-------------|
-| `/agentii:ratio-analysis` | 24 financial ratios across 6 categories with cross-company comparison |
-| `/agentii:peg-valuation` | PEG = P/E ÷ Growth Rate with Peter Lynch thresholds and sector benchmarks |
-| `/agentii:reverse-dcf` | Solve for implied growth rate/margins from current price |
-| `/agentii:ddm-valuation` | Multi-stage Dividend Discount Model for mature dividend payers and financials |
-| `/agentii:residual-income` | Book Value + PV of future economic profit — for banks, insurers, capital-intensive firms |
-
-### business-intelligence (4 skills)
-
-| Command | Description |
-|---------|-------------|
-| `/agentii:revenue-decomp` | Segment breakdown, geographic split, product-line waterfall |
-| `/agentii:unit-economics` | CAC/LTV estimation, churn inference, gross margin per unit |
-| `/agentii:what-if` | Scenario tree (bear/base/bull), probability-weighted EV, sensitivity matrix |
-| `/agentii:operational-kpi` | Headcount trends, utilization rates, backlog/book-to-bill |
-
-### industry-analysis (4 skills)
-
-| Command | Description |
-|---------|-------------|
-| `/agentii:peer-bench` | Multi-ticker financial comparison, growth/value matrix, z-score ranking |
+| `/agentii:peer-bench` | Multi-ticker comparison, growth/value matrix, z-score ranking |
+| `/agentii:pitch-deck` | 12–16 slide investment thesis presentation → `.pptx` |
 | `/agentii:sector-overview` | TAM estimation, competitive concentration (HHI), regulatory landscape |
-| `/agentii:competitive-positioning` | Porter's Five Forces, strategic group mapping, differentiation analysis |
-| `/agentii:supply-chain` | Supplier/customer dependency, geographic concentration, bottleneck identification |
+| `/agentii:constitution` | Scaffold a workspace's investment constitution (spec 046) |
 
 All valuation skills support `--mode=scenario` for Bear/Base/Bull probability-weighted analysis.
+
+> **Browse all 80**: the full registry with descriptions, modes and tool allow-lists is [`skill-registry.yaml`](./skill-registry.yaml). Methodology depth lives in per-skill `references/` directories (progressive disclosure) — the SKILL.md body stays lean (~700–900 words) and detail loads on demand. [Full methodology →](./contracts/skill-methodology-template.md)
+
+---
+
+## Governance & Research Modes
+
+Spec 046 added the layer that makes the research *checkable* rather than merely generated. It is the largest recent body of work and it ships in the `scenarios` vertical.
+
+### Two operating modes
+
+| | **Thesis mode** | **Single-skill mode** |
+|---|---|---|
+| What it is | A governed research programme under `theses/{nnn}-{slug}/` | One skill against agentii.ai data, no thesis |
+| Governance | `constitution.md` — or `agentii.md` where there is none | same |
+| Work unit | the thesis | the skill run |
+| Outputs | `artifacts/` | `{ticker}/{YYYY-MM-DD_HHMM}_{skill}_{affix}.md` |
+| Memory | artifact frontmatter, **derived** | `agentii.md` (append-only index) |
+| Sessions | `tasks.md` + `converge` | `sessions/INDEX.md` + transcripts |
+
+**`agentii.md` has two roles, and the filesystem decides which.** With a `constitution.md` present it is a *chronicle* (a memory index, rotated per period). With none, **it is the constitution** — and rotating it would rotate away the project's principles. The detector reads the filesystem; it keeps no new state.
+
+### The constitution
+
+`/agentii:constitution` scaffolds a workspace's investment constitution: `constitution.md` (prose + SemVer amendment log), `constitution.yaml` (executable position/concentration constraints, budgets, regime drift triggers), plus `assumptions.yaml`, `value-checks.yaml` and `taxonomy.yaml`. Theses compile against a `constitution_pin`, so a stale pin is a hard failure rather than a silent drift.
+
+### Gates, not vibes
+
+Correctness is enforced by **dispatch preconditions and write-boundary gates**, not by the order in which an agent chooses to work:
+
+- **G1 — deterministic**: pure script, millisecond, zero LLM. Citation integrity, numeric canonical form, `VACUOUS` reporting, evidence class.
+- **G2 — judgement**: an independent-context validator sub-agent at phase boundaries.
+- **G3 — human audit**: only the G1/G2 red items, via `theses/{nnn}-{slug}/checklists/*.md`.
+
+A gate that did not run must **say so** (`mechanism_outcome: VACUOUS`) — an un-run gate that reports success is the failure mode the whole layer exists to prevent.
+
+### Report pipeline
+
+`pack → author → assemble → render`. Skills produce artifacts; the packer assembles them into a report input; the author writes `content.html` against a fixed outline; the assembler injects page furniture — headers, footers, page numbers, table of contents, and the **disclaimer page** — and the render step iterates on the rendered output rather than on the source.
 
 ---
 
 ## Office Output (Code-Mode + LibreOffice)
 
-v2.3.1 adopts Anthropic's proven code-mode architecture — no office MCP server. The agent writes self-contained Python scripts and executes them via `Bash`. [Full contract →](./contracts/office-tooling.md)
+v3.3.0 continues Anthropic's proven code-mode architecture — no office MCP server. The agent writes self-contained Python scripts and executes them via `Bash`. [Full contract →](./contracts/office-tooling.md)
 
 | Format | Library | Primary | Degraded Fallback |
 |--------|---------|---------|-------------------|
@@ -186,36 +200,38 @@ v2.3.1 adopts Anthropic's proven code-mode architecture — no office MCP server
 
 ## Workspace Memory
 
-v2.3.1 introduces a file-first hybrid memory architecture that persists context across sessions. After running skills, your workspace looks like this:
+A file-first hybrid memory architecture that persists context across sessions. After running skills, your workspace looks like this:
 
 ```
 workspace/
-├── agentii.md                          # Project memory index (YAML frontmatter + markdown table)
+├── constitution.md                     # Thesis-mode governance (spec 046); agentii.md where absent
+├── agentii.md                          # Memory index — or THE constitution, if no constitution.md
 ├── style.md                            # Optional workspace overrides (currency, peers, verbosity)
 ├── NVDA/
-│   ├── 2026-06-15_0930_recent-quarter_summary.md   # Tier 1: per-skill outputs with YAML frontmatter
+│   ├── 2026-06-15_0930_recent-quarter_summary.md   # per-skill outputs, YAML frontmatter
 │   └── 2026-06-15_1045_dcf_base.xlsx               # Office artifacts
 ├── snapshots/
 │   └── NVDA/
-│       └── 2026-06-15_thesis.md        # Tier 2: cross-skill synthesis (auto-triggered at ≥2 skills)
+│       └── 2026-06-15_thesis.md        # Point-in-time synthesis, restored on session start
 ├── sessions/
 │   ├── INDEX.md                         # Session index (auto-loaded)
 │   └── 2026-06-15/                     # Full transcripts (on-demand only)
 ├── _cross/                              # Multi-ticker analyses (peer-bench, comps, competitive-positioning)
 │   └── semis_2026-06-15_1400_peer-bench_nvda-amd-avgo.md
-└── _sector/                             # Pure sector/thematic analyses
-    └── tech.semiconductors/
+└── _sector/                             # Pure sector/thematic analyses (names lowercase-hyphenated)
+    └── tech-semiconductors/
         └── 2026-06-15_1500_sector-overview_summary.md
 ```
 
 **Key conventions:**
 
-- **`agentii.md`**: YAML frontmatter header (machine-parseable via `head -30`) + Markdown summary table (human-readable). Appended after every skill run.
-- **`{ticker}/`**: Tier-1 per-skill outputs with structured YAML frontmatter (`key_metrics`, `conclusions`, `facts_count`, `deducted_count`, `views_count`, `citation_count`).
-- **`snapshots/{ticker}/`**: Tier-2 thesis synthesis auto-triggered when ≥2 skills run on the same ticker in a session. Distills cross-skill conclusions with `[FACT]`/`[DEDUCTED]`/`[VIEW]` classification.
-- **`_cross/`**: Multi-ticker outputs for peer comparisons and cross-company analyses.
-- **`_sector/`**: Pure industry/thematic analyses with no primary ticker.
-- **`sessions/`**: Full transcripts archived by date (not auto-loaded); `INDEX.md` lists all sessions.
+- **`agentii.md`** — one file, **two roles**, decided by whether `constitution.md` exists: a *chronicle* (append-only memory index, rotated per period) or **the constitution itself** (principles, never rotated). Machine-parseable via `head -20`. Appended after every skill run; entries are never modified or deleted. [Schema →](./contracts/agentii-md-schema.md)
+- **`{ticker}/`** — per-skill outputs. Frontmatter carries a **public core** required in both modes: `as_of` (the date the analysis is as-of), `skill`, `affix`, `key_metrics`, `conclusions`, `claims[]`, `mechanism_outcome`, plus `ticker` or `tickers`. [Schema →](./contracts/output-frontmatter-schema.md)
+- **`snapshots/{ticker}/{YYYY-MM-DD}_{semantic-slug}.md`** — point-in-time synthesis (≤400 words) that states which prior conclusions are **confirmed**, **updated**, or **superseded**. The key is the **ticker, not the thesis id**, because a ticker always exists and a thesis id does not — thesis attribution lives in frontmatter, never in the path. [Contract →](./contracts/snapshot-synthesis.md)
+- **Claim classification is a field, not a badge.** Every claim carries `claim_class ∈ {FACT, DEDUCTED, VIEW}`; the inline `[FACT]`/`[DEDUCTED]`/`[VIEW]` badges are **rendering from it**, and the field wins on disagreement. `facts_count` / `deducted_count` / `views_count` are **derived** from that list, never authored. The reason is that a gate which counts claims by reading prose has stopped being deterministic — which is the one thing a G1 gate must be.
+- **Artifacts go to `artifacts/` in thesis mode only.** In single-skill mode there is no `artifacts/` to hold them, and `agentii.md` + `style.md` + `snapshots/` + `sessions/` keep their original behaviour.
+- **`_cross/`** — multi-ticker outputs. **`_sector/`** — industry/thematic outputs with no primary ticker.
+- **`sessions/`** — transcripts archived by date (not auto-loaded); `INDEX.md` is auto-loaded. [Format →](./contracts/session-format.md)
 
 ---
 
@@ -227,9 +243,9 @@ Every material fact, table row, and metric in a deliverable is immediately follo
 Revenue grew 22% YoY to $215.9B [📄 NVDA 10-K p.42](https://agentii.ai/v/NVDA/sec173/42)
 ```
 
-The bottom `## Citations` section provides a non-duplicative roll-up index. The closing TUI reply includes a **Key Citations** block (0–10 clickable URLs) so you can cmd+click straight to the exact SEC page without opening the deliverable file.
+The bottom `## Citations` section provides a non-duplicative roll-up index. The closing TUI reply includes a **Key Citations** block — the headline 5–10 facts as clickable URLs, so you can cmd+click straight to the exact SEC page without opening the deliverable file.
 
-**Citation format**: `https://agentii.ai/v/{ticker}/{citation_id}/{N}` — path-based, ~7 tokens, browser-redirects to the exact filing page. Non-SEC sources use `ref<N>` (PDF) / `fda<N>` (FDA) prefixes.
+**Citation format**: `https://agentii.ai/v/{ticker}/{citation_id}/{N}` — path-based, ~7 tokens, browser-redirects to the exact filing page. Earnings-call transcripts use the `ect<N>` id form.
 
 ---
 
@@ -282,7 +298,7 @@ Skills surface a `data_freshness` warning for tickers with < 100% coverage and r
 ┌─────────────────┐     ┌──────────────────┐     ┌────────────────────┐
 │  AI Agent        │     │  MCP Server      │     │  REST API          │
 │  (Claude Code,   │ ──► │  mcp.agentii.ai  │ ──► │  api.agentii.ai    │
-│   OpenCode, etc) │     │  30+ tools       │     │  Hono + Vercel     │
+│   OpenCode, etc) │     │  30 tools        │     │  Hono + Vercel     │
 └─────────────────┘     └──────────────────┘     └────────┬───────────┘
                                                           │
                           ┌───────────────────────────────┤
@@ -290,7 +306,7 @@ Skills surface a `data_freshness` warning for tickers with < 100% coverage and r
                     ┌─────▼──────┐                  ┌─────▼──────┐
                     │  Neon      │                  │  Redis     │
                     │  PostgreSQL│                  │  (Upstash) │
-                    │  4.17M     │                  │  tracing   │
+                    │  15.99M    │                  │  tracing   │
                     │  XBRL facts│                  │  hot tier  │
                     └────────────┘                  └────────────┘
 ```
@@ -315,9 +331,16 @@ One MCP server. One API key. Zero infrastructure.
 
 ## For Other CLI Agents
 
-### OpenCode / Codex / Goose / OpenClaw
+The skills are portable markdown following the open Agent Skills standard. What differs per host is the **install path**, and not every host has an adapter shipped in this repository:
 
-All 48 skills use the open Agent Skills standard (`skills/agentii/<name>/SKILL.md`) — works identically across all 6 CLI hosts. The `agentii` MCP entry is replicated in each vertical's `.mcp.json` — host CLIs deduplicate by server name.
+| Host | Skills | Adapter config |
+|------|:---:|----------------|
+| Claude Code | ✅ | `adapters/claude-code/.mcp.json` |
+| Claude Cowork | ✅ | `adapters/claude-cowork/connector.json` |
+| Codex | ✅ | `adapters/codex/codex.json` |
+| Goose | ✅ | `adapters/goose/profiles.yaml` |
+| OpenClaw | ✅ | `adapters/openclaw/openclaw.json` |
+| OpenCode | ✅ | **no adapter shipped yet** — the skills load from its skills directory; see [docs/install](./docs/install/) |
 
 ```bash
 # Recommended: install the full agentii namespace
@@ -331,7 +354,9 @@ openclaw add ./plugins/agentii-plugin                                      # Ope
 cp -r plugins/vertical-plugins/equity-research-core/skills/agentii ~/.config/opencode/skills/
 ```
 
-See [`adapters/`](./adapters/) for per-CLI configuration files. All agents benefit from [`ai-agents.txt`](./ai-agents.txt) at the repo root.
+> **Two MCP transports.** The quick-start above uses the **hosted HTTP server** at `https://mcp.agentii.ai/mcp`. The files under `adapters/` configure the **stdio** package (`npx -y @agentii/investment-intelligence`) instead. Pick one deliberately — they are not the same process, and mixing them produces a confusing "tools not found".
+
+See [`adapters/`](./adapters/) for per-host configuration files, and [`docs/install/`](./docs/install/) for step-by-step guides. All agents benefit from [`ai-agents.txt`](./ai-agents.txt) at the repo root.
 
 ---
 
@@ -340,6 +365,7 @@ See [`adapters/`](./adapters/) for per-CLI configuration files. All agents benef
 - **Bring your templates** — mount firm-branded `.pptx` templates at `./templates/` for pitch-deck and earnings-preview
 - **Adjust methodology** — edit `## Defaults` tables and `references/institutional-defaults.md`
 - **Override via style.md** — per-workspace `style.md` overrides defaults for lookback quarters, reporting currency, peer universe, and output verbosity
+- **Set your own limits** — `/agentii:constitution` writes the position caps, concentration limits and regime drift triggers a workspace is governed by
 - **Chain skills** — `dcf → pitch-deck` for end-to-end model-to-deck workflows; `xlsx-financials → audit-xls` for quality assurance
 - **Edit skills** in `plugins/vertical-plugins/<vertical>/skills/agentii/<name>/SKILL.md` — the single canonical source
 - **Sync changes**: `python3 scripts/sync-agent-skills.py` then `bash scripts/assemble-agentii-namespace.sh`
@@ -357,6 +383,7 @@ See [`adapters/`](./adapters/) for per-CLI configuration files. All agents benef
 | `✘ not authenticated` | Key expired or invalid | Check at [agentii.ai/api-keys](https://agentii.ai/api-keys) |
 | `API_KEY_REQUIRED` | Key not sent | Verify `Authorization: Bearer` header in config |
 | `AGENTII_CREDITS_EXHAUSTED` | Trial credits used | Regenerate key or upgrade at [agentii.ai](https://agentii.ai) |
+| Tools work in one host, not another | HTTP MCP configured in one, stdio npm in the other | See [For Other CLI Agents](#for-other-cli-agents) — pick one transport |
 | `list_xbrl_concepts` returns empty | Concept name mismatch | Try "Revenues" not "Revenue", "NetIncomeLoss" not "Net Income" |
 | Ticker not found | Non-canonical ticker | Three-layer ticker resolution handles aliases (GOOGL → GOOG, BRK.B → BRK.A) |
 | `.xlsx` not produced | `openpyxl` not installed | `pip install openpyxl` — skill produces `.md` fallback with exact command |
@@ -370,19 +397,34 @@ See [`adapters/`](./adapters/) for per-CLI configuration files. All agents benef
 ```
 agentii-investment-intelligence/
 ├── plugins/
-│   ├── agentii-plugin/                  # Meta-plugin: /agentii:* surface (48 symlinked skills)
-│   ├── vertical-plugins/
-│   │   ├── equity-research-core/        # 9 skills
-│   │   ├── business-intelligence/       # 4 skills
-│   │   ├── industry-analysis/           # 4 skills
-│   │   ├── models-and-pitches/          # 9 skills
-│   │   └── quantitative-analysis/       # 5 skills
+│   ├── agentii-plugin/                  # Meta-plugin: /agentii:* surface (70 symlinked skills)
+│   ├── vertical-plugins/                # 14 verticals, 80 skills
+│   │   ├── equity-research-core/        # 9   company dimensions
+│   │   ├── models-and-pitches/          # 9   models + decks
+│   │   ├── bio-pharm/                   # 15  FDA catalysts, trials
+│   │   ├── scenarios/                   # 10  spec-046 research kit
+│   │   ├── quantitative-analysis/       # 5
+│   │   ├── idea-generation/             # 5
+│   │   ├── options-derivatives/         # 5
+│   │   ├── business-intelligence/       # 4
+│   │   ├── industry-analysis/           # 4
+│   │   ├── macro-strategy/              # 4
+│   │   ├── portfolio-strategy/          # 4
+│   │   ├── technical-analysis/          # 4
+│   │   ├── risk-and-psychology/         # 1
+│   │   └── trading-as-business/         # 1
 │   └── agent-plugins/
 │       └── agentii-equity-agent/        # Managed agent bundle
-├── contracts/                           # 21 shared contracts (single source of truth)
-├── scripts/                             # CI gates, sync, validation, assembly
-├── docs/install/                        # Per-CLI install guides
+├── contracts/                           # 33 shared contracts (single source of truth)
+├── data-tools/                          # Instant macro/market/earnings data (spec 039)
+├── scripts/                             # CI gates, sync, validation, assembly, report pipeline
+├── packaging/                           # 4 host export targets (spec 039)
+├── docs/                                # install guides, architecture, CLI surfaces
+├── adapters/                            # Per-host MCP config (5 hosts)
+├── workflows/                           # Enrichment presets (spec 039)
 ├── style.md                             # Package-shipped formatting standard
+├── skill-registry.yaml                  # 80 skills — the registry
+├── QUICKSTART.md                        # Step-by-step walkthrough
 ├── README.md, LICENSE, NOTICE, CHANGELOG.md
 └── SKILL.md                             # Root package manifest
 ```
@@ -393,10 +435,27 @@ agentii-investment-intelligence/
 
 Everything is markdown, YAML, and Python. Fork, edit, PR.
 
+- **Read [QUICKSTART.md](./QUICKSTART.md) first** for a working install, and browse [`docs/`](./docs/) for the architecture notes.
 - **Edit skills** in `plugins/vertical-plugins/<vertical>/skills/agentii/<name>/SKILL.md` — the single canonical source
 - **Sync changes**: `python3 scripts/sync-agent-skills.py` then `bash scripts/assemble-agentii-namespace.sh`
 - **Run `python3 scripts/check.py`** before pushing — validates all manifests, frontmatter, CI gates, and cross-file consistency
 - Skills follow the open Agent Skills standard, supported by Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork
+
+---
+
+## Disclaimer
+
+**This repository is software.** It does not provide investment, legal, tax, or accounting advice, and nothing it produces is a recommendation, an offer, or a solicitation to buy or sell any security.
+
+The skills generate **analyst work product for review by a qualified professional**. Outputs are staged for human sign-off and are not intended to be acted on unreviewed. Any figure, valuation, model, or conclusion a skill produces may be incomplete, delayed, or wrong — it is derived from the sources cited inline, those sources may themselves be wrong, and the analysis may have misread them. No representation or warranty is made as to accuracy or completeness.
+
+Statements about the future are forward-looking and inherently uncertain. Past performance is not indicative of future results. **You are responsible for your own due diligence** and should consult your own advisers before acting on anything produced with this software. The authors and distributors accept no liability for any loss arising from reliance on it.
+
+Data is provided by agentii.ai and third-party sources under their own terms. Market data may be delayed. Coverage is not universal — skills surface a `data_freshness` warning and are designed to refuse rather than fabricate, but absence of a warning is not a guarantee of completeness.
+
+> **Generated research outputs carry their own disclaimer.** Every presentation-shaped output — `thesis-report.html`, `dashboard.html`, `pitch-deck`, `earnings-preview` — must include the canonical block from [`plugins/vertical-plugins/scenarios/templates/disclaimer.md`](./plugins/vertical-plugins/scenarios/templates/disclaimer.md), which is the single authored source. It must be included verbatim, with placeholders filled; it is never restated, paraphrased, or forked, and `scripts/check_disclaimer.py` fails the build if it drifts.
+
+See [`LICENSE`](./LICENSE) for the software licence and [`NOTICE`](./NOTICE) for attribution.
 
 ---
 

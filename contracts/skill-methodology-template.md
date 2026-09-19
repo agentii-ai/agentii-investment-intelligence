@@ -162,7 +162,7 @@ Skills MUST follow a two-tier output model:
 
 **Tier 1 — Raw Analysis**: Per-skill output files in `{ticker}/` (or `_cross/`, `_sector/`) Detailed, citation-dense, full methodology. These are the evidence.
 
-**Tier 2 — Curated Snapshots**: After completing 2+ skills on the same ticker in a single session, the agent MUST synthesize a snapshot at `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md`. The snapshot:
+**Tier 2 — Curated Snapshots**: After completing a run for a ticker, the agent MUST synthesize or update the snapshot at `snapshots/{ticker}/{YYYY-MM-DD}_{semantic-slug}.md` — the date orders, the slug says what the snapshot is about (`thesis` when it covers the whole thesis, `guidance-cut` / `margin-bridge` when it does not). The snapshot:
 - Distills conclusions across all skills run in the session.
 - Flags changes from the prior snapshot (if one exists) with a "## Changes from Prior Snapshot" section.
 - References the prior snapshot's path for audit trail continuity.

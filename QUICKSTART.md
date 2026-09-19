@@ -1,9 +1,9 @@
-# Quickstart — agentii-investment-intelligence v2.3.1
+# Quickstart — agentii-investment-intelligence v3.3.0
 
 <p align="center">
   <strong>5 minutes to your first institutional-grade equity research report.</strong><br>
   No Rust toolchain. No Python virtualenv. No backend install.<br>
-  One API key. One MCP server. 31 skills. All six CLI agents.
+  One API key. One MCP server. 80 skills. All six CLI agents.
 </p>
 
 ---
@@ -68,14 +68,14 @@ Writes to `~/.claude.json`. Restart Claude Code.
 
 ## 4. Install Skills (Primary: Local Copy)
 
-All 31 skills register under a **single flat namespace, `/agentii:skill-name`**. There is no `/equity-research-core:*` or `/models-and-pitches:*` surface — every skill is reached the same way regardless of which vertical authored it.
+All 80 skills register under a **single flat namespace, `/agentii:skill-name`**. There is no `/equity-research-core:*` or `/models-and-pitches:*` surface — every skill is reached the same way regardless of which vertical authored it.
 
 ```bash
 # From the agentii-investment-intelligence directory:
 bash scripts/copy-skills-local.sh
 ```
 
-This copies all 31 `SKILL.md` files into `.claude/skills/agentii/` and all 31 command wrappers into `.claude/commands/agentii/`. Restart Claude Code.
+This copies the `SKILL.md` files and their command wrappers into `.claude/skills/agentii/` and `.claude/commands/agentii/`. Restart Claude Code.
 
 > **Why local copy instead of plugin install?** Claude Code v2.1.143 has a [known bug](https://github.com/anthropics/claude-code/issues/15178) where `claude plugin install` does not inject skills into the runtime. The local copy bypasses the plugin system entirely and works reliably on all Claude Code versions. When the bug is fixed, you can switch to `claude plugin install agentii@agentii-investment-intelligence` for the unified meta-plugin.
 
@@ -235,7 +235,7 @@ grep '"version"' .claude-plugin/marketplace.json
 
 ## 8. Skills at a Glance
 
-All 31 skills invoke as `/agentii:skill-name`. Trigger phrases auto-activate them from natural language too.
+All skills invoke as `/agentii:skill-name`. Trigger phrases auto-activate them from natural language too.
 
 | Vertical | Skills | Focus |
 |----------|--------|-------|
@@ -275,12 +275,12 @@ All valuation skills support `--mode=scenario` for Bear/Base/Bull probability-we
 - **Skim the skill catalog** — every `plugins/vertical-plugins/<vertical>/skills/agentii/<name>/SKILL.md` is a self-contained methodology
 - **Set up a workspace `style.md`** — override default lookback quarters, reporting currency, peer universe, and output verbosity per project
 - **Chain skills**: `dcf → pitch-deck` for end-to-end model-to-deck workflows; `xlsx-financials → audit-xls` for quality assurance
-- **Read the [CHANGELOG](./CHANGELOG.md)** for what changed in v2.3.1
+- **Read the [CHANGELOG](./CHANGELOG.md)** for what changed in v3.3.0
 - **Report issues** at [github.com/agentii-ai/agentii-investment-intelligence](https://github.com/agentii-ai/agentii-investment-intelligence)
 
 ---
 
 <p align="center">
-  <strong>One API key. One MCP server. 31 skills. Zero infrastructure.</strong><br>
+  <strong>One API key. One MCP server. 80 skills. Zero infrastructure.</strong><br>
   <a href="https://agentii.ai">agentii.ai</a>
 </p>

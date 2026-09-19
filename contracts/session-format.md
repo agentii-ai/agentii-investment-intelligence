@@ -65,7 +65,7 @@ The INDEX.md file provides a lightweight catalog of all sessions. It IS auto-loa
 | Layer | File | Auto-Load? | Purpose |
 |-------|------|------------|---------|
 | Index | `agentii.md` | Yes  | Project memory index — what analyses exist, key conclusions |
-| Snapshots | `snapshots/{ticker}/{date}_thesis.md` | Yes  | Point-in-time investment thesis — auto-loaded for context restoration |
+| Snapshots | `snapshots/{ticker}/{YYYY-MM-DD}_{semantic-slug}.md` | Yes  | Point-in-time synthesis — auto-loaded for context restoration. Key is the TICKER (Q144); thesis attribution lives in frontmatter |
 | Session Index | `sessions/INDEX.md` | Yes  | What sessions exist — lightweight catalog |
 | Raw Sessions | `sessions/{date}/{time}_{id}.jsonl` | No | Full transcripts — accessed via `read_session` tool on demand |
 

@@ -14,7 +14,7 @@ retrieval, so prior conclusions for the ticker are already in context.
 3. **Parse frontmatter only**: `head -20` each matched output file to extract its
    YAML frontmatter (`key_metrics`, `conclusions`, `facts_count`, …) — do NOT
    load full file bodies.
-4. **Load latest snapshot**: if `snapshots/{ticker}/{date}_thesis.md` exists, read
+4. **Load latest snapshot**: if `snapshots/{ticker}/{YYYY-MM-DD}_{semantic-slug}.md` exists, read
    the most recent one for thesis continuity (see
    `contracts/snapshot-synthesis.md`).
 5. **Build memory summary**: aggregate `key_metrics` + `conclusions` across all

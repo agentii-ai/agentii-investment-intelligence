@@ -2,6 +2,74 @@
 
 All notable changes to `agentii-investment-intelligence`.
 
+## [3.3.0] — 2026-09-19 — spec 046 Governance + Report Pipeline
+
+### Added
+- **Governance layer** (`scenarios` vertical, spec 046): `agentii.constitution` scaffolds a
+  workspace's investment constitution — `constitution.md` (prose + SemVer amendment log),
+  `constitution.yaml` (executable position/concentration constraints, budgets, regime drift
+  triggers), plus `assumptions.yaml`, `value-checks.yaml`, `taxonomy.yaml`. Theses compile
+  against a `constitution_pin`, so a stale pin is a hard failure rather than silent drift.
+- **Two operating modes**, deliberately coexisting: *thesis mode* (a governed research
+  programme under `theses/{nnn}-{slug}/`, outputs to `artifacts/`) and *single-skill mode*
+  (one skill against agentii.ai data, no thesis). `agentii.md` has **two roles**, decided by
+  the filesystem: a chronicle when `constitution.md` exists, **the constitution itself** when
+  it does not — where rotating it would rotate away the project's principles. `agentii_cmd
+  singleskill scaffold` creates the single-skill instrument set, which had no entry point before.
+- **Report pipeline** (spec 046): `pack → author → assemble → render`. Artifacts are packed
+  into a report input; the author writes `content.html` against a fixed outline; the assembler
+  injects page furniture — headers, footers, page numbers, TOC, and the disclaimer page — and
+  the render step iterates on rendered output rather than source.
+- **Disclaimer system** (spec 046): a single authored source at
+  `scenarios/templates/disclaimer.md`, gated for the four presentation-shaped outputs
+  (`thesis-report.html`, `dashboard.html`, `pitch-deck`, `earnings-preview`). The clause set —
+  not the wording — is the contract, and `scripts/check_disclaimer.py` fails the build on drift
+  or on a forked copy.
+- **Gate tiers G1/G2/G3**: G1 is deterministic (pure script, millisecond, zero LLM — citation
+  integrity, numeric canonical form, evidence class); G2 is an independent-context validator
+  sub-agent at phase boundaries; G3 is human audit of red items only. A gate that did not run
+  must report `mechanism_outcome: VACUOUS`; an un-run gate that reports success is the failure
+  mode the layer exists to prevent.
+- **New verticals**: `bio-pharm` (15 skills, spec 052), `scenarios` (10, the spec-046 kit),
+  `idea-generation` (5), `options-derivatives` (5), `macro-strategy` (4),
+  `portfolio-strategy` (4), `technical-analysis` (4), `risk-and-psychology` (1),
+  `trading-as-business` (1).
+
+### Changed
+- **Count corrections, applied where the count is a claim rather than a record.** The package
+  is **80 skills across 14 verticals**, with **33 contracts** and **30 MCP tools**. The 2.4.0 entry
+  below says "48 entries" and "48 skills total"; 48 was never the skill count — it is the number of
+  addressable sub-prompt modes in `equity-research-core`. Historical entries are left as written;
+  this line is the correction.
+- **Version unified to 3.3.0.** Four values shipped simultaneously — `SKILL.md` and seven
+  `plugin.json` files said 2.2.1, the README badge and QUICKSTART said 2.3.1, and the CHANGELOG's
+  latest entry said 2.4.0. All package-level sites now read 3.3.0. The eight verticals at `0.1.0`
+  are **independently versioned** and are left alone: they have never had a 1.0, and moving them
+  to 3.3.0 would assert a release history they do not have.
+- **README rewritten** as the landing page: the broken `demo.gif` hero removed (the file was never
+  committed), the self-contradictory figures reconciled (`15.99M` vs `4.17M` XBRL facts; `20+` vs
+  `30+` tools; `48` vs `31` vs `80` skills), the 14-row vertical table replacing per-skill tables
+  that listed 31 of 80, and a **Disclaimer** section added.
+
+### Fixed
+- **`check_disclaimer.py` was invoked by nothing.** It was correct, and it was Q139's named
+  enforcement point — but no test module and no CI step ran it, so the disclaimer was gated only
+  in principle. It is now a CI step, and `check_*.py` orphanhood is itself gated (Check 48).
+- **The spec-matrix separator parsed as a task.** `parse_spec_matrix` skipped only the literal
+  `---` while `spec-template.md` emits `|-------|`, so every scaffolded thesis carried a phantom
+  task. Fixed structurally rather than by extending a list of literals.
+- **The revoked snapshot key survived in a generator.** `spec-template.md` still emitted
+  `snapshots/{nnn}-{slug}/YYYY-MM-DD_thesis.md`; every thesis scaffolded afterwards inherited it.
+- **Three contracts still carried the retired `_thesis.md` filename** (`memory-load.md`,
+  `session-format.md`, `agentii-md-schema.md`) after Q144 replaced it — the same defect as the one
+  that had already been corrected in a sibling file.
+- **22 cross-reference labels across 7 shipped documents** had been silently emptied to `****` by a
+  lossy transform. Recovered from the commits that predate it, not guessed.
+- **The Chinese-firewall premise retired from the probe harness.** The provider registry and
+  `contracts/SOURCES.md` had been corrected to put it out of scope (users are in the US and the EU);
+  `data-tools/source_probe.py` still asserted *"Yahoo geo-blocks this network"* and labelled its
+  licence `(geo-blocked)`. `GEO_BLOCK` and `RATE_LIMITED` are now separate outcomes.
+
 ## [2.4.0] — 2026-07-17 — spec 039 Enhance Skills
 
 ### Added

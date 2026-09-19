@@ -61,7 +61,7 @@ date: 2026-06-03
 skill: recent-quarter
 output_file: LLY/2026-06-03_1430_recent-quarter_consolidated-p-and-l.md
 key_conclusions: Q1 2026 revenue $18.5B (+12% QoQ), EPS $2.34 beat consensus by 4%, gross margin expanded 200bps to 80%. Mounjaro supply constraints easing.
-snapshot_ref: snapshots/LLY/2026-06-03_thesis.md # optional, present only if snapshot synthesized
+snapshot_ref: snapshots/LLY/2026-06-03_thesis.md # optional; slug names what the snapshot is ABOUT
 ---
 ```
 
