@@ -50,10 +50,17 @@ Writes to `~/.claude.json`. Restart Claude Code — all 30 tools auto-discover o
 ### 3. Install Skills (Claude Code: Local Copy)
 
 ```bash
-bash scripts/copy-skills-local.sh   # Copies all 80 skills + commands to ~/.claude/
+bash scripts/copy-skills-local.sh ~   # ~ = the target; skills land in ~/.claude/
 ```
 
+> **The target argument is not optional in practice.** The script defaults to the
+> *current directory*, so running it bare from the repo root installs into
+> `<repo>/.claude/` instead of `~/.claude/`. Pass `~` unless you specifically want a
+> project-local install.
+
 Restart Claude Code — skills register under a **single unified namespace, `/agentii:skill-name`** (skills land in `~/.claude/skills/agentii/`, commands in `~/.claude/commands/agentii/`). This is the **recommended install method on Claude Code** — one namespace, no per-vertical prefixes, and it works reliably on all Claude Code versions.
+
+The installer is idempotent and **prunes**: re-running it removes any installed skill that no longer exists upstream (a renamed or split skill, for example), and prints each one by name. Pass `--dry-run` to preview without writing.
 
 > **Single namespace by design**: the local-copy path exposes *only* `/agentii:*`. There is no `/equity-research-core:*` or `/models-and-pitches:*` surface — every skill is reached the same way regardless of which vertical authored it.
 

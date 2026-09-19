@@ -14,10 +14,19 @@ set -eu
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 META_SKILLS_DIR="${REPO_ROOT}/plugins/agentii-plugin/skills/agentii"
-# spec 039 US6 (T077): all 12 verticals — original 5 + 3 pre-existing (macro-strategy,
-# options-derivatives, portfolio-strategy; previously omitted from assembly) + 4 new course
-# verticals (idea-generation, risk-and-psychology, trading-as-business, technical-analysis).
-VERTICALS="equity-research-core business-intelligence industry-analysis models-and-pitches quantitative-analysis macro-strategy options-derivatives portfolio-strategy idea-generation risk-and-psychology trading-as-business technical-analysis bio-pharm"
+# ALL 14 verticals — and note the count, because this list has been wrong twice.
+#
+# spec 039 US6 (T077) fixed a hardcoded list of 5: 3 pre-existing verticals
+# (macro-strategy, options-derivatives, portfolio-strategy) had never been assembled.
+# The fix enumerated 13 and its own comment said "all 12" — while the disk held 14.
+# **`scenarios` was absent**, so the 10 spec-046 kit skills never reached the
+# meta-plugin: `agentii-plugin/skills/agentii/` carried 70 symlinks against 80 skills.
+#
+# The omission was invisible for the same reason the orphan directories were: every
+# count in this repository was self-consistent about 70, and nothing compared the
+# list against the disk. `check.py` Check 50 now fails on a namespace directory with
+# no SKILL.md; this list is checked by the count in the summary line below.
+VERTICALS="equity-research-core business-intelligence industry-analysis models-and-pitches quantitative-analysis macro-strategy options-derivatives portfolio-strategy idea-generation risk-and-psychology trading-as-business technical-analysis bio-pharm scenarios"
 # Naming convention (spec 052): same-name sector adaptations use {base}-{sector}
 # suffixes (e.g., earnings-preview-med), so the meta namespace stays collision-free.
 TMPFILE="$(mktemp)"
@@ -59,9 +68,34 @@ echo "Found $count skills across $vert_count verticals."
 
 # Step 2: Validate each skill
 echo "--- Validating skills ---"
+# Role-aware, and this is the reason `scenarios` was absent from VERTICALS.
+#
+# These three checks are TICKER-ANALYSIS checks: a sourcing skill emits output files,
+# structures them, and handles its own errors. The 10 `scenarios` skills are
+# workspace META-commands — they operate on specs, tasks and theses, and emit no
+# ticker artifact — so they legitimately have no `## Output File`. Applied
+# unconditionally, these checks fail all 10, and the only way to get a green
+# assembly was to leave the vertical out of the list.
+#
+# So the omission was never an oversight; it was the validator's blind spot being
+# worked around by hand. `check.py` already solved this properly — `_meta_role()`
+# reads `role: kit|orchestrator` from the frontmatter and excludes those bodies from
+# the analysis-only checks (Q25: three body types, three validators). This mirrors it.
+#
+# The role is read, never inferred, and only from frontmatter — so a skill cannot
+# slip past by lacking the marker.
 errors=0
+meta_skipped=0
 while IFS=' ' read -r skill_name vertical; do
   skill_file="${REPO_ROOT}/plugins/vertical-plugins/${vertical}/skills/agentii/${skill_name}/SKILL.md"
+
+  # Q25 role dispatch: kit / orchestrator bodies are meta-commands, not analyses.
+  role="$(sed -n '1,/^---$/p' "$skill_file" 2>/dev/null | awk 'NR>1 && /^---$/{exit} /^role:/{sub(/^role:[[:space:]]*/,""); print; exit}')"
+  case "$role" in
+    kit|orchestrator)
+      meta_skipped=$((meta_skipped + 1))
+      continue ;;
+  esac
 
   # Check ## Output File presence
   if ! grep -q "^## Output File" "$skill_file"; then
@@ -82,6 +116,9 @@ while IFS=' ' read -r skill_name vertical; do
     errors=$((errors + 1))
   fi
 done < "$TMPFILE"
+if [ "$meta_skipped" -gt 0 ]; then
+  echo "  ($meta_skipped meta-command(s) skipped — role: kit/orchestrator, Q25)"
+fi
 
 if [ "$errors" -gt 0 ]; then
   echo "VALIDATION FAILED: $errors error(s) found."
@@ -104,8 +141,34 @@ while IFS=' ' read -r skill_name vertical; do
 done < "$TMPFILE"
 echo "Symlinked $count skills into $META_SKILLS_DIR."
 
-# Step 5: Verify flat namespace
+# Step 5: Verify flat namespace — against the DISK, not against ourselves.
+#
+# The previous version printed `Meta-plugin skills: $meta_count` and stopped. That
+# number is computed FROM the thing being verified, so it is true by construction and
+# cannot detect the failure that actually occurred: `scenarios` was missing from
+# VERTICALS, so 10 skills were never symlinked, and the line still printed a
+# self-consistent 70. A count that agrees with itself is not a check.
+#
+# The comparison that can fail is list-versus-disk: every vertical on disk must be in
+# VERTICALS, and the namespace must hold one link per SKILL.md in those verticals.
 echo "--- Verifying namespace ---"
+disk_verticals="$(cd "$REPO_ROOT/plugins/vertical-plugins" && ls -1d */ 2>/dev/null | sed 's|/$||' | sort)"
+missing_verticals=""
+for v in $disk_verticals; do
+  case " $VERTICALS " in *" $v "*) ;; *) missing_verticals="$missing_verticals $v" ;; esac
+done
+disk_skills="$(find "$REPO_ROOT/plugins/vertical-plugins" -path '*/skills/agentii/*/SKILL.md' | wc -l | tr -d ' ')"
 meta_count="$(ls -1 "$META_SKILLS_DIR" 2>/dev/null | wc -l | tr -d ' ')"
-echo "Meta-plugin skills: $meta_count"
-echo "Assembly complete."
+echo "Meta-plugin skills: $meta_count (disk holds $disk_skills)"
+
+if [[ -n "$missing_verticals" ]]; then
+  echo "FAIL — vertical(s) on disk but not in VERTICALS:$missing_verticals"
+  echo "       their skills are absent from the meta-plugin."
+  exit 1
+fi
+if [[ "$meta_count" != "$disk_skills" ]]; then
+  echo "FAIL — meta-plugin holds $meta_count skills, disk holds $disk_skills."
+  echo "       A name collision or a missing vertical produces this. Re-run after fixing."
+  exit 1
+fi
+echo "Assembly complete — every vertical on disk is assembled."

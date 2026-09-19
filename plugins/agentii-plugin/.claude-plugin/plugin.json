@@ -1,7 +1,7 @@
 {
   "name": "agentii",
   "version": "3.3.0",
-  "description": "Institutional-grade equity research skills for AI agents. 29+ skills across 5 verticals (equity-research-core, business-intelligence, industry-analysis, models-and-pitches, quantitative-analysis) powered by agentii.ai's agent-use-ready SEC filing data plane. Unified namespace: /agentii:skill-name.",
+  "description": "Institutional-grade equity research skills for AI agents. 80 skills across 14 verticals, exposed under a single /agentii:skill-name namespace and powered by agentii.ai's agent-use-ready SEC filing data plane.",
   "author": {
     "name": "agentii-ai",
     "url": "https://agentii.ai"

@@ -751,6 +751,95 @@ for sk in ALL_SKILL_MD_FILES:
             f"— FR-014c/FR-014e namespace gate"
         )
 
+# --- Check 50: Namespace gate, the other half — no directory WITHOUT a SKILL.md
+#     (spec 046 Part III; found by the 2026-09-19 upgrade audit)
+#
+# Check 27 above catches a SKILL.md in the WRONG PLACE. This catches a directory
+# in the RIGHT place with NO SKILL.md. They are exact complements, and the gap
+# between them was invisible for as long as it existed:
+#
+#   * Check 27 globs `skills/**/SKILL.md`. A directory with no SKILL.md produces no
+#     hit, so it cannot be found by a check that looks for SKILL.md files. Five such
+#     directories were committed — four inside the install path, two of those a level
+#     too high for the installer's loop to even reach.
+#   * Check 30's own comment already says "shared dirs like .../agentii/references/
+#     are NOT skills" — it EXCLUDES them from the registry comparison, so an orphan is
+#     absent from both sides of the bijection and it passes. The exclusion is correct;
+#     it was simply unguarded, and "correctly excluded" and "does not exist" are the
+#     same thing to every check that was running.
+#
+# The cost was not cosmetic. A directory at `skills/agentii/<name>/` is enumerated as
+# a skill by `copy-skills-local.sh` and `assemble-agentii-namespace.sh` (both walk
+# `"$dir"/*/`), so orphans made directory enumeration report 82 while every SKILL.md
+# glob reported 80 — and the diff between those two numbers is what a reader sees as
+# "this skill is installed but missing".
+_mark('Check 50: Namespace gate — no directory without a SKILL.md (spec 046)')
+
+# (root, what a legitimate child of it is)
+_NS_ROOTS = [
+    (PLUGINS / "vertical-plugins", "skills/agentii"),      # children = skill dirs
+    (PLUGINS / "vertical-plugins", "skills"),              # only legitimate child = agentii/
+    (PLUGINS / "agent-plugins", "skills/agentii"),
+]
+_orphans: list[Path] = []
+for _base, _suffix in _NS_ROOTS:
+    for _root in sorted(_base.glob(f"*/{_suffix}")):
+        checked += 1
+        for _child in sorted(p for p in _root.iterdir() if p.is_dir()):
+            if _suffix == "skills":
+                # At the `skills/` level the ONE legitimate entry is the agentii
+                # namespace. Anything else is the pre-Phase-23 layout or a stub.
+                if _child.name == "agentii":
+                    continue
+            if not (_child / "SKILL.md").is_file():
+                _orphans.append(_child)
+if _orphans:
+    for _o in _orphans:
+        err(
+            f"skill-namespace: {rel(_o)} is a directory in a skill namespace with no "
+            f"SKILL.md — it is enumerated as a skill by copy-skills-local.sh and "
+            f"assemble-agentii-namespace.sh, and skipped with a warning on every "
+            f"install. Delete it, or move it out of the skills tree (Check 50)."
+        )
+
+# The duplicate-name half. `copy-skills-local.sh` keys its destination FLAT by name
+# (`$SKILLS_DST/$skill_name`) and `sync-agent-skills.py` does `src_by_name[name] = src`,
+# so two skills sharing a name would be a SILENT overwrite — whichever vertical is
+# walked last wins, and nothing reports it. No collision exists today; this is the
+# guard that keeps it that way, because the failure mode it prevents is invisible.
+#
+# Scoped to ONE source, and deduplicated by RESOLVED path. Both refinements came from
+# this check's own false positives on its first two runs, and both are load-bearing:
+#
+#   * Dedup by resolved path: `agentii-plugin/skills/agentii/*` is a tree of SYMLINKS
+#     into the verticals, so a naive scan sees every skill twice. Run 1 reported all 70
+#     of them as duplicates. A symlink to a file IS that file.
+#   * Scope to `vertical-plugins`: run 2 reported 9 collisions between
+#     `equity-research-core/*` and `agent-plugins/agentii-equity-agent/*`. Those are
+#     real second copies — but they are a SEPARATE DISTRIBUTION BUNDLE, not part of the
+#     flat destination. `copy-skills-local.sh` walks only `vertical-plugins/*/skills/
+#     agentii`, so an agent-plugin copy can never overwrite a vertical's. Flagging them
+#     here would report drift — a genuine concern, but a different one — as a collision
+#     that cannot happen, and the two would be fixed by different means.
+#
+# The question this half answers is narrow and decidable: **can two files race for one
+# name at the flat destination?** Only the verticals can.
+_SEEN_NAMES: dict[str, Path] = {}
+for _sk in sorted(PLUGINS.glob("vertical-plugins/*/skills/agentii/*/SKILL.md")):
+    checked += 1
+    _name = _sk.parent.name
+    _real = _sk.resolve()
+    if _name in _SEEN_NAMES:
+        if _SEEN_NAMES[_name] == _real:
+            continue          # the same file reached through a symlink — not a collision
+        err(
+            f"skill-namespace: duplicate skill name '{_name}' — {rel(_SEEN_NAMES[_name])} "
+            f"and {rel(_sk)} are two DIFFERENT files. The install destination is keyed "
+            f"flat by name, so one would silently overwrite the other (Check 50)."
+        )
+    else:
+        _SEEN_NAMES[_name] = _real
+
 # --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---
 
 _mark('Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23)')

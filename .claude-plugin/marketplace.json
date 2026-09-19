@@ -4,7 +4,7 @@
     "name": "agentii-ai"
   },
   "metadata": {
-    "description": "Agent-use-ready US equity investment-intelligence skills and plugins for Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar) with three-layer retrieval protocol, code-mode office output (openpyxl/python-pptx + LibreOffice), and workspace memory architecture (v2.3.1).",
+    "description": "Agent-use-ready US equity investment-intelligence skills and plugins for Claude Code, OpenCode, Codex, OpenClaw, Goose, and Claude Cowork. Backed by agentii.ai's data API (SEC filings, XBRL facts, earnings calendar) with three-layer retrieval protocol, code-mode office output (openpyxl/python-pptx + LibreOffice), and workspace memory architecture (v3.3.0).",
     "version": "3.3.0",
     "total_skills": 80,
     "schema_version": "1.0"
@@ -13,7 +13,7 @@
     {
       "name": "agentii",
       "source": "./plugins/agentii-plugin",
-      "description": "Unified meta-plugin — the full agentii skill namespace (13 verticals, 62 skills) under a single /agentii:skill-name namespace. The recommended single install. Skills with same-name vertical variants (e.g., bio-pharm's med-adapted earnings-preview) ship via their own vertical plugins."
+      "description": "Unified meta-plugin — the full agentii skill namespace (14 verticals, 80 skills) under a single /agentii:skill-name namespace. The recommended single install. Skills with same-name vertical variants (e.g., bio-pharm's med-adapted earnings-preview) ship via their own vertical plugins."
     },
     {
       "name": "equity-research-core",
@@ -48,7 +48,7 @@
     {
       "name": "bio-pharm",
       "source": "./plugins/vertical-plugins/bio-pharm",
-      "description": "7 med-sector skills (spec 052): fda-catalyst-analysis (dated PDUFA/AdCom/device catalyst calendars), pipeline-analysis (risk-adjusted pipeline + runway), trial-readout-analysis (AdCom-style six-axis scrutiny), plus med-adapted sector-overview-med, peer-bench-med, earnings-preview-med and recent-quarter-med. Naming rule: same-name sector adaptations use {base}-{sector} suffixes. Backed by the med knowledge base (130 strategies / 320 cases) and the structured AdCom calendar (122 meetings)."
+      "description": "15 med-sector skills (spec 052): fda-catalyst-{devices,medicines,vaccines} (dated PDUFA/AdCom/device catalyst calendars), pipeline-{devices,medicines,vaccines} (risk-adjusted pipeline + runway), trial-readout-analysis (AdCom-style six-axis scrutiny), market-share-tracking, med-market-sizing, med-event-takeaways, ct-status-diff, plus med-adapted sector-overview-med, peer-bench-med, earnings-preview-med and recent-quarter-med. Naming rule: same-name sector adaptations use {base}-{sector} suffixes. Backed by the med knowledge base (130 strategies / 320 cases) and the structured AdCom calendar (122 meetings)."
     },
     {
       "name": "idea-generation",
@@ -63,7 +63,7 @@
     {
       "name": "options-derivatives",
       "source": "./plugins/vertical-plugins/options-derivatives",
-      "description": "6 options & derivatives skills: options-foundations, options-strategies, income-strategies, volatility-trading, price-action-options, technical-execution."
+      "description": "5 options & derivatives skills: options-foundations, income-strategies, volatility-trading, price-action-options, technical-execution. (A sixth, `options-strategies`, was retired upstream and is no longer shipped.)"
     },
     {
       "name": "portfolio-strategy",
