@@ -140,9 +140,11 @@ def test_reduction_writes_thesis_atomically(tmp_path):
     thesis = tmp_path / "theses" / "001-mvp" / "thesis.md"
     doc = reduce_journals.reduce(shard_dir, thesis)
     assert doc["mechanical"]["entry_count"] == 3
-    assert thesis.is_file()
+    # The reduce writes thesis.reduce.json, NOT thesis.md. thesis.md is the human's
+    # prose file; a machine write to it is refused by the boundary (contracts/thesis.md).
+    assert thesis.with_name("thesis.reduce.json").is_file()
     assert "conviction" in doc["judgment"]  # ② revision hook ran over ①'s output
-    assert not thesis.with_suffix(".tmp").exists()  # no temp residue
+    assert not thesis.with_name("thesis.reduce.json.tmp").exists()  # no temp residue
 
 
 def test_reduction_stale_price_degrades_claim(tmp_path):

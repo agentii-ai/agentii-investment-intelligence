@@ -54,24 +54,40 @@ class WriteTracer:
 # ── T177: one writer, proven by trace ───────────────────────────────────────
 
 def test_every_writer_routes_through_the_boundary(tmp_path, monkeypatch):
-    """Run all four writers; every filesystem write must come via the boundary.
+    """Run every writer; every filesystem write must come via the boundary.
 
-    The four are the ones Q147 measured: `synthesize_report.py`,
-    `reduce_journals.py`, `thesis_status.py`, `portfolio_aggregate.py` — each
-    with its own private `_atomic_write`, i.e. its own gate-free path."""
+    The four Q147 measured all had their own private `_atomic_write`, i.e. their own
+    gate-free path: `synthesize_report.py`, `reduce_journals.py`, `thesis_status.py`,
+    `portfolio_aggregate.py`.
+
+    **This docstring said "all four" and the body ran three — `synthesize_report` was
+    never invoked — and `agentii_cmd` was not in the set at all.** That omission is
+    where the thesis.md seam lived: `agentii_cmd._write` was a bare `Path.write_text`,
+    the one write path to `thesis.md` that the boundary never saw, and the test named
+    for exactly this property did not cover it. The tracer now runs `agentii_cmd`
+    too, because a tracer that enumerates its own subjects by memory will keep
+    missing the one that was added last.
+    """
+    import agentii_cmd
     import portfolio_aggregate
     import reduce_journals
     import thesis_status
 
     tracer = WriteTracer(monkeypatch)
 
-    # reduce_journals: journal shards -> thesis.md (the Q15 single-writer file)
+    # agentii_cmd: the scaffold path — constitution, L1 files, specify's thesis.md.
+    # Without this call the seam was untested: this was the ungated writer.
+    ws = tmp_path / "ac-ws"
+    agentii_cmd.constitution_scaffold(ws)
+
+    # reduce_journals: journal shards -> thesis.reduce.json (the Q15 machine file)
     shard_dir = tmp_path / "shards"; shard_dir.mkdir()
     (shard_dir / "run1.ndjson").write_text(
         '{"skill_id": "dcf", "ticker": "NVDA", "entity_claims": [], "status": "ok"}\n'
         '{"skill_id": "risk", "ticker": "NVDA", "entity_claims": [], "status": "ok"}\n',
         encoding="utf-8")
-    reduce_journals.reduce(shard_dir, tmp_path / "thesis.md")
+    (tmp_path / "theses" / "001-mvp").mkdir(parents=True)
+    reduce_journals.reduce(shard_dir, tmp_path / "theses" / "001-mvp" / "thesis.md")
 
     # thesis_status: workspace -> theses/INDEX.md
     (tmp_path / "theses" / "001-x").mkdir(parents=True)

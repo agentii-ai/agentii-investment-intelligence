@@ -2,7 +2,7 @@
 
 Chain (plan S1): ratify minimal L1 → mkdir-CAS thesis → one task → dispatch with
 explicit thesis_dir → data-layer refusal demonstrated (DATA_STALE) → artifact with
-5 pins + observed_at → G1 passes → journal shard → reduction → atomic thesis.md.
+5 pins + observed_at → G1 passes → journal shard → reduction → atomic thesis.reduce.json.
 
 Plus the concurrency negative test: 8 parallel subagents' journal appends must not
 corrupt (Q4 item 3 — the reason shards exist).
@@ -96,7 +96,7 @@ entity_claims:
     bad.write_text(artifact.read_text().replace("skill_pin:", "removed:"))
     assert g1_gate.check_artifact(bad)
 
-    # 7. Journal shard → reduction → atomic thesis.md.
+    # 7. Journal shard → reduction → atomic thesis.reduce.json.
     journal.append_entry(thesis / "shards" / "run1.ndjson",
                          journal.make_entry("recent-quarter", "NVDA", "default",
                                             "001-mvp", ["get_realtime_quote"],
@@ -105,13 +105,16 @@ entity_claims:
     # D75 #5: dispatch journals EVERY dispatch (explicit path included) — the
     # reducer therefore sees the dispatch record + the skill entry.
     assert doc["mechanical"]["entry_count"] == 2
-    assert (thesis / "thesis.md").is_file()
-    assert not (thesis / "thesis.md.tmp").exists()
+    # The reduce lands in thesis.reduce.json — thesis.md is the human's prose file.
+    reduce_file = thesis / "thesis.reduce.json"
+    assert reduce_file.is_file()
+    assert reduce_file.read_text(encoding="utf-8").startswith("{")
+    assert not (thesis / "thesis.reduce.json.tmp").exists()
 
     # The slice's demonstrable result: one gated artifact under refusal-enforced
-    # correctness, reduced into an atomically written thesis.md.
+    # correctness, reduced into an atomically written thesis.reduce.json.
     assert artifact.is_file()
-    assert (thesis / "thesis.md").read_text().startswith("{")
+    assert reduce_file.read_text(encoding="utf-8").startswith("{")
 
 
 def test_8_parallel_journal_appends_do_not_corrupt(tmp_path):

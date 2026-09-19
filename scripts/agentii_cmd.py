@@ -24,9 +24,12 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import alloc_thesis_id  # noqa: E402
 import g1_gate  # noqa: E402
+import write_boundary  # noqa: E402 — the single write boundary
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES = ROOT / "plugins" / "vertical-plugins" / "scenarios" / "templates"
@@ -45,9 +48,92 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def _write(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+def _write(path: Path, text: str, *, kind: str = "scaffold",
+           writer: str | None = None, gate: bool = True) -> None:
+    """Every write in this module goes through the write boundary (Q147/T172).
+
+    This WAS a bare `Path.write_text`, and that is how `thesis.md` came to have two
+    writers with incompatible formats and no gate between them: the reducer wrote
+    through the boundary, the scaffold wrote around it, and the boundary's
+    second-writer refusal — which exists to catch exactly that — never saw the
+    second write. A gate attached to one of N writers is worse than no gate, because
+    it reads as enforced.
+
+    `kind` defaults to `'scaffold'` rather than `'markdown'`, and that is a
+    correction rather than a convenience. Everything this module writes is a scaffold
+    — a template, a checklist, `specify`'s spec, `.gitignore`, `agentii.md`,
+    `thesis.md`. None of them is a SKILL ARTIFACT, and the prose gates are artifact
+    gates: `_gate_evidence_class` asks whether `support:` justifies a claim PROMOTION,
+    a concept that does not exist at scaffold time, so on a template it reported
+    "NO `support:` field" once per write — nine advisory lines for one `specify`, all
+    correct and all noise. The boundary already groups `thesis.md` with `INDEX.md`
+    and portfolio views as "not artifacts" and exempts them from the citation gate
+    for the same reason; this extends the same judgment to the rest of the prose
+    gates. The credential scan and the second-writer refusal run on every kind
+    regardless — those two are the ones that must never be skipped."""
+    res = write_boundary.write(path, text, producer="agentii_cmd", kind=kind,
+                               writer=writer, gate=gate)
+    if res.verdict not in ("written", "blocked"):
+        raise SystemExit(
+            f"WRITE REFUSED: {path}\n"
+            + "\n".join(f"  - {r}" for r in res.reasons))
+    # `blocked` is non-fatal by design (the prose gates are advisory for scaffolds);
+    # print the reasons so a clean-looking run is not mistaken for a clean verdict.
+    for reason in res.reasons:
+        print(f"  note: {reason}", file=sys.stderr)
+
+
+def _render_thesis_template(workspace: Path, thesis: Path, slug: str) -> str:
+    """Emit thesis.md from `thesis-template.md`, substituting what specify() knows.
+
+    The scaffold used to be a hand-built string in this file, and the template was a
+    SEPARATE, third shape that no reader could read and no code ever loaded — so the
+    two drifted and neither matched the contract. Reading the template makes the
+    shape changeable in one place, which is what the checklist write below already
+    does.
+
+    Substituted: the thesis id, the slug, today's date, and the two pins that are
+    knowable at this moment — `constitution_pin` from the ratified constitution and
+    `assumption_pin` from the versioned ledger. `corpus_version` and `skill_pin` are
+    deliberately left ABSENT: a thesis has retrieved nothing yet, and a `[TBD]`
+    placeholder is truthy, so it would pass `g1_gate.check_frontmatter` while pinning
+    nothing (Q105's vacancy, in a pin)."""
+    import datetime as _dt
+    import re as _re
+
+    tpl = (TEMPLATES / "thesis-template.md")
+    text = tpl.read_text(encoding="utf-8") if tpl.is_file() else (
+        "---\nwriter: agentii.specify\nmode: thesis\nthesis_id: [THESIS_ID]\n---\n\n"
+        "# Thesis: [THESIS_NAME]\n")
+
+    cons = workspace / "constitution.md"
+    cp = "unratified"
+    if cons.is_file():
+        m = _re.search(r"^\*\*CONSTITUTION_VERSION\*\*:\s*(\S+)",
+                       cons.read_text(encoding="utf-8"), _re.M)
+        if m:
+            cp = m.group(1)
+    if cp.endswith("-unratified"):
+        # Not fatal — `specify` already refuses an unratified constitution — but the
+        # pin is carried into every artifact and `reduce_journals.check_aggregate`
+        # hard-fails those, so the reason has to be visible at the moment it is set.
+        print(f"  note: constitution_pin={cp!r} — a thesis pinned to an unratified "
+              f"constitution fails the aggregate check when it is reached",
+              file=sys.stderr)
+
+    ap = "unversioned"
+    assum = workspace / "assumptions.yaml"
+    if assum.is_file():
+        try:
+            ap = str((yaml.safe_load(assum.read_text(encoding="utf-8")) or {}).get("version", ap))
+        except yaml.YAMLError:
+            pass
+
+    return (text.replace("[THESIS_ID]", thesis.name)
+                .replace("[THESIS_NAME]", slug)
+                .replace("[AS_OF]", _dt.date.today().isoformat())
+                .replace("[CONSTITUTION_PIN]", cp)
+                .replace("[ASSUMPTION_PIN]", ap))
 
 
 # --- specify (Q23/Q27/Q30/Q32/Q83) -------------------------------------------
@@ -376,9 +462,8 @@ def specify(workspace: Path, slug: str) -> Path:
            + "|---|---|---|:---:|---|\n\n"
            + "## 3. Skill Deployment Matrix\n| Skill | Vertical | Depth | Tickers | Market Data Stage | Purpose |\n"
            + "|---|---|:---:|---|---|---|\n")
-    _write(thesis / "thesis.md", "# Thesis: " + slug + "\n\n"
-           + "```yaml\nclaim: [TBD]\npillars: []\nknown-open: []\n"
-           + "budget: {max_tasks: 40, max_retries_per_task: 2}\n```\n")
+    _write(thesis / "thesis.md", _render_thesis_template(workspace, thesis, slug),
+           writer="agentii.specify")
     checklist = (TEMPLATES / "checklist-template.md")
     _write(thesis / "checklists" / "thesis-quality.md",
            checklist.read_text(encoding="utf-8") if checklist.is_file()
@@ -753,6 +838,36 @@ def singleskill_scaffold(workspace: Path, *, force: bool = False) -> list[Path]:
     return written
 
 
+_VERSION_LINE_RX = re.compile(r"(^\*\*CONSTITUTION_VERSION\*\*:\s*)(\S+)\s*$",
+                                 re.M)
+
+
+def _bump_version(text: str, bump: str) -> tuple[str | None, str]:
+    """(old, new) for the constitution's own SemVer line. Q33: MAJOR/MINOR/PATCH.
+
+    A version that is not `X.Y.Z` — the template's `0.1.0-unratified`, or a
+    hand-edited value — is treated as `0.1.0` with its suffix dropped, so the FIRST
+    amendment produces a real version rather than refusing. The suffix is a
+    ratification marker, not a version component."""
+    m = _VERSION_LINE_RX.search(text)
+    if not m:
+        return None, "0.1.0"
+    raw = m.group(2)
+    core = raw.split("-", 1)[0]
+    parts = core.split(".")
+    try:
+        major, minor, patch = (int(parts[0]), int(parts[1]), int(parts[2]))
+    except (IndexError, ValueError):
+        return raw, "1.0.0" if bump == "major" else "0.1.0"
+    if bump == "major":
+        new = f"{major + 1}.0.0"
+    elif bump == "minor":
+        new = f"{major}.{minor + 1}.0"
+    else:
+        new = f"{major}.{minor}.{patch + 1}"
+    return raw, new
+
+
 def constitution_amend(workspace: Path, bump: str, note: str) -> None:
     if bump not in VALID_BUMPS:
         raise SystemExit(f"AMEND REFUSED: bump must be one of {sorted(VALID_BUMPS)} "
@@ -761,11 +876,60 @@ def constitution_amend(workspace: Path, bump: str, note: str) -> None:
     if not constitution.is_file():
         raise SystemExit("AMEND REFUSED: constitution.md not found — scaffold first")
     text = constitution.read_text(encoding="utf-8")
+
+    # The version line is ADVANCED here, and that is a correction. `amend` used to
+    # append the Sync Impact Report entry and leave `CONSTITUTION_VERSION` untouched,
+    # so the version a thesis pins against never moved: a workspace could amend
+    # repeatedly and still declare `0.1.0-unratified`. That is the reported field
+    # defect of the whole SemVer block — the Amendment Log records 1.5.0 while the
+    # header still says 1.4.0 — reproduced by the tool that exists to maintain it.
+    # Q33's rule is that a MINOR/MAJOR bump marks older pins `stale`; a pin that
+    # never changes can never mark anything stale.
+    old_version, new_version = _bump_version(text, bump)
+    if old_version is not None:
+        text = _VERSION_LINE_RX.sub(lambda m: m.group(1) + new_version, text, count=1)
+
+    # A declaration is added when the document lacks one, so the NEXT amendment is
+    # gated. This one cannot be: the boundary reads the EXISTING document's
+    # `writer:` (Q138 — "at the moment of the second write, the only thing you can
+    # read is the document"), and a constitution scaffolded before this contract
+    # existed declares nothing, so it is append-only and a rewrite is refused.
+    # Writing the declaration into the new text does not help, because the gate
+    # never looks at the new text for this question.
+    adopting = write_boundary.declared_writer(text) is None
+    if adopting:
+        text = ("---\n"
+                "# The constitution's writer. `amend` is the owner's deliberate rewrite;\n"
+                "# any other writer's write to this file is refused. The same rule governs\n"
+                "# the thesis instruments — see contracts/thesis.md.\n"
+                "writer: agentii.constitution\n"
+                "---\n\n") + text
     entry = (f"<!--\nSync Impact Report entry\n  bump: {bump}\n  note: {note}\n"
-             f"  old → new: [record changed principles here]\n  deferred: [none]\n-->\n")
-    constitution.write_text(text + "\n" + entry, encoding="utf-8")
-    print(f"AMENDED ({bump}) — MINOR/MAJOR marks constitution_pin-older theses "
-          f"`stale` and dispatches re-examination after the gate-5 budget confirm.")
+             f"  old → new: {old_version or '?'} → {new_version}\n"
+             f"  deferred: [none]\n-->\n")
+    # Through the boundary, not around it (Q147): this was a bare `write_text` in the
+    # same module as `_write`, which is the defect that function was just fixed for,
+    # one call site over.
+    try:
+        _write(constitution, text + "\n" + entry, writer="agentii.constitution")
+    except SystemExit:
+        if not adopting:
+            raise
+        # One-time: the document predates the contract and declares no writer, so
+        # the append-only fail-safe refuses a rewrite. `gate=False` is used HERE and
+        # only here — the declaration added above makes the next amendment gated —
+        # and the bypass is printed rather than silent, because a skipped gate that
+        # leaves no trace is the defect this whole change is about.
+        res = write_boundary.write(constitution, text + "\n" + entry,
+                                   producer="agentii_cmd", kind="scaffold",
+                                   writer="agentii.constitution", gate=False)
+        print(f"  note: this constitution declared no `writer:`, so the boundary "
+              f"refused the rewrite and it was applied with the gate bypassed; "
+              f"`writer: agentii.constitution` is now declared, so the next amendment "
+              f"is gated. boundary: {res.examined}", file=sys.stderr)
+    print(f"AMENDED ({bump}) — {old_version or '?'} → {new_version}. MINOR/MAJOR marks "
+          f"constitution_pin-older theses `stale` and dispatches re-examination after "
+          f"the gate-5 budget confirm.")
 
 
 # ── The delegating commands (Phase 11 / Q22 · Q24 · Q26) ─────────────────────

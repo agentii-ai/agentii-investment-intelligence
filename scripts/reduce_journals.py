@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""reduce_journals.py — journal reduction, the single write moment of thesis.md
+"""reduce_journals.py — journal reduction, the writer of thesis.reduce.json
 (spec 046 Q15).
 
 Strictly ordered and non-commutative:
@@ -8,8 +8,25 @@ Strictly ordered and non-commutative:
   ② LLM revises judgment fields (conviction / claims / wrong_if) reading ①'s output
      — a hook point in S1 (no LLM wired yet; the revision step exists and receives
      ①'s mechanical summary);
-  ③ single atomic write (tmp → fsync → os.replace) to thesis.md — the single-writer
-     moment of the only living file (Q5 partitioning).
+  ③ one atomic write to `thesis.reduce.json` — the MACHINE half of the thesis, and
+     the only file this module writes.
+
+**This docstring used to claim step ③ was "the single write moment of thesis.md …
+the single-writer moment of the only living file". That claim was false in both
+directions, and it was quoted as evidence by a workspace audit before anyone traced
+the code.**
+
+`thesis.md` is the HUMAN's file — prose with `---` frontmatter, written once by
+`agentii.specify`. This module also wrote to it, in JSON, through the write boundary.
+The boundary's second-writer refusal keys on a `writer:` field in the document's own
+frontmatter; the scaffold declared none, so the file read as append-only and this
+module's JSON write was refused as `refuse-append-only` — blocking — leaving the file
+at its scaffold. **The Result was discarded, so `main()` printed `REDUCED N entries`
+over a write that never happened.**
+
+So the claim "single write moment" described an intent, not the behaviour: there were
+two writers, the gate refused the second, and the refusal was silent. The fix is the
+split this module now implements, plus checking the Result.
 
 Judgment must rest on established mechanical fact, not precede it — order matters.
 """
@@ -24,11 +41,23 @@ from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import write_boundary  # noqa: E402 — the single write boundary (T172)
+import thesis_doc  # noqa: E402 — where a thesis keeps machine state
 import journal  # noqa: E402
 
 # Q41: a directional claim needs a fresh price — re-quote or accept a <24h quote;
 # older prices degrade the claim to stale_price (barred from trade-template).
 PRICE_FRESHNESS_MAX_AGE_SECONDS = 24 * 3600
+
+
+class ReduceWriteRefused(RuntimeError):
+    """The boundary refused the write. Carries the boundary's OWN words, not a
+    paraphrase — the reason names the competing writer, and paraphrasing it would
+    hide the one fact the reader needs."""
+
+    def __init__(self, described: str, target: Path):
+        super().__init__(f"reduce write REFUSED for {target}:\n{described}")
+        self.described = described
+        self.target = target
 
 
 def _compute_mechanical(shard_dir: Path) -> dict[str, Any]:
@@ -160,16 +189,28 @@ def reduce(shard_dir: Path, thesis_path: Path,
                                                           "claims": [],
                                                           "wrong_if": []}
     doc = {
+        # The declared writer TRAVELS IN THE DOCUMENT, exactly as the rule requires of
+        # markdown: `write_boundary.declared_writer` reads `writer:` from frontmatter,
+        # and JSON cannot carry a `---` block — so it reads the top-level key. Without
+        # this line the reduce file declares nothing, "declares nothing" means
+        # append-only, and the SECOND reduction is refused exactly as the first one
+        # was before the split. The fix would have reproduced the bug on a new path.
+        "writer": "reduce_journals",
         "reduced_at": __import__("datetime").datetime.now().astimezone().isoformat(),
         "mechanical": mechanical,
         "judgment": judgment,
     }
-    write_boundary.write(
-        thesis_path,
+    target = thesis_doc.machine_path(thesis_path)
+    res = write_boundary.write(
+        target,
         json.dumps(doc, indent=2, ensure_ascii=False) + "\n",
         producer='reduce_journals',
         kind='json',
         writer='reduce_journals')
+    # The Result is CHECKED. It used to be discarded, which is what made a refused
+    # write indistinguishable from a successful one to every caller and to main().
+    if not res.ok():
+        raise ReduceWriteRefused(res.describe(), target)
     return doc
 
 
@@ -178,8 +219,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--shard-dir", required=True)
     p.add_argument("--thesis", required=True, help="thesis.md output path")
     args = p.parse_args(argv)
-    doc = reduce(Path(args.shard_dir), Path(args.thesis))
-    print(f"REDUCED {doc['mechanical']['entry_count']} entries → {args.thesis}")
+    try:
+        doc = reduce(Path(args.shard_dir), Path(args.thesis))
+    except ReduceWriteRefused as e:
+        # No success line on any non-written verdict. The old code printed one
+        # unconditionally, which is the lie this whole fix is about.
+        print(str(e), file=sys.stderr)
+        print("remedy: the target declares a different writer — see contracts/thesis.md",
+              file=sys.stderr)
+        return 2
+    print(f"REDUCED {doc['mechanical']['entry_count']} entries → "
+          f"{thesis_doc.machine_path(args.thesis)}")
     return 0
 
 

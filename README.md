@@ -104,7 +104,7 @@ Expected: structured, citation-backed report with real SEC filing data and click
 | **Office Output** | Code-mode: `openpyxl` (Excel .xlsx), `python-pptx` (PowerPoint .pptx), `python-docx` (Word .docx) + LibreOffice headless recalc — no office MCP server |
 | **Citations** | Every fact links to `agentii.ai/v/{ticker}/{citation_id}/{page}` — clickable, verifiable, inline-after-fact + TUI Key Citations block |
 | **Workspace Memory** | `agentii.md` index, per-ticker outputs with YAML frontmatter, `snapshots/` synthesis with a structured `claim_class` field, `sessions/` archive |
-| **Contracts** | **33** shared contracts in `contracts/` — single source of truth for retrieval protocol, citations, office tooling, preflight, memory, and tracing |
+| **Contracts** | **34** shared contracts in `contracts/` — single source of truth for retrieval protocol, citations, office tooling, preflight, memory, and tracing |
 | **Instant Data** (spec 039) | `data-tools/` — zero-key-first macro/market/earnings tools behind `~~category` placeholders, AGENT_CONTRACT envelope, file cache + failover; opt-in `setup_credentials.py` wizard for free API keys |
 | **Enrichment & Quality** (spec 039) | `skill-registry.yaml` + `scripts/enhance-skill.py` (YAML workflow presets) + `scripts/quality-scan.py` (5-dimension 0–10 score, CI gate) |
 | **Packaging** (spec 039) | `packaging/export.py` emits 4 host variants — claude-code, codex, cowork, generic-cli — from the canonical SKILL.md (diff-clean, placeholders preserved) |
@@ -422,7 +422,7 @@ agentii-investment-intelligence/
 │   │   └── trading-as-business/         # 1
 │   └── agent-plugins/
 │       └── agentii-equity-agent/        # Managed agent bundle
-├── contracts/                           # 33 shared contracts (single source of truth)
+├── contracts/                           # 34 shared contracts (single source of truth)
 ├── data-tools/                          # Instant macro/market/earnings data (spec 039)
 ├── scripts/                             # CI gates, sync, validation, assembly, report pipeline
 ├── packaging/                           # 4 host export targets (spec 039)

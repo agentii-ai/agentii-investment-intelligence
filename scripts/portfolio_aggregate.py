@@ -21,7 +21,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import write_boundary  # noqa: E402 — the single write boundary (T172)
-import g1_gate  # noqa: E402
+import g1_gate
+import thesis_doc  # noqa: E402 — where machine state lives  # noqa: E402
 
 ACTIVE_STATES = {"pinned", "stale_price"}  # pending_review / retired excluded (Q61)
 
@@ -33,12 +34,9 @@ def scan_active_claims(workspace: Path) -> list[dict[str, Any]]:
     if not theses_dir.is_dir():
         return rows
     for thesis_dir in sorted(theses_dir.iterdir()):
-        thesis_md = thesis_dir / "thesis.md"
-        if not thesis_md.is_file():
-            continue
-        try:
-            doc = json.loads(thesis_md.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        doc, _src = thesis_doc.read_machine(thesis_dir)
+        if _src == "none":
+            print(thesis_doc.no_machine_reason(thesis_dir), file=sys.stderr)
             continue
         conviction = doc.get("judgment", {}).get("conviction") or 0.5
         for claim in (doc.get("judgment") or {}).get("claims") or []:
@@ -69,12 +67,9 @@ def _claims_by_thesis(workspace: Path) -> dict[str, list[dict]]:
     if not theses.is_dir():
         return out
     for d in sorted(theses.iterdir()):
-        f = d / "thesis.md"
-        if not f.is_file():
-            continue
-        try:
-            doc = json.loads(f.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        doc, _src = thesis_doc.read_machine(d)
+        if _src == "none":
+            print(thesis_doc.no_machine_reason(d), file=sys.stderr)
             continue
         out[d.name] = [c for c in (doc.get("judgment") or {}).get("claims") or []
                        if isinstance(c, dict)]

@@ -18,7 +18,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import g1_gate  # noqa: E402 — frontmatter parsing for the resume verdict
+import g1_gate
+import thesis_doc  # noqa: E402 — where machine state lives  # noqa: E402 — frontmatter parsing for the resume verdict
 import journal  # noqa: E402
 
 
@@ -314,17 +315,17 @@ def daily_sweep(theses: list[Path], *, earnings_calendar: dict,
     flips: list[str] = []
     states: dict[tuple[str, str], str] = {}
     for t in theses:
-        try:
-            doc = json.loads((t / "thesis.md").read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        doc, _src = thesis_doc.read_machine(t)
+        if _src == "none":
+            print(thesis_doc.no_machine_reason(t), file=sys.stderr)
             continue
         for claim in (doc.get("judgment") or {}).get("claims") or []:
             if isinstance(claim, dict):
                 states[(t.name, claim.get("id"))] = claim.get("state")
     for t in theses:
-        try:
-            doc = json.loads((t / "thesis.md").read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        doc, _src = thesis_doc.read_machine(t)
+        if _src == "none":
+            print(thesis_doc.no_machine_reason(t), file=sys.stderr)
             continue
         claims = (doc.get("judgment") or {}).get("claims") or []
         # (c) dependency propagation — upstream claim state changed. The mapping

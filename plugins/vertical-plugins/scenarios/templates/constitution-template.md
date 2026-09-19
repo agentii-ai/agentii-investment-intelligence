@@ -1,3 +1,11 @@
+---
+# The constitution's writer. `agentii.constitution amend` is the owner's deliberate
+# rewrite — it is the only writer this file declares, and any other writer's write is
+# refused as a second writer (Q127). The same rule governs the thesis instruments;
+# see contracts/thesis.md for the reasoning.
+writer: agentii.constitution
+---
+
 <!--
 Sync Impact Report (spec 046 Q33 — executable input, not decoration):
   version: [OLD_VERSION] → [NEW_VERSION]

@@ -134,15 +134,36 @@ def declared_writer(text: str) -> str | None:
     state — which Q4 rejected five times, and which would drift from the
     documents it describes (Q120's class).
 
-    Returns None when the key is absent. **Absent means append-only**, which is
-    Q127's fail-safe: "undeclared" must never silently mean "anyone may
-    overwrite" — that is Q105's family again, silence read as permission, and its
-    observed consequence was a document two sessions interleaved."""
+    **Two carriers, one field.** A markdown document declares its writer in `---`
+    frontmatter; a JSON document cannot contain that delimiter at all, so it
+    declares the same thing as a top-level `"writer"` key. Reading only the
+    frontmatter form meant a JSON file declared nothing, and "declares nothing"
+    means append-only — so a JSON writer's own SECOND write was refused as
+    `refuse-append-only`, silently, because the caller discarded the Result. That
+    is the same defect as the markdown case, one format over, and it is why the
+    split into a JSON reduce file could not work until this function learned it.
+
+    Returns None when the key is absent **in either form**. **Absent means
+    append-only**, which is Q127's fail-safe: "undeclared" must never silently
+    mean "anyone may overwrite" — that is Q105's family again, silence read as
+    permission, and its observed consequence was a document two sessions
+    interleaved."""
     m = _FRONTMATTER_RX.match(text)
-    if not m:
-        return None
-    w = _WRITER_RX.search(m.group(1))
-    return w.group(1).strip().strip("'\"") if w else None
+    if m:
+        w = _WRITER_RX.search(m.group(1))
+        return w.group(1).strip().strip("'\"") if w else None
+    # JSON does not permit a `---` frontmatter block, so the field lives at the top
+    # level. Guarded on the first character as well as the parse, so a large
+    # markdown file is never handed to json.loads — the parse is the expensive half
+    # and the cheap test is exact.
+    if text.lstrip()[:1] == "{":
+        try:
+            doc = json.loads(text)
+        except (ValueError, TypeError):
+            return None
+        w = doc.get("writer") if isinstance(doc, dict) else None
+        return w.strip() if isinstance(w, str) and w.strip() else None
+    return None
 
 
 def second_writer_verdict(path: Path, new_text: str, writer: str | None) -> tuple[str, str]:
@@ -487,8 +508,10 @@ def write(path: Path, content: str, *, producer: str, writer: str | None = None,
     `kind` selects which gates can run. The credential scan runs on EVERY kind —
     Q124 names session records and journal shards as the highest-exposure surface,
     and those are not prose. The five prose gates run on `markdown`/`html` only:
-    running a citation-density check over `thesis.md`'s JSON would report
-    `examined: 0` and pass, which is the vacuous success this file exists to stop."""
+    running a citation-density check over `thesis.reduce.json` would report
+    `examined: 0` and pass, which is the vacuous success this file exists to stop.
+    (`thesis.md` is prose and IS a markdown write; the reduce document is the JSON
+    one, and it lives in its own file — see contracts/thesis.md.)"""
     path = Path(path)
     res = Result(path=path, verdict="written", producer=producer)
 

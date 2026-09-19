@@ -76,6 +76,20 @@ machine_gates:
     # schema changed: a `both` gate whose declared input no longer exists is a rule
     # that can declare itself mode-independent and have nothing to read.
     note: Q100/Q102 anti-fabrication. Claims about agentii.ai data are made in both modes.
+  - id: thesis-single-writer
+    mode: thesis
+    tier: G1
+    reads: [thesis_files, FIVE_PINS]
+    enforcement: write_boundary
+    # The gate that could never fire, and whose silence hid a frozen file. `thesis.md`
+    # declares `writer: agentii.specify`; `thesis.reduce.json` declares
+    # `writer: reduce_journals`. Each refuses the other, and an UNDECLARED document is
+    # append-only — so a missing declaration is not permission, it is a lock nobody
+    # can see. Enforced in `write_boundary.second_writer_verdict`, which reads both a
+    # `---` frontmatter block and a JSON top-level `writer` key, because JSON cannot
+    # carry the former at all. See contracts/thesis.md.
+    note: Q127/Q138. Two files, one writer each.
+
   - id: vacuous-reporting
     mode: both
     tier: G1

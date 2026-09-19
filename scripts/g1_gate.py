@@ -27,6 +27,19 @@ FIVE_PINS = ("assumption_pin", "corpus_version", "as_of",
 
 
 def parse_frontmatter(text: str) -> dict:
+    """The frontmatter block, or `{}`.
+
+    **`{}` is ambiguous, and that ambiguity is load-bearing.** It means either "the
+    document has no frontmatter" or "the frontmatter is empty" — and `check_frontmatter`
+    reads a falsy value as "the field is missing", so a file in a shape this function
+    cannot read reports EVERY pin missing. Measured: `thesis_status` therefore showed
+    five blank pins for the 24 real theses whose frontmatter sits in a fenced ```yaml
+    block rather than at byte 0, and the report was indistinguishable from a thesis
+    that genuinely declared nothing.
+
+    The return type is kept (`{}`) because twelve call sites test it with `if not fm`
+    to mean "no frontmatter" — widening it would change those silently. Use
+    `has_frontmatter` to disambiguate, or `describe_frontmatter_problems` to report."""
     if not text.startswith("---"):
         return {}
     try:
@@ -34,6 +47,28 @@ def parse_frontmatter(text: str) -> dict:
         return yaml.safe_load(fm) or {}
     except (ValueError, yaml.YAMLError):
         return {}
+
+
+def has_frontmatter(text: str) -> bool:
+    """Does this document BEGIN with a `---` block at byte 0?
+
+    The one question `parse_frontmatter` cannot answer, because `{}` conflates it with
+    an empty block."""
+    return text.startswith("---")
+
+
+def describe_frontmatter_problems(text: str, *, where: str = "") -> list[str]:
+    """`check_frontmatter`, but a FORMAT failure is reported as one.
+
+    "the file does not begin with `---`" and "five pins are missing" are different
+    facts with different remedies, and only one of them is about pins. Reporting the
+    format failure as the pin failure sends a reader to add five fields to a document
+    that has all five, in a place this parser never looks."""
+    if not has_frontmatter(text):
+        return [f"{where + ': ' if where else ''}no frontmatter — the document does "
+                f"not begin with `---` at byte 0, so EVERY field check is unavailable. "
+                f"This is a FORMAT failure, not missing fields."]
+    return check_frontmatter(parse_frontmatter(text))
 
 
 def check_frontmatter(fm: dict) -> list[str]:

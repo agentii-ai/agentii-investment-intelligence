@@ -26,7 +26,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import g1_gate  # noqa: E402 — frontmatter parsing
+import g1_gate
+import thesis_doc  # noqa: E402 — where machine state lives  # noqa: E402 — frontmatter parsing
 import synthesize_report  # noqa: E402 — Q50 sources_hash / source_files
 
 MAX_JUDGMENT_FINDINGS = 50  # Q40 cap for the judgment class only
@@ -77,14 +78,11 @@ def _evaluate_stale(artifact: Path, current_pins: dict[str, Any]) -> list[tuple[
 def _evaluate_wrong_if(thesis: Path) -> list[tuple[str, str, str]]:
     """Deterministic, uncapped: wrong_if entries (metric+threshold+source) evaluated
     against entity_claims values across artifacts. Triggered → invalidated."""
-    thesis_md = thesis / "thesis.md"
-    if not thesis_md.is_file():
+    doc, _src = thesis_doc.read_machine(thesis)
+    if _src == "none":
+        print(thesis_doc.no_machine_reason(thesis), file=sys.stderr)
         return []
-    try:
-        doc = json.loads(thesis_md.read_text(encoding="utf-8"))
-        wrong_if = (doc.get("judgment") or {}).get("wrong_if") or []
-    except (ValueError, AttributeError):
-        return []
+    wrong_if = (doc.get("judgment") or {}).get("wrong_if") or []
     claims: dict[tuple[str, str], tuple[float, str]] = {}
     for art in (thesis / "artifacts").rglob("*.md"):
         fm = g1_gate.parse_frontmatter(art.read_text(encoding="utf-8"))
@@ -126,12 +124,9 @@ def _evaluate_refuted(thesis: Path) -> list[tuple[str, str, str]]:
     The finding ID is content-derived the same way (`refuted` sits where
     `invalidated` does), so a re-run appends nothing for an unchanged refutation
     (Q40)."""
-    thesis_md = thesis / "thesis.md"
-    if not thesis_md.is_file():
-        return []
-    try:
-        doc = json.loads(thesis_md.read_text(encoding="utf-8"))
-    except (ValueError, AttributeError):
+    doc, _src = thesis_doc.read_machine(thesis)
+    if _src == "none":
+        print(thesis_doc.no_machine_reason(thesis), file=sys.stderr)
         return []
     out: list[tuple[str, str, str]] = []
     for c in (doc.get("judgment") or {}).get("claims") or []:
@@ -197,11 +192,9 @@ def stage3_archive(thesis: Path, *, challenge_clean: set[str]) -> list[dict]:
     superseded/retired post-mortems — bad wins must not pollute the knowledge
     base (Q68 linkage). Case format: thesis background + claim + evidence +
     result + lessons; source=thesis_postmortem + thesis_id/claim_id tags."""
-    import json as _json
-
-    try:
-        doc = _json.loads((thesis / "thesis.md").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    doc, _src = thesis_doc.read_machine(thesis)
+    if _src == "none":
+        print(thesis_doc.no_machine_reason(thesis), file=sys.stderr)
         return []
     archives: list[dict] = []
     for claim in (doc.get("judgment") or {}).get("claims") or []:
@@ -380,14 +373,11 @@ def run(thesis: Path, current_pins: dict[str, Any]) -> dict[str, Any]:
                     encoding="utf-8")
 
     # Q58: a thesis paused on budget is a finding, not silence.
-    try:
-        doc = json.loads((thesis / "thesis.md").read_text(encoding="utf-8"))
-        if (doc.get("judgment") or {}).get("budget_paused"):
-            appended.append(f"- [ ] {_next_row_id()} [Convergence] Thesis paused on "
-                            f"budget — Q39 approval card required to resume "
-                            f"(src: converge:budget_paused)")
-    except (OSError, ValueError, AttributeError):
-        pass
+    doc, _src = thesis_doc.read_machine(thesis)
+    if (doc.get("judgment") or {}).get("budget_paused"):
+        appended.append(f"- [ ] {_next_row_id()} [Convergence] Thesis paused on "
+                        f"budget — Q39 approval card required to resume "
+                        f"(src: converge:budget_paused)")
 
     if not appended:
         # Q26: a clean run reports `converged` and touches nothing — byte-identical.
