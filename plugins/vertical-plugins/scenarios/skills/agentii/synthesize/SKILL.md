@@ -24,11 +24,24 @@ here, at the synthesis step, after the cross-stock synthesis
 ## The loop (four steps + optimize)
 
 ```bash
-cd agentii-investment-intelligence
+# 0. RESOLVE the kit root — contracts/kit-root.md. The kit's scripts do NOT ship with
+#    the skills, so never assume the CWD is the checkout (`cd agentii-investment-
+#    intelligence` was this skill's old step 0, and it only worked for a user sitting
+#    in the checkout). This resolver fails loudly rather than guessing:
+KIT=""
+for c in "${AGENTII_KIT_ROOT:-}" \
+         "$(cat "$HOME/.claude/skills/agentii/.kit-root" 2>/dev/null)" \
+         "${CLAUDE_PLUGIN_ROOT:-}"; do
+  [ -n "$c" ] && [ -f "$c/scripts/agentii_cmd.py" ] && { KIT="$c"; break; }
+done
+if [ -z "$KIT" ]; then d="$PWD"; while [ "$d" != "/" ]; do
+  [ -f "$d/scripts/agentii_cmd.py" ] && { KIT="$d"; break; }; d="$(dirname "$d")"; done; fi
+[ -n "$KIT" ] || { echo "agentii kit not found — see contracts/kit-root.md" >&2; exit 1; }
+
 # 1. PACK — deterministic bundle of every source, verbatim (no timestamps),
 #    PLUS report/metrics.json (per-ticker key_metrics/conclusions/counts —
 #    machine-ready numbers for KPI tiles and kpi_trend charts, RAW values):
-python3 scripts/synthesize_report.py pack --thesis <theses/{nnn}-{slug}>
+python3 "$KIT/scripts/synthesize_report.py" pack --thesis <theses/{nnn}-{slug}>
 
 # 2. AUTHOR — read <thesis>/report-input.md (verbatim sources + citations)
 #    and <thesis>/report/metrics.json (numbers). Write
@@ -36,17 +49,32 @@ python3 scripts/synthesize_report.py pack --thesis <theses/{nnn}-{slug}>
 
 # 3. ASSEMBLE — validate + inject + gate (advisories on stderr are guidance,
 #    the hard gates are silent until they fail):
-python3 scripts/synthesize_report.py assemble --thesis <thesis-dir> --check-only  # fit loop
-python3 scripts/synthesize_report.py assemble --thesis <thesis-dir>               # deliver
+python3 "$KIT/scripts/synthesize_report.py" assemble --thesis <thesis-dir> --check-only  # fit loop
+python3 "$KIT/scripts/synthesize_report.py" assemble --thesis <thesis-dir>               # deliver
 
-# 4. RENDER — Chrome headless → letter PDF → per-page PNGs + manifest:
-python3 scripts/render_report.py render --thesis <thesis-dir>
+# 4. RENDER — Chrome headless → letter PDF → per-page PNGs + manifest.
+#    --keep-pdf is REQUIRED for delivery: without it the PDF is written to a temp dir,
+#    used for the PNGs, and DELETED. The deliverable is HTML **and** PDF.
+python3 "$KIT/scripts/render_report.py" render --thesis <thesis-dir> --keep-pdf
 
 # 5. OPTIMIZE (required, not optional): READ the PNGs page by page, in batches
 #    of 3–4. Fix real problems the estimator cannot see — clipped tables, ugly
 #    URL wrapping, weak density, orphan headings, oversized tiles. Edit
 #    content.html → re-assemble → re-render until EVERY page is visually clean.
 ```
+
+## Deliverables
+
+Two files, both at the thesis root — report the absolute paths when you finish:
+
+- `<thesis-dir>/thesis-report.html`
+- `<thesis-dir>/thesis-report.pdf`
+
+The PDF is the deliverable, not a QA by-product. `render`'s docstring frames it as the
+"visual QA loop" because the PNGs are what the optimize pass reads — but `--keep-pdf`
+is what turns its `--print-to-pdf` output into the artifact a user actually sends to
+someone, and it belongs beside the HTML rather than in the `report/pages/` scratch
+folder with the PNGs.
 
 Renders never gate CI (Chrome/poppler may be absent) — **the author's own visual
 pass is the gate**. `assemble --check-only` remains the estimator fallback; a

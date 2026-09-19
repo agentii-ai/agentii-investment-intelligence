@@ -1,0 +1,1 @@
+../../vertical-plugins/models-and-pitches/commands/sotp-valuation.md

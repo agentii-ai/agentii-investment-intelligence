@@ -30,7 +30,8 @@ VERTICALS="equity-research-core business-intelligence industry-analysis models-a
 # Naming convention (spec 052): same-name sector adaptations use {base}-{sector}
 # suffixes (e.g., earnings-preview-med), so the meta namespace stays collision-free.
 TMPFILE="$(mktemp)"
-trap "rm -f $TMPFILE" EXIT
+TMP_CMDS="$(mktemp)"
+trap "rm -f $TMPFILE $TMP_CMDS" EXIT
 
 echo "=== agentii namespace assembly ==="
 
@@ -141,6 +142,44 @@ while IFS=' ' read -r skill_name vertical; do
 done < "$TMPFILE"
 echo "Symlinked $count skills into $META_SKILLS_DIR."
 
+# Step 4b: Commands into the meta-plugin — the half that was never assembled.
+#
+# Until 2026-09-20 this script symlinked 80 skills and carried ZERO commands, so
+# `plugins/agentii-plugin/` had no `commands/` directory at all. A clean
+# `claude plugin install agentii` therefore yielded the entire skill namespace and not
+# one slash command: `/agentii:specify` and `/agentii:synthesize` resolved only for a
+# user who had ALSO run `copy-skills-local.sh`, which stages them at
+# `.claude/commands/agentii/` by an entirely different route. Two install channels, one
+# of which silently shipped half the product.
+#
+# The omission was invisible for the same reason the missing vertical was: nothing
+# compared the assembled plugin against the disk. Step 5 below performs exactly that
+# comparison for skills; this extends it to commands.
+META_COMMANDS_DIR="${REPO_ROOT}/plugins/agentii-plugin/commands"
+rm -rf "$META_COMMANDS_DIR"
+mkdir -p "$META_COMMANDS_DIR"
+
+cmd_count=0
+for c in "${REPO_ROOT}"/plugins/vertical-plugins/*/commands/*.md; do
+  [ -f "$c" ] || continue
+  cname="$(basename "$c")"
+  cvert="$(echo "$c" | sed -e "s|^${REPO_ROOT}/plugins/vertical-plugins/||" -e 's|/commands/.*||')"
+  # The destination is FLAT, so two verticals declaring the same basename would be a
+  # silent overwrite — whichever is walked last wins, and nothing would report it.
+  # Check 50 guards the skill half of this hazard; the same hazard lives here.
+  if grep -qxF "$cname" "$TMP_CMDS"; then
+    echo "ERROR: duplicate command name '$cname' — the meta-plugin commands/ dir is"
+    echo "       flat, so one would silently overwrite the other. Rename one."
+    exit 1
+  fi
+  echo "$cname" >> "$TMP_CMDS"
+  # Relative symlink, for the same portability reason as the skills above. dst lives at
+  # plugins/agentii-plugin/commands/<name> → ../../ reaches plugins/.
+  ln -sf "../../vertical-plugins/${cvert}/commands/${cname}" "$META_COMMANDS_DIR/$cname"
+  cmd_count=$((cmd_count + 1))
+done
+echo "Symlinked $cmd_count commands into $META_COMMANDS_DIR."
+
 # Step 5: Verify flat namespace — against the DISK, not against ourselves.
 #
 # The previous version printed `Meta-plugin skills: $meta_count` and stopped. That
@@ -159,7 +198,10 @@ for v in $disk_verticals; do
 done
 disk_skills="$(find "$REPO_ROOT/plugins/vertical-plugins" -path '*/skills/agentii/*/SKILL.md' | wc -l | tr -d ' ')"
 meta_count="$(ls -1 "$META_SKILLS_DIR" 2>/dev/null | wc -l | tr -d ' ')"
-echo "Meta-plugin skills: $meta_count (disk holds $disk_skills)"
+disk_cmds="$(find "$REPO_ROOT/plugins/vertical-plugins" -path '*/commands/*.md' | wc -l | tr -d ' ')"
+meta_cmd_count="$(ls -1 "$META_COMMANDS_DIR" 2>/dev/null | wc -l | tr -d ' ')"
+echo "Meta-plugin skills:   $meta_count (disk holds $disk_skills)"
+echo "Meta-plugin commands: $meta_cmd_count (disk holds $disk_cmds)"
 
 if [[ -n "$missing_verticals" ]]; then
   echo "FAIL — vertical(s) on disk but not in VERTICALS:$missing_verticals"
@@ -171,4 +213,12 @@ if [[ "$meta_count" != "$disk_skills" ]]; then
   echo "       A name collision or a missing vertical produces this. Re-run after fixing."
   exit 1
 fi
-echo "Assembly complete — every vertical on disk is assembled."
+# The command half of the same comparison. Without it the plugin can ship a complete
+# skill namespace and no slash commands — which is precisely what it did, for as long as
+# it did, while every number in this script agreed with itself.
+if [[ "$meta_cmd_count" != "$disk_cmds" ]]; then
+  echo "FAIL — meta-plugin holds $meta_cmd_count commands, disk holds $disk_cmds."
+  echo "       A duplicate basename or a missing vertical produces this. Re-run after fixing."
+  exit 1
+fi
+echo "Assembly complete — every vertical and command on disk is assembled."

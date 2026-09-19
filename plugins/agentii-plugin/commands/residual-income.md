@@ -1,0 +1,1 @@
+../../vertical-plugins/quantitative-analysis/commands/residual-income.md

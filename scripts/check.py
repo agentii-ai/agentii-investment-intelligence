@@ -840,6 +840,71 @@ for _sk in sorted(PLUGINS.glob("vertical-plugins/*/skills/agentii/*/SKILL.md")):
     else:
         _SEEN_NAMES[_name] = _real
 
+# --- Check 51: Command coverage — every kit/orchestrator skill has a command file
+#     (spec 046 Part III; found by the `/agentii:synthesize` report, 2026-09-19)
+#
+# A `role: kit|orchestrator` skill is a WORKSPACE meta-command: the user invokes it as
+# `/agentii:<name>` to drive a thesis. That is what the role means, and the command file
+# is what makes the name resolvable at all. So `commands/` has to carry one entry per
+# kit skill.
+#
+# It carried 8 of 10. `synthesize` and `full-equity-research` had none, so
+# `/agentii:synthesize` answered `No commands match` and the report step had no by-name
+# entry point. Nothing reported it: `COMMAND_FILES` above is built and then used for
+# exactly one thing — Gate 9's double-brace scan — so no check had ever compared the
+# command set to the skill set. The convention held at 8/10 and was unenforced at 2/10.
+#
+# Scoped to kit/orchestrator roles, deliberately, and the scope is the honest part. The
+# other 69 skills follow a DIFFERENT convention — a 9–12 line wrapper with
+# `argument-hint` and a MODE_SYNTAX pointer — and 29 of them have no command at all,
+# mostly because their vertical has no `commands/` directory yet. That is undecided
+# scope, not a violation; asserting it here would fail the suite on a state nobody has
+# ruled against. This check asserts only the rule that is actually a rule.
+#
+# The reverse direction IS universal, because an orphan command is unambiguous: it
+# resolves to a skill that does not exist. Measured 2026-09-19: zero such commands, so
+# this half currently guards rather than repairs.
+_mark('Check 51: Command coverage — kit skill ⇒ command file (spec 046)')
+
+_VP = PLUGINS / "vertical-plugins"
+_KIT_SKILLS: dict[str, tuple[str, Path]] = {}
+for _sk in sorted(_VP.glob("*/skills/agentii/*/SKILL.md")):
+    checked += 1
+    if _meta_role(_sk):
+        _KIT_SKILLS[_sk.parent.name] = (_sk.relative_to(_VP).parts[0], _sk)
+
+# Self-test, in the shape of MIN_EXPECTED_SKILLS above. This check reads a role and acts
+# on the result; if the role reader broke, it would find nothing and report clean while
+# examining nothing — Q105's defect at the level of the check itself.
+MIN_EXPECTED_KIT_SKILLS = 8
+if len(_KIT_SKILLS) < MIN_EXPECTED_KIT_SKILLS:
+    err(
+        f"check-config: the kit/orchestrator role scan matched {len(_KIT_SKILLS)} "
+        f"skill(s) (expected >= {MIN_EXPECTED_KIT_SKILLS}) — Check 51 would examine "
+        f"nothing. Verify that `role:` is still read from skill frontmatter."
+    )
+
+for _name, (_vertical, _sk) in sorted(_KIT_SKILLS.items()):
+    _cmd = _VP / _vertical / "commands" / f"{_name}.md"
+    if not _cmd.is_file():
+        err(
+            f"command-coverage: {rel(_sk)} declares role: kit|orchestrator but "
+            f"{rel(_cmd)} does not exist — `/agentii:{_name}` cannot resolve, so the "
+            f"skill has no by-name entry point. Write the 4-line wrapper the other kit "
+            f"skills carry (Check 51)."
+        )
+
+for _cmd in sorted(_VP.glob("*/commands/*.md")):
+    checked += 1
+    _name = _cmd.stem
+    _vertical = _cmd.relative_to(_VP).parts[0]
+    if not (_VP / _vertical / "skills" / "agentii" / _name / "SKILL.md").is_file():
+        err(
+            f"command-coverage: {rel(_cmd)} resolves to `/{_vertical}:{_name}` (and to "
+            f"`/agentii:{_name}` once namespaced), but no skill named '{_name}' exists "
+            f"in that vertical — the command points at nothing (Check 51)."
+        )
+
 # --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---
 
 _mark('Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23)')

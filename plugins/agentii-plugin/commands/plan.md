@@ -1,0 +1,1 @@
+../../vertical-plugins/scenarios/commands/plan.md

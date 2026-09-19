@@ -1,0 +1,1 @@
+../../vertical-plugins/equity-research-core/commands/business-model.md

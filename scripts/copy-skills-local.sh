@@ -50,6 +50,22 @@ fi
 
 mkdir -p "$SKILLS_DST" "$COMMANDS_DST"
 
+# The kit-root pointer (contracts/kit-root.md).
+#
+# The skills this script installs invoke `python3 "$KIT/scripts/…"`, and $KIT has to
+# come from somewhere: no install channel ships `scripts/` (this one copies skills and
+# commands only). Recording the checkout's absolute path here is what lets an installed
+# skill find its own tooling without hardcoding `cd agentii-investment-intelligence` —
+# which is what every scenario skill used to do, and which only works when the CWD
+# happens to be the checkout.
+#
+# Re-running the installer rewrites it, so an upgrade that moves the checkout updates
+# the pointer. Deliberately NOT written under --dry-run: the pointer is a write, and
+# --dry-run writes nothing.
+if [[ "$DRY_RUN" != "1" ]]; then
+  printf '%s\n' "$REPO_ROOT" > "$SKILLS_DST/.kit-root"
+fi
+
 TOTAL=0
 SKIPPED=0
 REMOVED=0

@@ -35,6 +35,18 @@ is bounded by the Sync Impact Report (only pillars depending on amended principl
 ## Invocation
 
 ```bash
-python3 scripts/agentii_cmd.py constitution scaffold --workspace /path/to/workspace
-python3 scripts/agentii_cmd.py constitution amend --workspace /path/to/workspace --bump minor --note "..."
+# Resolve the kit root first — contracts/kit-root.md. The kit's scripts do NOT ship
+# with the skills, so never assume the CWD is the checkout.
+KIT=""
+for c in "${AGENTII_KIT_ROOT:-}" \
+         "$(cat "$HOME/.claude/skills/agentii/.kit-root" 2>/dev/null)" \
+         "${CLAUDE_PLUGIN_ROOT:-}"; do
+  [ -n "$c" ] && [ -f "$c/scripts/agentii_cmd.py" ] && { KIT="$c"; break; }
+done
+if [ -z "$KIT" ]; then d="$PWD"; while [ "$d" != "/" ]; do
+  [ -f "$d/scripts/agentii_cmd.py" ] && { KIT="$d"; break; }; d="$(dirname "$d")"; done; fi
+[ -n "$KIT" ] || { echo "agentii kit not found — see contracts/kit-root.md" >&2; exit 1; }
+
+python3 "$KIT/scripts/agentii_cmd.py" constitution scaffold --workspace /path/to/workspace
+python3 "$KIT/scripts/agentii_cmd.py" constitution amend --workspace /path/to/workspace --bump minor --note "..."
 ```

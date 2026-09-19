@@ -43,7 +43,19 @@ Append-only gap closure — the cadence engine of the research orchestration sys
 ## Invocation
 
 ```bash
-python3 scripts/converge.py --thesis theses/001-ai-semiconductors \
+# Resolve the kit root first — contracts/kit-root.md. The kit's scripts do NOT ship
+# with the skills, so never assume the CWD is the checkout.
+KIT=""
+for c in "${AGENTII_KIT_ROOT:-}" \
+         "$(cat "$HOME/.claude/skills/agentii/.kit-root" 2>/dev/null)" \
+         "${CLAUDE_PLUGIN_ROOT:-}"; do
+  [ -n "$c" ] && [ -f "$c/scripts/agentii_cmd.py" ] && { KIT="$c"; break; }
+done
+if [ -z "$KIT" ]; then d="$PWD"; while [ "$d" != "/" ]; do
+  [ -f "$d/scripts/agentii_cmd.py" ] && { KIT="$d"; break; }; d="$(dirname "$d")"; done; fi
+[ -n "$KIT" ] || { echo "agentii kit not found — see contracts/kit-root.md" >&2; exit 1; }
+
+python3 "$KIT/scripts/converge.py" --thesis theses/001-ai-semiconductors \
   --pins '{"assumption_pin": 1, "corpus_version": "2026-08", "as_of": "2026-09-08", "constitution_pin": "0.1.0", "skill_pin": "recent-quarter:abc"}'
 ```
 

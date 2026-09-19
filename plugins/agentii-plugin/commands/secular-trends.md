@@ -1,0 +1,1 @@
+../../vertical-plugins/equity-research-core/commands/secular-trends.md

@@ -1,0 +1,1 @@
+../../vertical-plugins/portfolio-strategy/commands/position-sizing.md

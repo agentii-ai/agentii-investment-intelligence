@@ -1,0 +1,1 @@
+../../vertical-plugins/business-intelligence/commands/revenue-decomp.md

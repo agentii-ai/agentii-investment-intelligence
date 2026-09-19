@@ -30,7 +30,19 @@ market_data_stage: none
 ## Invocation
 
 ```bash
-python3 scripts/dispatch.py --thesis-dir theses/001-ai-semiconductors --task "NVDA recent-quarter default" --journal theses/001-ai-semiconductors/shards/run1.ndjson
+# Resolve the kit root first — contracts/kit-root.md. The kit's scripts do NOT ship
+# with the skills, so never assume the CWD is the checkout.
+KIT=""
+for c in "${AGENTII_KIT_ROOT:-}" \
+         "$(cat "$HOME/.claude/skills/agentii/.kit-root" 2>/dev/null)" \
+         "${CLAUDE_PLUGIN_ROOT:-}"; do
+  [ -n "$c" ] && [ -f "$c/scripts/agentii_cmd.py" ] && { KIT="$c"; break; }
+done
+if [ -z "$KIT" ]; then d="$PWD"; while [ "$d" != "/" ]; do
+  [ -f "$d/scripts/agentii_cmd.py" ] && { KIT="$d"; break; }; d="$(dirname "$d")"; done; fi
+[ -n "$KIT" ] || { echo "agentii kit not found — see contracts/kit-root.md" >&2; exit 1; }
+
+python3 "$KIT/scripts/dispatch.py" --thesis-dir theses/001-ai-semiconductors --task "NVDA recent-quarter default" --journal theses/001-ai-semiconductors/shards/run1.ndjson
 ```
 
 Gate 4 (before mass dispatch, consequential — never delegable) shows budget and

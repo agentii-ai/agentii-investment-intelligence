@@ -1,0 +1,1 @@
+../../vertical-plugins/macro-strategy/commands/rate-cycle.md

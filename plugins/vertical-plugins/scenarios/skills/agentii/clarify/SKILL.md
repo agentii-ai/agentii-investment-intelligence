@@ -11,12 +11,33 @@ The 8th kit command — closes the gap Q32 itself assumed: upstream
 `speckit-clarify` re-evaluates the quality checklist after every spec write, but
 spec 046 never named the command that performs the clarification.
 
+## Invocation
+
+Both phases run kit Python. Resolve the kit root once per shell first —
+`contracts/kit-root.md`. The kit's scripts do NOT ship with the skills, and this
+skill's old path (`kit-scripts/`, below) did not exist at all: it named a directory
+that has never been in this repository, so every documented invocation of `clarify`
+failed with "No such file or directory".
+
+```bash
+# Resolve the kit root — contracts/kit-root.md. Never assume the CWD is the checkout.
+KIT=""
+for c in "${AGENTII_KIT_ROOT:-}" \
+         "$(cat "$HOME/.claude/skills/agentii/.kit-root" 2>/dev/null)" \
+         "${CLAUDE_PLUGIN_ROOT:-}"; do
+  [ -n "$c" ] && [ -f "$c/scripts/agentii_cmd.py" ] && { KIT="$c"; break; }
+done
+if [ -z "$KIT" ]; then d="$PWD"; while [ "$d" != "/" ]; do
+  [ -f "$d/scripts/agentii_cmd.py" ] && { KIT="$d"; break; }; d="$(dirname "$d")"; done; fi
+[ -n "$KIT" ] || { echo "agentii kit not found — see contracts/kit-root.md" >&2; exit 1; }
+```
+
 ## Two phases
 
 ### 1. Analyze (deterministic)
 
 ```bash
-python3 kit-scripts/agentii_cmd.py clarify --thesis theses/001-… --questions
+python3 "$KIT/scripts/agentii_cmd.py" clarify --thesis theses/001-… --questions
 ```
 
 Emits a JSON list of candidate questions, each with:
@@ -33,7 +54,8 @@ missing `budget`, missing `expiry_triggers`, subscription tokens not in
 ### 2. Encode (after the human answers)
 
 ```bash
-python3 kit-scripts/agentii_cmd.py clarify --thesis theses/001-… --answers '<json>'
+# $KIT comes from `## Invocation` above — re-run that resolver if this is a new shell.
+python3 "$KIT/scripts/agentii_cmd.py" clarify --thesis theses/001-… --answers '<json>'
 ```
 
 - Appends each answer to `spec.md`'s `## Clarifications` section

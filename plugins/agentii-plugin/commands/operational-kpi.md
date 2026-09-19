@@ -1,0 +1,1 @@
+../../vertical-plugins/business-intelligence/commands/operational-kpi.md

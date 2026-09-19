@@ -53,8 +53,16 @@ def png_size(path: Path) -> tuple[int, int]:
 
 
 def render(thesis: Path, out: Path | None = None, dpi: int = 192, *,
-           keep_pdf: bool = False, verify: bool = False) -> dict:
-    """Render the assembled report to per-page PNGs. Returns the manifest dict."""
+           keep_pdf: bool = False, verify: bool = False,
+           pdf_out: Path | None = None) -> dict:
+    """Render the assembled report to per-page PNGs. Returns the manifest dict.
+
+    `keep_pdf` keeps Chrome's `--print-to-pdf` output as a DELIVERABLE. It lands at
+    `pdf_out`, or beside the HTML at `<thesis>/thesis-report.pdf` — NOT in `out`
+    (`<thesis>/report/pages/`), which is the PNG scratch directory the optimize pass
+    reads. Until 2026-09-20 the kept PDF went into that scratch directory, which is
+    part of why the deliverable was mistaken for a QA by-product.
+    """
     thesis = Path(thesis)
     report = thesis / "thesis-report.html"
     if not report.is_file():
@@ -141,8 +149,11 @@ def render(thesis: Path, out: Path | None = None, dpi: int = 192, *,
                     raise RenderError(2, f"{p.name}: width {w}px, expected "
                                          f"{expected_w}px (8.5in @ {dpi}dpi)")
         width, height = png_size(pngs[0])
+        pdf_path = None
         if keep_pdf:
-            shutil.copy(pdf, out_dir / "thesis-report.pdf")
+            pdf_path = Path(pdf_out) if pdf_out else (thesis / "thesis-report.pdf")
+            pdf_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(pdf, pdf_path)
         manifest = {
             "page_count": n_pages, "section_count": n_pages, "dpi": dpi,
             "width": width, "height": height,
@@ -150,6 +161,8 @@ def render(thesis: Path, out: Path | None = None, dpi: int = 192, *,
                        "path": p.name, "width": width, "height": height}
                       for p in pngs],
         }
+        if pdf_path is not None:
+            manifest["pdf"] = str(pdf_path)
         (out_dir / "manifest.json").write_text(
             json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         return manifest
@@ -160,23 +173,30 @@ def render(thesis: Path, out: Path | None = None, dpi: int = 192, *,
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         prog="render_report.py",
-        description="Visual QA loop: render thesis-report.html to per-page PNGs "
-                    "(Chrome headless + poppler) for the LLM's optimize pass")
+        description="Render thesis-report.html to per-page PNGs (Chrome headless + "
+                    "poppler) for the LLM's optimize pass; --keep-pdf also emits the "
+                    "PDF deliverable beside the HTML")
     sub = p.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("render", help="render the assembled report to PNGs")
     r.add_argument("--thesis", required=True)
-    r.add_argument("--out", default=None, help="output dir (default: <thesis>/report/pages)")
+    r.add_argument("--out", default=None, help="PNG output dir (default: <thesis>/report/pages)")
     r.add_argument("--dpi", type=int, default=192)
-    r.add_argument("--keep-pdf", action="store_true")
+    r.add_argument("--keep-pdf", action="store_true",
+                   help="keep the PDF; without it the PDF is deleted with the temp dir")
+    r.add_argument("--pdf-out", default=None,
+                   help="PDF target (default: <thesis>/thesis-report.pdf)")
     r.add_argument("--verify", action="store_true",
                    help="also check each PNG is letter-width at the requested dpi")
     args = p.parse_args(argv)
     try:
         manifest = render(Path(args.thesis), out=Path(args.out) if args.out else None,
-                          dpi=args.dpi, keep_pdf=args.keep_pdf, verify=args.verify)
+                          dpi=args.dpi, keep_pdf=args.keep_pdf, verify=args.verify,
+                          pdf_out=Path(args.pdf_out) if args.pdf_out else None)
         out_dir = Path(args.out) if args.out else (Path(args.thesis) / "report" / "pages")
         print(f"OK {out_dir / 'manifest.json'} pages={manifest['page_count']} "
               f"dpi={manifest['dpi']} ({manifest['width']}x{manifest['height']})")
+        if "pdf" in manifest:
+            print(f"OK {manifest['pdf']} pages={manifest['page_count']}")
         return 0
     except RenderError as exc:
         print(exc, file=sys.stderr)

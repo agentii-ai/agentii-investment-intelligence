@@ -1,0 +1,1 @@
+../../vertical-plugins/industry-analysis/commands/sector-overview.md

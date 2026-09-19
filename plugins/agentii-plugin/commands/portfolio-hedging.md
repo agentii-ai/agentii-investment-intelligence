@@ -1,0 +1,1 @@
+../../vertical-plugins/portfolio-strategy/commands/portfolio-hedging.md

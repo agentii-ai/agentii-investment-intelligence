@@ -1,0 +1,1 @@
+../../vertical-plugins/models-and-pitches/commands/xlsx-financials.md

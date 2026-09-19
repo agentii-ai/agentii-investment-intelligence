@@ -1,0 +1,1 @@
+../../vertical-plugins/options-derivatives/commands/technical-execution.md

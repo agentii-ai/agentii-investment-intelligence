@@ -1,0 +1,1 @@
+../../vertical-plugins/industry-analysis/commands/supply-chain.md
