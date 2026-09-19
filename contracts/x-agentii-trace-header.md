@@ -95,6 +95,6 @@ Multiply `call_count` by per-endpoint credit pricing for billing.
 
 ## Cross-Spec Dependencies
 
-- ****: Hono middleware (`trace.ts`), Redis provisioning, Supabase `agent_traces` migration, batch writer
-- ****: No changes (Neon not used for tracing)
-- ****: Skill Preflight instruction in all SKILL.md files, CI validation (Check 18, Check 19)
+- **spec 019**: Hono middleware (`trace.ts`), Redis provisioning, Supabase `agent_traces` migration, batch writer
+- **spec 022**: No changes (Neon not used for tracing)
+- **spec 023**: Skill Preflight instruction in all SKILL.md files, CI validation (Check 18, Check 19)

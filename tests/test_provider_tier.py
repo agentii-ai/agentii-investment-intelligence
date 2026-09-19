@@ -21,6 +21,7 @@ be asserted about the REGISTRY and the DISPATCH LOGIC is asserted always.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -253,3 +254,81 @@ def test_live_keyless_sources_answer_and_agree(request):
     ok = {n: e for n, e in results.items() if e["status"] == "ok"}
     assert len(ok) >= 2, {n: e.get("error") for n, e in results.items()}
     assert sp.cross_source_agreement(ok)["agree"] is True, ok
+
+
+# ── T201: the egress scope is a CONSTRAINT, not a comment ───────────────────
+
+# T183 corrected `_sources.py` and `contracts/SOURCES.md` to say the Chinese
+# firewall is out of scope. Three files kept asserting the opposite, and the one a
+# reader trusts is whichever they open: `source_probe.py`'s `probe_yahoo` docstring
+# read "Yahoo geo-blocks this network", its registry entry labelled the licence
+# "Apache-2.0 (geo-blocked)", and its module docstring stated the failure "is in
+# fact a geographic block". Each is true of one measured network (Shenzhen, egress
+# 113.84.64.112) and false of the product.
+_SCOPE_FILES = [
+    ROOT / "data-tools" / "source_probe.py",
+    ROOT / "data-tools" / "_sources.py",
+    ROOT / "data-tools" / "market_data.py",
+    ROOT / "contracts" / "SOURCES.md",
+]
+
+# An ASSERTION of the retired premise: a present-tense claim that the block occurs,
+# or a region baked into a non-region field. A correction note that QUOTES the old
+# wording is correct and must keep passing, so each pattern is anchored on the
+# asserting form rather than on the words.
+_RETIRED_ASSERTIONS = [
+    (re.compile(r"geo-blocks this network", re.I), "asserts the block as a current fact"),
+    (re.compile(r'"license"\s*:\s*"[^"]*geo[- ]?block', re.I), "geo-block in a licence field"),
+    (re.compile(r"is in fact a geographic block", re.I), "states the block as the diagnosis"),
+    (re.compile(r"\bmust fail\b.*geo-?block", re.I), "expects a geo-block"),
+]
+
+
+def test_no_shipped_file_asserts_the_retired_cn_premise():
+    """The scope is a product constraint, so violating it is a defect, not a wording
+    preference.
+
+    Asserted across the data-layer files rather than against the one docstring that
+    was noticed, because the correction only landed in two of five places the first
+    time. A grep-shaped test is the right instrument here: the failure mode is a
+    sentence, and it comes back by being copied.
+
+    **A correction note must be allowed to quote what it corrects** — Check 39 hit
+    exactly this and named it: *a pattern that matches its own definition is not a
+    finding*. `source_probe.probe_yahoo`'s docstring now reads *"This docstring used
+    to read `Yahoo geo-blocks this network`"*, and the first version of this test
+    failed on it. So a line carrying a retrospective marker is excluded: the record
+    of a correction is the one place the corrected wording has to appear.
+    """
+    retro = re.compile(r"used to read|previously|formerly|was changed|no longer|"
+                       r"out of scope|retired|T201", re.I)
+    offenders: list[str] = []
+    for path in _SCOPE_FILES:
+        if not path.is_file():
+            continue
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if retro.search(line):
+                continue
+            for rx, why in _RETIRED_ASSERTIONS:
+                if rx.search(line):
+                    offenders.append(f"{path.relative_to(ROOT)}:{n} ({why}): {line.strip()[:90]}")
+
+    assert not offenders, (
+        "the Chinese firewall is OUT OF SCOPE (the user's stated constraint: our users "
+        "are in the US and the EU). These lines assert it as a product behaviour:\n  "
+        + "\n  ".join(offenders))
+
+
+def test_the_probe_classifies_what_it_sees_rather_than_what_it_expects():
+    """`GEO_BLOCK` and `RATE_LIMITED` are separate outcomes, and 429 is not a block.
+
+    Before T201 the classifier was `GEO_BLOCK if blocked and status == 403 else
+    SOURCE_UNAVAILABLE` — so the in-scope failure (a US-datacenter 429) was reported
+    under a name that says "geography", which is how a scope decision gets silently
+    reversed by a status-code branch. The kind now names the mechanism observed.
+    """
+    import inspect
+    src = inspect.getsource(sp.probe_yahoo)
+    assert "RATE_LIMITED" in src, (
+        "a 429 must be reported as a throttle, not folded into the geo-block branch")
+    assert '"GEO_BLOCK"' in src

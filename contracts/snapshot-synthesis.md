@@ -30,28 +30,46 @@ reference this file with a one-line `## Snapshot` pointer.
 > **Retained, not deprecated**: `snapshots/` is part of the early instrument set (`agentii.md` + `style.md` +
 > `snapshots/` + `sessions/`) that Q141/Q144 keep. "Replaced by `artifacts/`" happens **only in thesis mode**.
 
-After writing the raw deliverable, synthesize/update the ticker's thesis snapshot
-at `snapshots/{ticker}/{YYYY-MM-DD}_thesis.md`: a concise (≤400 word)
+After writing the raw deliverable, synthesize/update the ticker's snapshot at
+`snapshots/{ticker}/{YYYY-MM-DD}_{semantic-slug}.md`: a concise (≤400 word)
 point-in-time thesis that merges this run's conclusions with the prior snapshot.
 Note explicitly which prior conclusions are **confirmed**, **updated**, or
 **superseded**.
 
+> **This paragraph said `{YYYY-MM-DD}_thesis.md` until 2026-09-19 (T196).** The table
+> above had already been corrected by Q144; the instruction had not — so the file
+> stated the new filename in its summary and the old one in the line a reader
+> actually follows. That is T193's defect class (a corrected rule surviving beside
+> its own correction) found one level down, in the file T193's fix pointed at.
+> The slug names what the snapshot is *about*: `thesis` when it covers the whole
+> thesis, `guidance-cut` / `margin-bridge` when it does not.
+
 ## Claim taxonomy (FR-092)
 
-Every material claim in the deliverable MUST be classified with an inline prefix
-badge:
+Every material claim in the deliverable MUST carry a **class**, as a structured
+field — `claim_class ∈ {FACT, DEDUCTED, VIEW}` on the claim record:
 
-| Badge | Meaning | Requirement |
+| Class | Meaning | Requirement |
 |-------|---------|-------------|
-| `[FACT]` | Directly retrieved from a filing or XBRL fact | MUST carry an inline `/v/` citation |
-| `[DEDUCTED]` | Computed/derived from facts (ratios, growth, mix) | MUST reference the input facts |
-| `[VIEW]` | Analyst interpretation / forward judgment | No citation required; clearly marked as opinion |
+| `FACT` | Directly retrieved from a filing or XBRL fact | MUST carry an inline `/v/` citation |
+| `DEDUCTED` | Computed/derived from facts (ratios, growth, mix) | MUST reference the input facts |
+| `VIEW` | Analyst interpretation / forward judgment | No citation required; clearly marked as opinion |
 
-- Use the inline prefix at the start of the bullet/sentence:
+- The class is a **field**; the inline `[FACT]` / `[DEDUCTED]` / `[VIEW]` badge is
+  **rendering generated from it**, not the source of truth. Where the two disagree,
+  the field wins and the disagreement is a defect to report — the same single-source
+  discipline Q140/Q141 apply to `agentii.md` and `snapshots/`.
+  > **Why a field, and not the badge (Q146/T169).** A G1 gate is defined as
+  > deterministic, pure-script, millisecond, zero-LLM. Counting claims by scanning
+  > prose for `[FACT]` makes the gate parse writing — so a claim badged slightly
+  > differently is silently not counted, and the gate returns a clean result over an
+  > input it never read. The badge is for the reader; the field is for the gate.
+- Use the rendered badge at the start of the bullet/sentence:
   `[FACT] Q1 revenue was $18.5B [📄 NVDA 10-Q p.4](...)`.
-- Include a small summary table near the top of the deliverable with the counts
-  (`facts_count`, `deducted_count`, `views_count`) — these MUST match the output
-  frontmatter (`contracts/output-frontmatter-schema.md`).
+- The summary table near the top of the deliverable carries
+  `facts_count` / `deducted_count` / `views_count`. These are **DERIVED** — counted
+  from the claims' `claim_class`, never authored independently. Three numbers that
+  must agree by construction are three numbers that can disagree silently.
 
 ## Session archival (FR-095)
 

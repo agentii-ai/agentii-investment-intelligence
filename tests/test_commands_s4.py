@@ -128,6 +128,61 @@ def test_parse_spec_matrix():
     assert rows[1]["depth"] == "light"
 
 
+def test_parse_spec_matrix_against_the_real_template():
+    """The regression the old test could not catch, because it used the wrong input.
+
+    `SPEC_MATRIX` above spells its separator `|---|---|:---:|---|---|---|`. The
+    shipped `spec-template.md` spells it `|-------|----------|:---:|…|`, and the
+    parser skipped only the literal `"---"` — so the separator survived as a row and
+    every thesis scaffolded from the template carried a phantom task with
+    `skill='-------'`. The fixture and the generator disagreed, and the test used the
+    fixture.
+
+    So this test does not spell a separator at all: it reads the GENERATOR and feeds
+    the parser what the generator actually emits. A future template edit that changes
+    the separator form cannot silently reintroduce the bug — it fails here.
+    """
+    template = (ROOT / "plugins" / "vertical-plugins" / "scenarios" / "templates"
+                / "spec-template.md").read_text(encoding="utf-8")
+
+    # The template's own matrix, verbatim: header + separator, no data rows.
+    matrix = template.split("## 3. Skill Deployment Matrix", 1)[1].split("\n## ", 1)[0]
+    rows = agentii_cmd.parse_spec_matrix("## 3. Skill Deployment Matrix" + matrix)
+    assert rows == [], f"the template's separator row parsed as a task: {rows}"
+
+    # …and with a real row appended to the template's own header, exactly one row
+    # comes back. Both halves are needed: the first asserts the separator is skipped,
+    # the second that the skip did not become "skip everything".
+    spec = ("## 3. Skill Deployment Matrix" + matrix.rstrip("\n")
+            + "\n| `dcf` | valuation | Deep | NVDA | stage-2 | valuation range |\n")
+    rows = agentii_cmd.parse_spec_matrix(spec)
+    assert [r["skill"] for r in rows] == ["dcf"], rows
+    assert rows[0]["tickers"] == ["NVDA"]
+    assert rows[0]["purpose"] == "valuation range"
+
+
+def test_separator_row_detection_is_structural_not_a_literal_list():
+    """Any dash/colon arrangement is a separator; a populated cell never matches.
+
+    The old check was a list of literals (`"---"`, `":"`), which can only be as
+    correct as the author's memory of what every generator writes. This pins the
+    property instead: separator-shaped in, separator-shaped out, and no false
+    positives on the values a real matrix holds.
+    """
+    for sep in ("|---|", "|---|---|:---:|---|---|---|",
+                "|-------|----------|:---:|--------|:---:|------|",
+                "| --- | :---: | --- |", "|:-:|"):
+        cells = [c.strip() for c in sep.strip("|").split("|")]
+        assert agentii_cmd._is_separator_row(cells), sep
+
+    # A ticker list, a skill name, and a Purpose cell all contain letters.
+    for row in ("| `dcf` | valuation | Deep | NVDA, AMD | stage-2 | valuation range |",
+                "| Skill | Vertical | Depth | Tickers | Stage | Purpose |",
+                "| a-1 | b | c | d | e | f |"):
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        assert not agentii_cmd._is_separator_row(cells), row
+
+
 def test_depth_to_modes_q79_merge():
     import yaml
 

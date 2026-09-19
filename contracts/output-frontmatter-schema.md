@@ -7,7 +7,7 @@ Every skill output file MUST include a YAML frontmatter block at the top of the 
 ```yaml
 ---
 ticker: LLY # uppercase ticker (or tickers: [LLY, NVO, PFE] for multi-ticker per FR-106)
-date: 2026-06-03 # ISO 8601 date
+as_of: 2026-06-03 # ISO 8601. T168: this is the date the analysis is AS OF; `date` is retired
 skill: recent-quarter # matches skill frontmatter `name` field
 affix: consolidated-p-and-l # short descriptive slug
 key_metrics: # dict of most important computed values
@@ -18,12 +18,23 @@ key_metrics: # dict of most important computed values
 conclusions: >- # 1-3 sentence synthesis
  Q1 2026 revenue $18.5B (+12% QoQ), EPS $2.34 beat consensus by 4%.
  Gross margin expanded 200bps to 80%. Mounjaro supply constraints easing.
-facts_count: 12 # number of [FACT] claims per
-deducted_count: 8 # number of [DEDUCTED] claims
-views_count: 3 # number of [VIEW] claims
+claims: # T196 (Q146): EVERY material claim, each with its own class.
+ - {claim_class: FACT,     text: "Q1 2026 revenue $18.5B", citation: "LLY 10-Q p.4"}
+ - {claim_class: DEDUCTED, text: "+12% QoQ revenue growth", citation: "prior-quarter revenue"}
+ - {claim_class: VIEW,     text: "Mounjaro supply constraints are easing"}
+mechanism_outcome: EXECUTED # Q129/Q135: EXECUTED | VACUOUS — an un-run gate must say so
+facts_count: 1 # DERIVED — counted from `claims`, not authored (Check 45 recomputes)
+deducted_count: 1 # DERIVED
+views_count: 1 # DERIVED
 citation_count: 23 # total inline citations
 ---
 ```
+
+> **The counts are DERIVED, so this example's numbers are consistent with its `claims`
+> list on purpose.** Three numbers that must agree by construction are three numbers
+> that can disagree silently — and did: the pre-T196 example carried
+> `facts_count: 12 / deducted_count: 8 / views_count: 3` with no list behind them,
+> so nothing in the file could have contradicted them.
 
 ## Fields — LAYERED (T167/T168/T169, Q145/Q146)
 
@@ -43,7 +54,8 @@ required in both modes, plus a mode-specific extension.
 | `skill` | Yes | string | Skill name matching the `name` field in SKILL.md frontmatter |
 | `affix` | Yes | string | Descriptive slug capturing analysis focus |
 | `key_metrics` | Yes | dict | Most important computed values as human-readable strings |
-| `claim_class` | **Yes** | enum | **`FACT` \| `DEDUCTED` \| `VIEW`** — added by **T169** |
+| `conclusions` | Yes | string | 1-3 sentence synthesis of key findings |
+| `claims` | **Yes** | object[] | **Every material claim, each carrying its own `claim_class ∈ {FACT, DEDUCTED, VIEW}`** — T196 corrects T169, which put the class on the ARTIFACT |
 | `mechanism_outcome` | **Yes** | enum | **`EXECUTED` \| `VACUOUS`** — Q129/Q135. In the CORE because Q142 classifies `VACUOUS` reporting as mode-independent: an un-run gate must say it did not run, whether or not a thesis exists |
 
 > **T168 — the `date` / `as_of` collision, resolved to ONE name.** The two mode
@@ -64,13 +76,26 @@ required in both modes, plus a mode-specific extension.
 > independently maintained. Three fields that must agree by construction is three
 > fields that can disagree silently.
 
+> **T196 — T169 put the field at the wrong altitude, and the error defeated its own
+> purpose.** T169 made `claim_class` a scalar on the ARTIFACT: one element of
+> `{FACT, DEDUCTED, VIEW}` per file. But Q146 requires the three counts to be
+> **derived from the classes**, and **three counts are not derivable from one value**.
+> A file reading `claim_class: FACT` can only ever yield `1 / 0 / 0`, whatever it
+> actually contains — so the count would be derived in name and authored in fact,
+> which is the arrangement T169 was written to end. Worse, it was **satisfiable
+> while enforcing nothing**: a file declaring `FACT` and holding twenty `DEDUCTED`
+> claims passed the schema, and the anti-fabrication gate read a number nothing
+> guaranteed. The class is now a property of each claim (`claims[]`, and
+> `entity_claims[]` in thesis mode), and **Check 45** recomputes the counts from the
+> list — because "derived" that is not recomputed is a declaration like any other.
+
 ### Layer 2 — derived (no longer authored)
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `facts_count` | Derived | int | Count of `[FACT]` claims — **derived from `claim_class`** (T169) |
-| `deducted_count` | Derived | int | Count of `[DEDUCTED]` claims — **derived** (T169) |
-| `views_count` | Derived | int | Count of `[VIEW]` claims — **derived** (T169) |
+| `facts_count` | Derived | int | `claims` whose `claim_class` is `FACT` — **recomputed by Check 45** |
+| `deducted_count` | Derived | int | `claims` whose `claim_class` is `DEDUCTED` — **recomputed by Check 45** |
+| `views_count` | Derived | int | `claims` whose `claim_class` is `VIEW` — **recomputed by Check 45** |
 | `citation_count` | Yes | int | Total inline citation references |
 
 ### Layer 3 — thesis-mode extension
@@ -79,21 +104,24 @@ Not in this contract. `specs/046-…/contracts/artifact-frontmatter.schema.json`
 carries the thesis layer (`assumption_pin`, `corpus_version`, `constitution_pin`,
 `skill_pin`, `mode`, `data_class`, `entity_claims`, `writer`, …) — **added to** the
 public core, never instead of it.
-| `skill` | Yes | string | Skill name matching `name` field in SKILL.md frontmatter |
-| `affix` | Yes | string | Descriptive slug capturing analysis focus |
-| `key_metrics` | Yes | dict | Most important computed values as human-readable strings |
-| `conclusions` | Yes | string | 1-3 sentence synthesis of key findings |
-| `facts_count` | Yes | int | Count of `[FACT]` claims per |
-| `deducted_count` | Yes | int | Count of `[DEDUCTED]` claims |
-| `views_count` | Yes | int | Count of `[VIEW]` claims |
-| `citation_count` | Yes | int | Total inline citation references |
+
+> **Here stood an orphaned copy of the pre-T167 table** — eight rows (`skill`,
+> `affix`, `key_metrics`, `conclusions`, `facts_count`, `deducted_count`,
+> `views_count`, `citation_count`) left behind when the layered tables replaced it.
+> It re-required the three counts as *authored* (`Yes`), directly contradicting
+> Layer 2's *Derived* eight lines above, and it listed `conclusions` as required
+> while Layer 1 had by then omitted it. Removed 2026-09-19 (T196): a reader who
+> reached it — and it sat **after** the point where the layers end, so reaching it
+> means having read the correct tables first — would have taken the stale
+> requirement as the operative one.
 
 ## Validation Rules
 
 1. Exactly one of `ticker` (singular) or `tickers` (plural) MUST be present — never both.
 2. `key_metrics` values MUST be human-readable strings with units ($, %, bps, x).
-3. `facts_count + deducted_count + views_count` MUST equal the total number of classified claims in the file.
-4. `citation_count` MUST be ≥1 per 200 words of body text ( citation density).
+3. `facts_count + deducted_count + views_count` MUST equal the number of entries in `claims` — and since both sides are now recomputable, a disagreement is a **defect, not a discrepancy to reconcile** (**Check 45**). The counts are outputs of the derivation, not inputs to it.
+4. `citation_count` MUST be ≥1 per 200 words of body text (citation density).
+5. Every entry in `claims` MUST carry a `claim_class`; an unclassed claim is invisible to the anti-fabrication gate, which is the one outcome Q146 exists to prevent.
 
 ## Glob-Based Discovery Protocol
 
@@ -108,8 +136,8 @@ This achieves the File-First Hybrid Architecture goal (research-memory.md) — m
 
 ## Cross-Reference
 
-- ****: Output file naming convention
-- ****: agentii.md memory index
-- ****: Two-tier output model
-- ****: FACT/DEDUCTED/VIEW classification taxonomy
-- ****: Multi-ticker output convention (`_cross/`, `_sector/`)
+- **FR-079**: Output file naming convention
+- **FR-087**: agentii.md memory index
+- **FR-091**: Two-tier output model
+- **FR-092**: FACT/DEDUCTED/VIEW classification taxonomy
+- **FR-093**: Multi-ticker output convention (`_cross/`, `_sector/`)

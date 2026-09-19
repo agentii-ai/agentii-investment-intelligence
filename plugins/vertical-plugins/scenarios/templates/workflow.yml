@@ -68,8 +68,13 @@ machine_gates:
   - id: citation-integrity
     mode: both
     tier: G1
-    reads: [claim_class, citations]
+    reads: [claims, citations]
     enforcement: write_boundary
+    # T196: was `claim_class` — the file-level scalar T169 introduced, which one
+    # value per file made underivable into three counts. The class now lives on
+    # each claim, so the gate reads the list. Check 41 caught this the moment the
+    # schema changed: a `both` gate whose declared input no longer exists is a rule
+    # that can declare itself mode-independent and have nothing to read.
     note: Q100/Q102 anti-fabrication. Claims about agentii.ai data are made in both modes.
   - id: vacuous-reporting
     mode: both

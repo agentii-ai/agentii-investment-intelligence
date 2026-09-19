@@ -1,26 +1,47 @@
-"""test_meta_rules.py — spec 046's five meta-rule checks (T143–T146, Checks 38–42).
+"""test_meta_rules.py — spec 046's meta-rule and gate-integrity checks (Checks 38–49).
 
-The spec carries three meta-rules, and all three say one sentence: **a rule must
+The spec carries FOUR meta-rules, and all four say one sentence: **a rule must
 name the context it assumes.**
 
-    MR-1  axis attribution    — which axis a value belongs to
-    MR-2  the location rule   — where a record lives
-    MR-3  mode attribution    — which mode a rule governs (+ where it runs)
+    MR-1  axis attribution    — which axis a value belongs to          (Check 38)
+    MR-2  the location rule   — where a record lives                   (Check 39)
+    MR-3  mode attribution    — which mode a rule governs, + where it runs
+                                                                       (Checks 40–42)
+    MR-4  evidence attribution — where the observation behind a decision lives
+                                                                       (Check 44)
 
-Q130's own author broke MR-1 five times, and Q142 broke MR-2 in the round that
-introduced MR-3. That is the argument for these being **scripts rather than
-paragraphs**: the author is not an exception.
+Q130's own author broke MR-1 five times, Q142 broke MR-2 in the round that
+introduced MR-3, and MR-3's own author broke it again in the next round. That is
+the argument for these being **scripts rather than paragraphs**: the author is not
+an exception.
+
+**The checks that are not meta-rules**, added 2026-09-19 and all the same shape —
+*the declaration and the implementation have drifted, and no reader can see it*:
+
+    Check 41  a gate's declared mode must be satisfiable by its inputs
+    Check 45  derived counts must actually recompute from the claim list
+    Check 46  no reference label may have been emptied (22 were)
+    Check 47  the landing index must not silently overwrite its own keys
+    Check 48  no `check_*.py` may be reachable from nowhere
+    Check 49  the disclaimer's single source must still hold
 
 Each check reports its own precondition honestly. Check 40 reports `UNTAGGED: N`
-until the tagging pass completes; Checks 41 and 42 report `NO INVENTORY` until the
-gate inventory carries mode declarations. **An un-run check must say it has not
-run** — Q105, applied to the checks themselves.
+until the tagging pass completes. **An un-run check must say it has not run** —
+Q105, applied to the checks themselves — and where a check can gate, it gates
+rather than reporting: Checks 42 and 44 both began as reports and became gates
+when the convention they needed was finally declared.
+
+**This docstring said "five meta-rule checks … Checks 38–42" while the file held
+eleven.** Left as a note rather than silently corrected: the header of the file
+that checks hand-maintained counts is exactly where a hand-maintained count of its
+own went stale, which is the whole subject.
 """
 from __future__ import annotations
 
 import collections
 import json
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -326,7 +347,32 @@ def test_check_42_a_named_location_is_one_component():
     did need both. Naming only one WOULD be Q147's defect — the documentation
     naming one place while reality has two. So the rule cannot be applied
     mechanically in either direction, and this check does not pretend to: it
-    reports, and gates only once the field declares a `location_base`."""
+    reports, and gates only once the field declares a `location_base`.
+
+    ── T199, 2026-09-19: IT NOW GATES. ────────────────────────────────────────
+
+    `location_base:` is declared, and the field was normalised: 43 components
+    that were written against an undeclared root (`templates/…`, `synthesize
+    SKILL.md`, a bare `dispatch.py`) or elided (`specs/046-.../`) are now real
+    paths. The gate it enables is the one MR-2 was always about:
+
+        a `location:` that does not resolve is a DEFECT when the item is marked
+        `resolved: true` — and only then.
+
+    The `resolved:`-aware half is not a softening; it is what makes the rule
+    correct. Q24 is the case that proves it: the item names
+    `status/SKILL.md` and says in its own text "the skill body does not". An
+    unresolvable location on an OPEN item is the item telling the truth about
+    work not yet done — demanding resolvability there would force a lie or a
+    deletion. And a location on a RESOLVED item that resolves to nothing is
+    exactly MR-2's failure ("unnamed ⇒ incomplete, **because in practice it is
+    a gate that never fires**") in its completed form: a reader follows the
+    path and finds nothing, while the index says the work is done.
+
+    It found Q24 on its first run — the item was marked resolved on 2026-09-18
+    by a decision that no skill body was needed, while its `location:` still
+    named the file that decision said would not exist. A note recorded the
+    decision; the field a reader follows did not."""
     idx = SPEC / "landing-items.yaml"
     if not idx.is_file():
         pytest.skip("no landing-items.yaml")
@@ -346,16 +392,45 @@ def test_check_42_a_named_location_is_one_component():
             counts["no-component"] += 1
             resolved_role += bool(i.get("resolved"))
 
-    print(f"\nCheck 42 — `location:` by syntax, {len(items)} items: "
-          + ", ".join(f"{k}={v}" for k, v in counts.items())
-          + f" (of the no-component ones, {resolved_role} are RESOLVED)")
-
-    if not doc.get("location_base"):
+    # ── the gate ────────────────────────────────────────────────────────────
+    base = doc.get("location_base")
+    if not base:
+        print(f"\nCheck 42 — `location:` by syntax, {len(items)} items: "
+              + ", ".join(f"{k}={v}" for k, v in counts.items())
+              + f" (of the no-component ones, {resolved_role} are RESOLVED)")
         pytest.skip(
-            f"NO CONVENTION — landing-items.yaml declares no `location_base`, so "
-            f"`location:` cannot be resolved against a root and Q147 (one component "
-            f"vs N) cannot be decided. Syntax counts above are the whole finding. "
-            f"Add `location_base:` and a cardinality rule to make this a gate.")
+            "NO CONVENTION — landing-items.yaml declares no `location_base`, so "
+            "`location:` cannot be resolved against a root and Q147 (one component "
+            "vs N) cannot be decided. Add `location_base:` and a cardinality rule "
+            "to make this a gate.")
+
+    roots = [(KIT / b).resolve() for b in base]
+    unresolved_resolved: list[str] = []   # defects
+    unresolved_open: list[str] = []       # legitimate: the file is to be written
+    for i in items:
+        for c in _loc_components(i.get("location") or ""):
+            c = re.split(r"\s+(?:header|\(|schema|this index)", c)[0].strip("`'\"")
+            if c.startswith("runtime-workspace/"):
+                continue        # a file in whichever workspace runs — not a repo path
+            if not re.search(r"\.(py|md|ya?ml|json|jsonl|html|txt|ndjson)$", c):
+                continue        # a role, not a file ("artifact boundary gate")
+            if any((r / c).exists() for r in roots):
+                continue
+            (unresolved_resolved if i.get("resolved") else unresolved_open).append(
+                f"{i.get('question')}: {c}")
+            break               # one representative per item keeps the count legible
+
+    print(f"\nCheck 42 — `location:` {len(items)} items: "
+          + ", ".join(f"{k}={v}" for k, v in counts.items())
+          + f" | unresolvable: {len(unresolved_resolved)} on RESOLVED items, "
+          f"{len(unresolved_open)} on open items (legitimate)")
+
+    assert not unresolved_resolved, (
+        f"{len(unresolved_resolved)} landing item(s) are marked `resolved: true` "
+        f"while their `location:` resolves to nothing. A reader follows the path and "
+        f"finds nothing, while the index says the work is done — MR-2's 'a gate that "
+        f"never fires', in its completed form:\n  "
+        + "\n  ".join(unresolved_resolved))
 
 
 # ── Check 44 — MR-4 evidence attribution (T186/T188/T189) ───────────────────
@@ -422,3 +497,319 @@ def test_check_44_mr4_is_registered_like_its_three_siblings():
         assert m.get("enforcement"), (
             f"{mid} declares no enforcement point. MR-2's own rule: a rule that "
             f"names no place to run is a gate that never fires.")
+
+
+# ── Check 45 — derived counts must actually be derivable (T196, Q146) ───────
+
+def _recount(claims: list[dict]) -> dict[str, int]:
+    """The derivation the contract promises, written once so it is inspectable.
+
+    Deliberately a plain loop over a list — no prose, no regex, no model. That is
+    the whole point of Q146: a G1 gate counts claims by reading FIELDS. The moment
+    this needs to understand a sentence, the gate has stopped being deterministic.
+    """
+    out = {"facts_count": 0, "deducted_count": 0, "views_count": 0}
+    key = {"FACT": "facts_count", "DEDUCTED": "deducted_count", "VIEW": "views_count"}
+    for c in claims:
+        out[key[c["claim_class"]]] += 1
+    return out
+
+
+def test_check_45_the_claim_class_is_per_claim_not_per_file():
+    """The incoherence T169 shipped, asserted against the schema so it cannot return.
+
+    T169 put `claim_class` on the ARTIFACT — one element of {FACT,DEDUCTED,VIEW} per
+    file. Q146 requires the counts to be DERIVED from the classes, and three counts
+    are not derivable from one value: a file reading `claim_class: FACT` can only
+    yield `facts_count: 1, deducted_count: 0, views_count: 0`, whatever it actually
+    contains. The field satisfied the schema and enforced nothing — this spec's own
+    defect, committed in the change written to fix it.
+
+    So the assertion is structural: the class is a property of a CLAIM, and no
+    file-level scalar by that name exists to be mistaken for the source of truth.
+    """
+    schema = json.loads((SPEC / "contracts" / "artifact-frontmatter.schema.json")
+                        .read_text(encoding="utf-8"))
+
+    for label, props in (("top level", schema["properties"]),
+                         ("$defs.publicCore", schema["$defs"]["publicCore"]["properties"])):
+        assert "claim_class" not in props, (
+            f"{label} still carries a scalar `claim_class`. One value cannot derive "
+            f"three counts — the class belongs to each claim.")
+        assert "claims" in props, f"{label} has no `claims` list for the class to live on"
+        assert "claim_class" in props["claims"]["items"]["required"], (
+            f"{label}.claims items must REQUIRE claim_class, or the list is unclassed "
+            f"and the counts are underivable again")
+
+    # The thesis layer's numeric subset carries the class too (Q146).
+    ec = schema["properties"]["entity_claims"]["items"]
+    assert "claim_class" in ec["required"], (
+        "entity_claims is the NUMERIC SUBSET of the claims; its entries need a class "
+        "for the same reason the general list does")
+
+
+def test_check_45_counts_recompute_from_the_claims_list():
+    """A file whose counts do not match its claims is the defect, and it is decidable.
+
+    Two halves. The first shows the derivation is a real function over a real list
+    (so the contract's promise is executable at all). The second is the half that
+    matters: a hand-maintained count that disagrees is DETECTED. Without it,
+    'derived' is a word in a description — and this spec's record is that a
+    declaration of derivation is exactly what stops being true silently.
+    """
+    claims = [{"claim_class": "FACT"}, {"claim_class": "FACT"},
+              {"claim_class": "DEDUCTED"}, {"claim_class": "VIEW"},
+              {"claim_class": "VIEW"}, {"claim_class": "VIEW"}]
+    assert _recount(claims) == {"facts_count": 2, "deducted_count": 1, "views_count": 3}
+
+    # The failure the check exists for: a plausible hand-written header.
+    declared = {"facts_count": 3, "deducted_count": 1, "views_count": 3}
+    derived = _recount(claims)
+    mismatch = {k: (declared[k], derived[k]) for k in derived if declared[k] != derived[k]}
+    assert mismatch == {"facts_count": (3, 2)}, mismatch
+
+    # An unclassed claim is not a claim — it is a claim the gate cannot see.
+    with pytest.raises(KeyError):
+        _recount([{"claim_class": "FACT"}, {}])
+
+
+# ── Check 46 — no document may carry a label that resolved to nothing (T197) ─
+
+def _shipped_docs() -> list[Path]:
+    """Docs a reader or an agent is expected to follow, excluding history."""
+    out: list[Path] = []
+    for root in (KIT / "contracts", KIT / "docs", KIT / "plugins",
+                 KIT / "managed-agent-cookbooks"):
+        if root.is_dir():
+            out += [p for p in root.rglob("*.md") if p.is_file()]
+    out += [p for p in (KIT / "README.md", KIT / "QUICKSTART.md",
+                        KIT / "CHANGELOG.md", KIT / "SKILL.md") if p.is_file()]
+    return out
+
+
+def test_check_46_no_document_carries_an_emptied_reference_label():
+    """MEASURED 2026-09-19: 22 cross-reference labels across 7 shipped documents
+    had been reduced to `****` by a lossy transform that ate `FR-\\d+` and
+    `spec \\d+`.
+
+    The damage is the exact shape this spec keeps finding, one level down from the
+    rules it was checking: **the reference survived, its target did not.** Each line
+    still read as a well-formed bullet with a description after the colon — so a
+    reader skimming the Cross-Reference block saw a list of five references and had
+    no signal that all five pointed at nothing. The descriptions were intact and the
+    identifiers were gone, which is worse than a broken link: a broken link fails
+    loudly, and an empty label reads as content.
+
+    Recovered from git history and restored (T197): the pre-corruption form is in
+    the commits that predate it. This check exists so the next lossy pass is caught
+    by CI rather than by someone noticing a stray `****`.
+    """
+    offenders: list[str] = []
+    # An emptied label: four or more asterisks standing where a reference belongs.
+    rx = re.compile(r"\*\*\*\*")
+    for p in _shipped_docs():
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for n, line in enumerate(text.splitlines(), 1):
+            if rx.search(line):
+                offenders.append(f"{p.relative_to(KIT)}:{n}: {line.strip()[:80]}")
+
+    assert not offenders, (
+        "a reference label was emptied — the bullet still reads as a reference and "
+        "points at nothing. Recover the target from git history:\n  "
+        + "\n  ".join(offenders))
+
+
+# ── Check 47 — the index is not silently overwriting itself (T198) ───────────
+
+class _NoDuplicateKeys(yaml.SafeLoader):
+    """A YAML loader that FAILS on a duplicate mapping key.
+
+    `yaml.safe_load` accepts duplicates and keeps the last — so a file can carry the
+    same key three times and parse perfectly. That is the whole reason this check
+    exists and has to be a loader rather than a grep: the defect is invisible to both
+    the parser and the reader.
+    """
+
+
+def _reject_duplicate_keys(loader, node, deep=False):
+    seen = []
+    for key_node, _ in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in seen:
+            raise ValueError(
+                f"duplicate key {key!r} at line {key_node.start_mark.line + 1}")
+        seen.append(key)
+    return yaml.SafeLoader.construct_mapping(loader, node, deep=deep)
+
+
+_NoDuplicateKeys.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _reject_duplicate_keys)
+
+
+def test_check_47_the_landing_index_has_no_duplicate_keys():
+    """MEASURED 2026-09-19: the Q84 entry carried its `evidence:` key FOUR times,
+    with an identical value.
+
+    `landing-items.yaml` was reconstructed from a session transcript after a
+    `git checkout` destroyed the working copy (the incident is recorded in the file
+    itself), and the replay emitted the same block repeatedly. Because YAML keeps the
+    last duplicate, **the file parsed cleanly and every count computed from it was
+    correct** — so nothing in the existing toolchain could have noticed. Had the four
+    copies differed, three would have been discarded without a word, and the surviving
+    one would have been whichever the replayer happened to emit last.
+
+    This is MR-4's subject in its purest form: the index is the spec's evidence
+    ledger, and a ledger that silently drops entries is worse than one that is short,
+    because only the short one is visibly short.
+    """
+    import io
+
+    path = SPEC / "landing-items.yaml"
+    if not path.is_file():
+        pytest.skip("no landing-items.yaml")
+    try:
+        yaml.load(path.read_text(encoding="utf-8"), Loader=_NoDuplicateKeys)
+    except ValueError as e:
+        pytest.fail(
+            f"landing-items.yaml carries a duplicate key — YAML last-wins, so the "
+            f"earlier value was discarded silently: {e}")
+
+    # And the declared total must equal what is actually there. The same
+    # reconstruction left `totals.items: 217` above 218 real entries.
+    doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    actual = len(doc["items"])
+    declared = doc["totals"]["items"]
+    assert declared == actual, (
+        f"totals.items says {declared}, the file holds {actual}. A count maintained "
+        f"by hand beside the thing it counts is what Q134 exists to eliminate. "
+        f"(The file's own INCIDENT note makes it a FLOOR while 13 items are still "
+        f"missing — a floor is stated as `>N`, not as an exact number that is wrong.)")
+
+
+# ── Check 48 — no gate script may be an orphan (T200) ───────────────────────
+
+def test_check_48_every_check_script_is_actually_invoked():
+    """`check_disclaimer.py` was correct, was named as Q139's enforcement point,
+    and was invoked by nothing.
+
+    It appeared in no test module and in no step of `.github/workflows/ci.yml`.
+    The spec's header calls this "a declared mechanism that silently returns empty
+    success" and counts fourteen instances; this was one **inside the gate
+    machinery itself**, which is where it does the most damage — a reader who
+    greps for `check_disclaimer`, finds a correct implementation, and concludes the
+    disclaimer is enforced.
+
+    So the assertion is not "check_disclaimer runs" — that would fix one instance
+    and leave the class. It is: **every `scripts/check_*.py` is reached — by CI, by
+    a test, or by another shipped script importing it.** A new orphan fails here on
+    the commit that adds it.
+
+    **The first version of this check had a false positive, and the false positive
+    is the useful part of the record.** It searched CI and `tests/` only, and
+    reported `check_page_overflow.py` and `check_no_baked_harness_strings.py` as
+    orphans. Both are in active use — `synthesize_report.py:42` imports the first
+    and `check.py:1126` imports the second — because a gate is often a *module*
+    that a producer calls inline rather than a script CI shells out to. A check
+    written from one example of the defect would have "fixed" two working gates.
+    So the search covers imports from every shipped script, not just the two places
+    the original defect happened to be visible.
+    """
+    import ast
+
+    scripts = sorted((KIT / "scripts").glob("check_*.py"))
+    assert scripts, "no check_*.py scripts found — the glob is wrong, not the repo"
+
+    # A `run:` step's command, not the whole YAML — a step's `name:` and its
+    # comments are prose, and prose that mentions a gate does not run it.
+    ci = (KIT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    ci_runs = "\n".join(re.findall(r"^\s*run:\s*(.+)$", ci, re.M))
+
+    def _code(p: Path) -> str:
+        """The CALLS a Python file makes — comments and docstrings removed.
+
+        The first version searched raw text and passed for the wrong reason: this
+        very docstring names `check_disclaimer.py`, so a mere MENTION satisfied a
+        check about INVOCATION. A gate named in a comment is exactly the failure
+        mode being hunted, so the search had to stop counting prose.
+        """
+        try:
+            src = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            return ""
+        if p.suffix == ".sh":
+            return "\n".join(l for l in src.splitlines() if not l.lstrip().startswith("#"))
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            return src
+        out = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                out += [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                out.append(node.module or "")
+            elif isinstance(node, ast.Call):
+                # subprocess.run([sys.executable, "scripts/check_x.py"]) and friends
+                for sub in ast.walk(node):
+                    if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                        out.append(sub.value)
+            elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+                out.append(node.name)
+        return "\n".join(out)
+
+    callers: list[Path] = []
+    for d in ("tests", "scripts", "data-tools"):
+        callers += sorted((KIT / d).rglob("*.py"))
+        callers += sorted((KIT / d).rglob("*.sh"))
+
+    # TWO spellings, because the two invocation forms differ: CI shells out to
+    # `check_x.py`, while Python imports `check_x`. Searching only the filename
+    # reported `check_no_baked_harness_strings` and `check_page_overflow` as
+    # orphans — both are imported by scripts that CI does run. The suffix is the
+    # difference between a real finding and two false ones.
+    orphans = []
+    for s in scripts:
+        stem, name = s.stem, s.name
+        if name in ci_runs:
+            continue
+        if any(stem in _code(p) for p in callers if p.resolve() != s.resolve()):
+            continue
+        orphans.append(name)
+
+    assert not orphans, (
+        f"{len(orphans)} gate script(s) are reached by nothing — not CI, not a test, "
+        f"not another script. They run nowhere and their findings are never seen. A "
+        f"gate that does not run is not a weaker gate — it is an absent one that "
+        f"reads as present:\n  " + "\n  ".join(orphans))
+
+
+# ── Check 49 — the disclaimer's single source holds (T202, Q139) ─────────────
+
+def test_check_49_the_disclaimer_gate_runs_and_passes():
+    """`scripts/check_disclaimer.py` asserted here as well as in CI.
+
+    Two reasons, and the second is the one that matters. First, CI can be skipped,
+    run on a fork, or fail to install its dependencies — a test runs wherever the
+    suite runs. Second, this file is where the OTHER checks live, and a gate that
+    exists in the repository but not in the suite is how `check_disclaimer` came to
+    be invoked by nothing for as long as it was.
+
+    It asserts the exit code rather than re-implementing the comparison: the script
+    already compares the dashboard's footer to the source, inner-to-inner, and
+    clause-set aware. A second implementation would be one more thing to drift —
+    Check 48's own lesson, applied.
+    """
+    import subprocess
+    script = KIT / "scripts" / "check_disclaimer.py"
+    assert script.is_file(), "the disclaimer gate is missing"
+    res = subprocess.run([sys.executable, str(script)],
+                         capture_output=True, text=True, cwd=str(KIT))
+    assert res.returncode == 0, (
+        f"check_disclaimer.py exited {res.returncode}.\n"
+        f"stdout:\n{res.stdout}\nstderr:\n{res.stderr}")
+    # And it must still be REPORTING coverage, not passing by finding nothing.
+    assert "placement-table coverage" in res.stdout, res.stdout
+    assert "thesis-report.html" in res.stdout

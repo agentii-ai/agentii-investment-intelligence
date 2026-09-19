@@ -41,6 +41,23 @@ jobs:
       - name: validate-partner-plugin.py (FR-048, FR-049)
         run: python3 scripts/validate-partner-plugin.py
 
+      - name: check_disclaimer.py (Q139 placement + single-source)
+        # WAS NOT RUN BY CI. Q139 named this script as the disclaimer's
+        # enforcement point and the script was correct — it compares
+        # dashboard.html's footer against the single source, prints the
+        # placement-table coverage, and exits 1 on drift — but nothing invoked
+        # it. It appeared in no test module and in no step of this file.
+        #
+        # That is Q142's defect exactly, one level up: a gate that names its
+        # location and never fires there. The spec's own header records the
+        # class ("a declared mechanism that silently returns empty success") and
+        # this was an instance of it *inside the mechanism written to end it*.
+        #
+        # It is placed with the other validators rather than after `pytest`
+        # because pytest does not cover it: the file lives in scripts/, and the
+        # suite never imported it.
+        run: python3 scripts/check_disclaimer.py
+
       - name: test-cookbooks.sh (FR-046b cookbook lint; Phase-1 tolerant)
         # Phase 1 tolerance: skips cookbooks without agent.yaml. Phase 7 (US7)
         # populates cookbooks and removes the skip. Per phase1-analyze.md F3.

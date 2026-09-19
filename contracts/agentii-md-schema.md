@@ -95,8 +95,8 @@ On session start, the agent MUST:
 
 ## Cross-Reference
 
-- ****: Per-skill output file convention
-- ****: YAML frontmatter in output files
-- ****: Two-tier output model (raw analysis + snapshots)
-- ****: Multi-ticker output convention (`tickers: [...]` array)
-- ****: Session archival (`sessions/INDEX.md` for session index)
+- **FR-079**: Per-skill output file convention
+- **FR-090**: YAML frontmatter in output files
+- **FR-091**: Two-tier output model (raw analysis + snapshots)
+- **FR-093**: Multi-ticker output convention (`tickers: [...]` array)
+- **FR-095**: Session archival (`sessions/INDEX.md` for session index)

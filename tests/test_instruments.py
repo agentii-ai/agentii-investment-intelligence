@@ -14,6 +14,7 @@ sibling assertions on MR-3.
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -159,6 +160,65 @@ def test_live_workspaces_are_on_the_safe_path(name):
         "claim about these workspaces needs re-deriving")
 
 
+# ── the revoked snapshot key (Q144/T196) ────────────────────────────────────
+
+# Q144 revoked 046's re-key and restored the published `snapshots/{ticker}/`.
+# T193 corrected the one surviving normative statement in spec.md:4709 — and MISSED
+# the one in `spec-template.md:51`, which matters more, because spec.md is a document
+# and a template is a GENERATOR: every thesis scaffolded afterwards inherits the key.
+#
+# The search is over the shipped corpus (templates, contracts, skills, agent
+# definitions), not over prose that discusses the revocation. A correction NOTE that
+# quotes the dead key is correct and must keep passing, so the test matches only the
+# key in an INSTRUCTION position: inside backticks, or after `Snapshot:`.
+_REVOKED_KEY_RX = re.compile(
+    r"`snapshots/\{nnn\}-\{slug\}[^`]*`"          # the key as a literal in backticks
+    r"|Snapshot:\s*`?snapshots/\{nnn\}"           # the Output Contract bullet form
+)
+
+
+def _shipped_corpus_files() -> list[Path]:
+    """Every file a workspace or an agent can be generated FROM.
+
+    Deliberately excludes specs/ and tests/: both quote the revoked key as history,
+    and asserting that a correction note may not name what it corrects would make
+    the record unwritable.
+    """
+    roots = [ROOT / "plugins", ROOT / "contracts", ROOT / "packages",
+             ROOT / "managed-agent-cookbooks", ROOT / "adapters"]
+    out: list[Path] = []
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for p in root.rglob("*"):
+            if p.is_file() and p.suffix in (".md", ".yaml", ".yml", ".json", ".html"):
+                out.append(p)
+    return out
+
+
+def test_no_shipped_template_or_contract_carries_the_revoked_snapshot_key():
+    """Q144's revocation is a GATE, not a note.
+
+    A correction note in a document is read once. A key in a template is copied into
+    every artifact generated afterwards — which is how the `{nnn}-{slug}` key outlived
+    its own revocation. This fails on any instruction-shaped occurrence anywhere in
+    the shipped corpus.
+    """
+    offenders: list[str] = []
+    for p in _shipped_corpus_files():
+        try:
+            text = p.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for m in _REVOKED_KEY_RX.finditer(text):
+            offenders.append(f"{p.relative_to(ROOT)}: {m.group(0)!r}")
+
+    assert not offenders, (
+        "Q144 revoked `snapshots/{nnn}-{slug}` — it is undefined in single-skill mode, "
+        "where there is no thesis id. These are instruction-position occurrences:\n  "
+        + "\n  ".join(offenders))
+
+
 # ── T108b: Q67 drift-trigger coverage ───────────────────────────────────────
 
 def test_scaffold_ships_every_canonical_trigger_pair():
@@ -273,3 +333,118 @@ def test_a_template_shaped_value_checks_is_reported(tmp_path):
         "rules:\n  - when: [CONDITION]\n    then: [ACTION]\n", encoding="utf-8")
     codes = {c for c, _ in agentii_cmd.scaffold_problems(tmp_path)}
     assert "SCHEMA_MISMATCH" in codes
+
+
+# ── T203: the single-skill instrument set, exercised end to end ─────────────
+
+def test_singleskill_scaffold_creates_the_early_instrument_set(tmp_path):
+    """The mode Q141 keeps had NO entry point. `constitution scaffold` builds the
+    thesis-mode instruments and nothing built their single-skill counterparts, so
+    a user running one skill against agentii.ai data had to learn from a contract
+    document that four paths were expected, and hand-create all four.
+
+    Q141 measured the scale — 52 skill files reference `agentii.md`, 32 reference
+    `sessions/` — and then measured the other half: **neither live workspace has
+    ever contained either file.** So the retention case rested entirely on the
+    corpus, and this path had never been run. The test runs it.
+    """
+    ws = tmp_path / "single-skill-workspace"
+    written = agentii_cmd.singleskill_scaffold(ws)
+    names = {p.relative_to(ws).as_posix() for p in written}
+
+    assert names == {"agentii.md", "style.md", "sessions/INDEX.md", ".gitignore"}, names
+    for rel in names:
+        assert (ws / rel).is_file(), rel
+
+    # The INDEX is the one with a machine reader: it is AUTO-LOADED on session
+    # start, so a missing one is indistinguishable from an empty history.
+    index = (ws / "sessions" / "INDEX.md").read_text(encoding="utf-8")
+    assert "session-format.md" in index and "| date |" in index
+
+    # style.md is copied from the kit's published standard rather than authored
+    # here: a per-workspace copy exists to be OVERRIDDEN, so diverging it by
+    # default would invert its purpose.
+    kit_style = (ROOT / "style.md").read_text(encoding="utf-8")
+    assert (ws / "style.md").read_text(encoding="utf-8") == kit_style
+
+
+def test_singleskill_scaffold_produces_a_governed_workspace(tmp_path):
+    """The scaffolded workspace must be GOVERNED, not merely populated.
+
+    Q140: with no `constitution.md`, `agentii.md` IS the constitution. So the
+    scaffold has to put the workspace on the same ratification path as
+    `constitution scaffold` — otherwise it would create a file that looks like a
+    governing instrument and gates nothing.
+    """
+    ws = tmp_path / "ws"
+    agentii_cmd.singleskill_scaffold(ws)
+
+    kind, why = agentii_cmd.detect_instrument(ws)
+    assert kind == agentii_cmd.INSTRUMENT_AGENTII_MD, (kind, why)
+    assert "IS the constitution" in why
+
+    # Unratified, because the placeholders are unreplaced — and the refusal must
+    # name `agentii.md`, not `constitution.md`, or it sends the user to a file
+    # that does not exist in their workspace.
+    assert agentii_cmd.constitution_ratified(ws) is False
+    with pytest.raises(SystemExit) as exc:
+        agentii_cmd.specify(ws, "some-thesis")
+    assert "agentii.md" in str(exc.value)
+    assert "constitution.md" not in str(exc.value).split("Run ")[0]
+
+
+def test_the_singleskill_template_can_actually_be_ratified(tmp_path):
+    """A template with unfillable placeholders is a dead end, and it would look
+    identical to a working one until someone tried.
+
+    T108's rule is that ratification means AUTHORED — ANY bracketed placeholder
+    blocks it, not just `[WORKSPACE_NAME]`. So this fills every placeholder the
+    template contains and asserts the workspace then ratifies. If a future edit
+    adds a placeholder the refusals do not recognise, or one that cannot be
+    filled without inventing content, this fails here.
+    """
+    ws = tmp_path / "ws"
+    agentii_cmd.singleskill_scaffold(ws)
+    path = ws / "agentii.md"
+    filled = re.sub(r"\[[A-Z][A-Za-z0-9 _.,/\-]*\]", "FILLED", path.read_text(encoding="utf-8"))
+    path.write_text(filled, encoding="utf-8")
+
+    leftover = re.findall(r"\[[A-Za-z][A-Za-z0-9_ -]{2,40}\]", filled)
+    assert not leftover, f"the template carries placeholders that resist filling: {leftover}"
+    assert agentii_cmd.constitution_ratified(ws) is True
+
+
+def test_singleskill_scaffold_refuses_to_create_a_second_governing_instrument(tmp_path):
+    """With `constitution.md` present, `agentii.md` would be a CHRONICLE (Q140).
+
+    Scaffolding it AS a constitution would create two governing instruments in one
+    workspace — precisely the ambiguity Q140 exists to remove. The refusal names
+    that, and it is checked BEFORE the overwrite guard because with both true the
+    overwrite message sends the user to edit the wrong file.
+    """
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    (ws / "constitution.md").write_text("# Investment Constitution — X\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc:
+        agentii_cmd.singleskill_scaffold(ws)
+    msg = str(exc.value)
+    assert "CHRONICLE" in msg and "constitution.md" in msg
+    assert not (ws / "agentii.md").exists(), "it wrote the file it just refused to write"
+
+
+def test_singleskill_scaffold_refuses_to_overwrite_a_ratified_constitution(tmp_path):
+    """In this mode `agentii.md` IS the constitution, so a re-scaffold is not an
+    overwrite of a template — it is the loss of the project's principles. This is
+    the case Q140's third rule names: rotation is safe for a chronicle and
+    destructive for a constitution."""
+    ws = tmp_path / "ws"
+    agentii_cmd.singleskill_scaffold(ws)
+    path = ws / "agentii.md"
+    path.write_text(path.read_text(encoding="utf-8").replace("[WORKSPACE_NAME]", "Real"),
+                    encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc:
+        agentii_cmd.singleskill_scaffold(ws)
+    assert "already ratified" in str(exc.value)
+    assert "Real" in path.read_text(encoding="utf-8")

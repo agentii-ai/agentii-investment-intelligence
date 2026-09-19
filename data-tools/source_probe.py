@@ -10,9 +10,18 @@ Why this exists
 The package has exactly one implemented market provider (yfinance) and no
 failover, so a single source's failure is a total outage — which is what
 happened. Diagnosis also went wrong the first time: the failure was recorded as
-a rate limit when it is in fact a geographic block, and `yfinance` reports both
-through the same `YFRateLimitError`. Documentation cannot settle questions like
+a rate limit when it was a **geographic block on the network it was measured
+from**, and `yfinance` reports both through the same `YFRateLimitError` — a
+constant message, not a diagnosis. Documentation cannot settle questions like
 this; only probing can.
+
+Scope (T201). The geographic block is a property of one measured network, not of
+the provider or of our users, who are in the US and the EU. The
+**Chinese firewall is explicitly out of scope**. What is in scope is the
+separate US-datacenter 429, which is a real throttle. This harness therefore
+records what it OBSERVES (`GEO_BLOCK` vs `RATE_LIMITED`) and never asserts which
+one it expects — because an expectation measured on one network is how a
+region-specific fact came to be documented as a product behaviour.
 
 Two properties are therefore first-class results rather than error paths:
 
@@ -70,6 +79,11 @@ BROWSER_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
 # Signatures of a block/bot page rather than data. A 200 carrying one of these
 # is NOT a success — this is the trap that made the original diagnosis wrong.
 BLOCK_MARKERS = (
+    # Retained on purpose (T201). This is a block-page SIGNATURE, not a claim about
+    # where the reader sits: if any network ever serves this page we must recognise
+    # it rather than parse it as data. What was wrong — and is now corrected — is
+    # `probe_yahoo` ASSERTING that this failure occurs. Detecting it: correct
+    # everywhere. Expecting it: correct only in Shenzhen.
     "no longer be accessible from mainland china",
     "too many requests",
     "noindex,nofollow",
@@ -236,14 +250,38 @@ def probe_tencent(ticker: str) -> dict:
 
 
 def probe_yahoo(ticker: str) -> dict:
-    """NEGATIVE CONTROL. Yahoo geo-blocks this network; must refuse cleanly."""
+    """NEGATIVE CONTROL. Its assertion is the REFUSAL, not the failure.
+
+    This docstring used to read *"Yahoo geo-blocks this network; must refuse
+    cleanly"* — a claim measured on ONE network (Shenzhen, egress 113.84.64.112),
+    shipped as if it described the product. The user's constraint is that our users
+    are in the US and the EU and **the Chinese firewall is explicitly out of scope**;
+    `data-tools/_sources.py` and `contracts/SOURCES.md` were corrected to say so, and
+    this file was not. One repository therefore asserted two opposite premises about
+    one provider — the copy a reader trusts is whichever they happen to open.
+
+    What survives the correction is the part that was never about geography: Yahoo
+    must fail in SHAPE. A source that is unreachable today may be reachable
+    tomorrow, and an unstructured failure from it would corrupt the failover path
+    for the sources that do work. The 429 measured from a US *datacenter* proxy is
+    in scope and is a real problem; a 403 geo-block is not, and on a US/EU machine
+    it simply will not occur. Neither outcome is asserted — the envelope is.
+    """
     url = (f"https://query1.finance.yahoo.com/v8/finance/chart/"
            f"{urllib.parse.quote(ticker)}?range=5d&interval=1d")
     r = _http_get(url, headers={"Accept": "application/json"})
     if r["error"]:
         return _envelope.error(f"SOURCE_UNAVAILABLE: {r['error']}", source="yahoo")
     if r["status"] != 200 or r["blocked"]:
-        kind = "GEO_BLOCK" if r["blocked"] and r["status"] == 403 else "SOURCE_UNAVAILABLE"
+        # The kind records what was OBSERVED, not where the observer sat. A 403
+        # carrying a block page is named for the mechanism; a 429 is a throttle and
+        # is NOT a geo-block, whatever region it arrives from.
+        if r["blocked"] and r["status"] == 403:
+            kind = "GEO_BLOCK"
+        elif r["status"] == 429:
+            kind = "RATE_LIMITED"
+        else:
+            kind = "SOURCE_UNAVAILABLE"
         return _envelope.error(f"{kind}: HTTP {r['status']}", source="yahoo")
     try:
         payload = json.loads(r["text"])
@@ -414,7 +452,10 @@ SOURCES: dict[str, dict] = {
     "nasdaq": {"fn": probe_nasdaq, "auth": KEYLESS, "license": "unofficial", "caps": ["quote"]},
     "sina": {"fn": probe_sina, "auth": KEYLESS, "license": "unofficial", "encoding": "gbk", "caps": ["quote"]},
     "tencent": {"fn": probe_tencent, "auth": KEYLESS, "license": "unofficial", "encoding": "gbk", "caps": ["quote"]},
-    "yahoo": {"fn": probe_yahoo, "auth": KEYLESS, "license": "Apache-2.0 (geo-blocked)", "caps": ["quote"]},
+        # The licence is Apache-2.0. "(geo-blocked)" was a MEASUREMENT on one network
+    # pasted into a licence field — so every reader of this table learned a
+    # region-specific fact as though it were a property of the library.
+    "yahoo": {"fn": probe_yahoo, "auth": KEYLESS, "license": "Apache-2.0", "caps": ["quote"]},
     "alpaca": {"fn": _probe_alpaca, "auth": ["ALPACA_API_KEY", "ALPACA_SECRET_KEY"], "license": "Apache-2.0", "batch": True, "caps": ["quote"]},
     "tiingo": {"fn": _probe_tiingo, "auth": ["TIINGO_API_KEY"], "license": "MIT", "batch": True, "caps": ["bars"]},
     "massive": {"fn": _probe_massive, "auth": ["POLYGON_API_KEY"], "license": "MIT", "batch": True, "caps": ["bars"]},

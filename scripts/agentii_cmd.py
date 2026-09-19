@@ -414,6 +414,36 @@ def expand_tasks(matrix: list[dict]) -> list[str]:
 
 # --- spec-matrix parsing (F1 remediation — the SKILL.md-documented path) -------
 
+# A markdown table's separator row is `---`, `:---:`, `|-------|`, or any
+# arrangement of dashes and colons — the SPEC says "three or more dashes or
+# colons", and the three-dash spelling is only the one this kit happens to write.
+#
+# The previous test was `cells[0] in ("Skill", "---", ":")`: a literal list, whose
+# only `---` entry matches no separator the template actually emits. `spec-template.md`
+# writes `|-------|`, so the separator SURVIVED as a row and `tasks_from_spec` emitted
+# a phantom T001 (`skill='-------'`, depth `:---:`) on every thesis scaffolded from
+# the template. Both live workspaces found this independently and diagnosed it
+# correctly (macro-plan_0910-1457.md L178-181, session-history-001-0918-1338.md L438);
+# neither fix landed here, because a list of literals can only be as correct as the
+# author's memory of what the generator writes.
+#
+# So the test is structural, not lexical: a cell is separator-shaped when it consists
+# ONLY of dashes, colons and spaces. That form cannot appear in a populated cell — a
+# skill name has letters, a ticker list has letters — so it cannot over-match.
+_SEPARATOR_CELL_RX = re.compile(r"^[:\-\s]*$")
+
+
+def _is_separator_row(cells: list[str]) -> bool:
+    """True for a markdown table separator row (`|---|:--:|`), any dash/colon count.
+
+    Requires at least one dash so that a row of empty cells is NOT silently treated
+    as a separator — an all-blank row is malformed input and should still be skipped
+    by the caller's own cell-count test, not reinterpreted here.
+    """
+    return any("-" in c for c in cells) and all(
+        _SEPARATOR_CELL_RX.match(c) for c in cells)
+
+
 def parse_spec_matrix(spec_text: str) -> list[dict]:
     """Parse the spec-template's '## 3. Skill Deployment Matrix' markdown table
     (Skill | Vertical | Depth | Tickers | Market Data Stage | Purpose) into
@@ -434,7 +464,7 @@ def parse_spec_matrix(spec_text: str) -> list[dict]:
         if not in_matrix or not line.startswith("|"):
             continue
         cells = [c.strip() for c in line.strip("|").split("|")]
-        if len(cells) < 5 or cells[0] in ("Skill", "---", ":"):
+        if len(cells) < 5 or cells[0] in ("Skill", ":") or _is_separator_row(cells):
             continue
         skill = cells[0].strip("`")
         depth = cells[2]
@@ -642,6 +672,87 @@ def constitution_scaffold(workspace: Path, *, force: bool = False) -> list[Path]
     return written
 
 
+def singleskill_scaffold(workspace: Path, *, force: bool = False) -> list[Path]:
+    """Scaffold the EARLY INSTRUMENT SET for a workspace that runs single-skill
+    mode (Q141, T203).
+
+    Why this exists. `constitution scaffold` creates the thesis-mode instruments —
+    `constitution.md`, the four YAMLs — and nothing created their single-skill
+    counterparts. So the mode Q141 explicitly keeps had **no entry point at all**:
+    a user invoking one skill against agentii.ai data had to know, from a contract
+    document, that `agentii.md` + `style.md` + `snapshots/` + `sessions/` were
+    expected, and hand-create all four.
+
+    Q141 measured the scale as 52 skill files referencing `agentii.md` and 32
+    referencing `sessions/`. Neither live workspace has ever contained either file,
+    so **this path has never been exercised** — the retention case rested entirely
+    on the skill corpus. A scaffold is what makes it exercisable.
+
+    `agentii.md` is written from `agentii-md-template.md`, and in this workspace
+    that file **IS the constitution** (Q140). It is therefore scaffolded with the
+    SAME `[WORKSPACE_NAME]` placeholder the constitution template uses, so
+    `constitution_ratified()` — which is instrument-aware — gates it identically
+    and `specify` refuses until a human has filled it in.
+    """
+    # Ordered: the STRUCTURAL refusal first. Both guards can be true at once, and
+    # whichever fires first is the message the user reads — so it should be the one
+    # that names the mistake they actually made. "You would create two governing
+    # instruments" is a different problem from "you would overwrite this one", and
+    # reporting the second while the first is the cause sends them to edit a file
+    # that is not the issue. (Found by running it: with both true, the overwrite
+    # guard fired and named the wrong thing.)
+    if (workspace / "constitution.md").is_file():
+        raise SystemExit(
+            "SCAFFOLD REFUSED: `constitution.md` is present, so `agentii.md` here "
+            "would be a CHRONICLE, not a constitution (Q140) — and building it as "
+            "a constitution would create two governing instruments. Use "
+            "`agentii.constitution` for this workspace, or remove constitution.md "
+            "deliberately.")
+    existing = workspace / "agentii.md"
+    if existing.is_file() and "[WORKSPACE_NAME]" not in existing.read_text(encoding="utf-8"):
+        if not force:
+            raise SystemExit(
+                "SCAFFOLD REFUSED: agentii.md is already ratified — and in this "
+                "workspace it IS the constitution, so overwriting it would discard "
+                "the project's principles. Edit it directly, or pass --force to "
+                "deliberately reset the workspace's doctrine.")
+
+    written: list[Path] = []
+
+    template = TEMPLATES / "agentii-md-template.md"
+    if not template.is_file():
+        raise SystemExit(f"SCAFFOLD FAILED: missing template {template}")
+    _write(workspace / "agentii.md", template.read_text(encoding="utf-8"))
+    written.append(workspace / "agentii.md")
+
+    # style.md is copied from the kit's own, not re-authored: it is a published
+    # standard (FR-094) and a per-workspace copy exists to be OVERRIDDEN, so
+    # diverging it by default would invert its purpose.
+    kit_style = Path(__file__).resolve().parents[1] / "style.md"
+    if kit_style.is_file():
+        _write(workspace / "style.md", kit_style.read_text(encoding="utf-8"))
+        written.append(workspace / "style.md")
+
+    # `snapshots/{ticker}/` and `sessions/{date}/` are created by their writers;
+    # what has to exist up front is the session INDEX, because it is AUTO-LOADED
+    # on session start and a missing one is indistinguishable from an empty one.
+    _write(workspace / "sessions" / "INDEX.md",
+           "# Session index\n\n"
+           "Auto-loaded catalog of runs in this workspace. One row per session,\n"
+           "appended by the writing skill; raw transcripts are NOT auto-loaded and\n"
+           "are read on demand via `read_session`. Format: `contracts/session-format.md`.\n\n"
+           "| date | session | skill | ticker | transcript |\n"
+           "|------|---------|-------|--------|------------|\n")
+    written.append(workspace / "sessions" / "INDEX.md")
+
+    _write(workspace / ".gitignore",
+           "# spec 046 Q77/Q82 — rebuildable caches, per-machine\n"
+           "market-data/\nraw-data/\n"
+           "# snapshots/ and sessions/ ARE committed: they are memory, not cache\n")
+    written.append(workspace / ".gitignore")
+    return written
+
+
 def constitution_amend(workspace: Path, bump: str, note: str) -> None:
     if bump not in VALID_BUMPS:
         raise SystemExit(f"AMEND REFUSED: bump must be one of {sorted(VALID_BUMPS)} "
@@ -720,6 +831,18 @@ def main(argv: list[str] | None = None) -> int:
     cp.add_argument("--bump", default=None)
     cp.add_argument("--note", default="")
 
+    # T203 — the single-skill counterpart of `constitution scaffold`. The early
+    # instrument set is retained by Q141 and had no way to be created.
+    ss = sub.add_parser("singleskill",
+                        help="scaffold the early instrument set (agentii.md + "
+                             "style.md + snapshots/ + sessions/) for a workspace "
+                             "running single-skill mode (Q141)")
+    ss.add_argument("action", choices=["scaffold"])
+    ss.add_argument("--workspace", required=True)
+    ss.add_argument("--force", action="store_true",
+                    help="deliberately reset a ratified agentii.md (which IS the "
+                         "constitution in this mode)")
+
     # Delegating commands carry no arguments of their own: everything after the verb
     # is forwarded verbatim (see the parse_known_args call below). add_help=False so
     # the TOOL's --help wins rather than this wrapper's — a wrapper advertising its
@@ -765,6 +888,9 @@ def main(argv: list[str] | None = None) -> int:
                 print("scaffolded", f)
         else:
             constitution_amend(Path(args.workspace), args.bump, args.note)
+    elif args.cmd == "singleskill":
+        for f in singleskill_scaffold(Path(args.workspace), force=args.force):
+            print("scaffolded", f)
     return 0
 
 

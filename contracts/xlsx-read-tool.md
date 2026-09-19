@@ -93,6 +93,6 @@ Skills add `xlsx-read` to their `allowed_tools` frontmatter and use it in their 
 
 ## Cross-Reference
 
-- ****: xlsx-financials skill (Excel output)
-- ****: Calculation arc cross-validation
-- ****: This contract
+- **FR-088**: xlsx-financials skill (Excel output)
+- **FR-086**: Calculation arc cross-validation
+- **FR-089**: This contract

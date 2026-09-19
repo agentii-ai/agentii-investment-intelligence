@@ -53,6 +53,6 @@ When available, `get_realtime_quote` automatically checks the centralized source
 
 ## Cross-Reference
 
-- ****: Two-tier real-time price data architecture
-- ****: get_realtime_quote MCP tool contract
+- **FR-097**: Two-tier real-time price data architecture
+- **FR-105**: get_realtime_quote MCP tool contract
 - **global-stock-data**: Reference implementation at `github.com/simonlin1212/global-stock-data`

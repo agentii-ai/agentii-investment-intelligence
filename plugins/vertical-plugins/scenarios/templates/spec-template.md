@@ -48,7 +48,7 @@
 ## 6. Output Contract
 - Per-Ticker: `{ticker}/YYYY-MM-DD_HHMM_{skill}_{affix}.md`
 - Cross-Stock: `_cross/{sector}_synthesis.md`
-- Snapshot: `snapshots/{nnn}-{slug}/YYYY-MM-DD_thesis.md`
+- Snapshot: `snapshots/{ticker}/{YYYY-MM-DD}_{semantic-slug}.md` — keyed by **ticker**, not thesis id (Q144), because a ticker always exists and a thesis id does not; the thesis attribution lives in the snapshot's frontmatter. The filename's slug names what the snapshot is *about* (`thesis`, `guidance-cut`, `margin-bridge`); `_thesis` is a degenerate slug, not a different convention.
 
 ## Clarifications *(filled by agentii.clarify — append-only)*
 

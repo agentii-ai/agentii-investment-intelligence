@@ -1,6 +1,6 @@
 # Slug Rules for `## Mode: <slug>` headings (v1.0 frozen)
 
-Deterministic slugification algorithm used by `scripts/port-dimension-prompts.py` to convert source sub-prompt YAML filenames (or `name:` fields) into mode slugs. Per **** + Round 4 Q12.
+Deterministic slugification algorithm used by `scripts/port-dimension-prompts.py` to convert source sub-prompt YAML filenames (or `name:` fields) into mode slugs. Per `spec 023` **FR-052b** + Round 4 Q12.
 
 ## Algorithm
 

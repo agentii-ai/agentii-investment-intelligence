@@ -13,6 +13,20 @@ it, instead of trusting a comment that says so:
      template-present or template-absent, with the reason a gate can or cannot
      run. (Q105: an output with no producer has a VACUOUS gate, and saying so is
      the point — a silent "0 problems" is the failure this spec keeps finding.)
+  5. (T202) The two outputs with no template — `pitch-deck` and `earnings-preview`
+     — are gated at their CONTRACT: the skill must still bind `disclaimer.md` and
+     must not have authored a second copy of the clauses. "Nothing to gate yet" is
+     honest but it is not the end of what is checkable, and a requirement recorded
+     only in prose can be edited away by someone who never read Q139.
+  6. (T202) `dashboard.html` is reported as HALF-live rather than wholly VACUOUS:
+     its footer IS drift-checked on every run (item 3). Grouping a live check with
+     a dead one made a working gate look absent.
+
+**Was invoked by nothing until 2026-09-19.** Q139 named this script as the
+disclaimer's enforcement point, it was correct, and no test and no CI step ran it
+— the defect the spec calls "a declared mechanism that silently returns empty
+success", inside the machinery written to end it. It is now a CI step and Check 48
+fails if any `check_*.py` is reachable from nowhere again.
 
 Exit codes: 0 = consistent, 1 = drift or malformed source.
 """
@@ -73,6 +87,70 @@ def _element_body(html: str) -> str | None:
     return m.group(2).strip() if m else None
 
 
+# ── T202: the contract-level gate for outputs that have no template ─────────
+
+# Q139's closed set has four members; `pitch-deck` and `earnings-preview` have no
+# template and no producer. The honest report was "nothing to gate yet" — but that
+# is not the same as "nothing is checkable". The requirement IS recorded, in each
+# skill's `## Disclaimer` section, and a requirement that exists only as prose is a
+# requirement that can be edited away by someone who never read Q139.
+#
+# So while a template is absent, the CONTRACT is what is gated:
+#   1. the skill still binds the single source (it names `disclaimer.md`), and
+#   2. it has NOT authored a second copy of the clauses.
+# (2) is the one that matters. "Do not restate, paraphrase or fork it" is Q139's
+# rule 1 and the only way to obey it is to keep pointing at the source; a skill
+# that inlines the text has forked it whether or not the wording matches today.
+_CONTRACTS = {
+    "pitch-deck": ROOT / "plugins" / "vertical-plugins" / "models-and-pitches"
+                  / "skills" / "agentii" / "pitch-deck" / "SKILL.md",
+    "earnings-preview": ROOT / "plugins" / "vertical-plugins" / "models-and-pitches"
+                        / "skills" / "agentii" / "earnings-preview" / "SKILL.md",
+}
+
+# Lines that make a claim the disclaimer says, i.e. authored text rather than a
+# pointer. Matched loosely on purpose: the failure being prevented is a COPY, and a
+# copy usually reuses most of the original's substance.
+_CLAUSE_TEXT = re.compile(
+    r"not investment advice|not an offer or solicitation|do their own due diligence|"
+    r"accept no liability|past performance is not indicative", re.I)
+
+
+def _contract_of(output: str) -> Path | None:
+    p = _CONTRACTS.get(output)
+    return p if p and p.is_file() else None
+
+
+def _check_contract_bindings(canonical: dict[str, str]) -> list[str]:
+    """Gate the output contract where no template exists (T202)."""
+    problems: list[str] = []
+    for output, path in sorted(_CONTRACTS.items()):
+        if not path.is_file():
+            problems.append(
+                f"{output}: its output contract is missing ({path.relative_to(ROOT)}) — "
+                f"the requirement it recorded is gone with it")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "## Disclaimer" not in text:
+            problems.append(
+                f"{output}: `{path.name}` no longer carries a `## Disclaimer` section. "
+                f"It is the only place this output's obligation is recorded — with no "
+                f"template to mount the block on, deleting the section deletes the "
+                f"requirement.")
+        if "templates/disclaimer.md" not in text:
+            problems.append(
+                f"{output}: `{path.name}` no longer names `templates/disclaimer.md`, so "
+                f"it does not bind the single source (Q139 rule 1).")
+        # Forbidden: an authored copy of the clauses (Q139 rule 1 — no fork).
+        for n, line in enumerate(text.splitlines(), 1):
+            if _CLAUSE_TEXT.search(line) and "disclaimer.md" not in line:
+                problems.append(
+                    f"{output}: `{path.name}`:{n} restates the disclaimer's own words "
+                    f"({line.strip()[:60]!r}). Q139 rule 1 forbids restating, "
+                    f"paraphrasing or forking; the skill must POINT at the source.")
+    return problems
+
+
 def main() -> int:
     problems: list[str] = []
     canonical = _canonical(problems)
@@ -109,16 +187,39 @@ def main() -> int:
         problems.append(f"missing template: {dash}")
 
     # 4. Report the placement-table outputs honestly.
+    # 5. (T202) The two outputs with no template: gate the CONTRACT instead.
+    #    Q139's closed set has four members and three had no place to mount the
+    #    block. "Nothing to gate yet" is honest, but it is not the end of what is
+    #    checkable: the requirement IS recorded — in each skill's output contract —
+    #    and a requirement recorded in prose is a requirement that can be edited
+    #    away. So the contract itself is gated: the skill must still bind the
+    #    canonical source, and must not have authored a second copy of the clauses.
+    contract_problems = _check_contract_bindings(canonical)
+    problems += contract_problems
+
+    # 6. (T202) The dashboard's gate is HALF-live and used to be reported as wholly
+    #    VACUOUS. Its footer is drift-checked above on every run; what has no
+    #    producer is the placeholder filling. Reporting both as one thing made a
+    #    live check look dead.
+    dash_live = (TEMPLATES / "dashboard.html").is_file() and not any(
+        "dashboard.html" in p for p in problems)
+
     print("Q139 placement-table coverage:")
     for name in PLACEMENT_OUTPUTS:
         present = (TEMPLATES / name).is_file()
         if name == "thesis-report.html":
             note = "template + producer (synthesize_report.py) — gate LIVE"
+        elif name == "dashboard.html":
+            note = ("template; footer drift-checked here — LIVE · placeholder fill has "
+                    "no producer — VACUOUS (Q105)" if dash_live
+                    else "template present, DRIFT — see failures")
         elif present:
             note = "template present, NO producer — gate VACUOUS (Q105)"
         else:
-            note = "no template, no producer — nothing to gate yet"
-        print(f"  {'ok ' if present else '-- '} {name:20s} {note}")
+            bound = _contract_of(name) is not None
+            note = ("no template/producer — contract-bound, gated here (T202)"
+                    if bound else "no template, no producer, NO contract — nothing to gate")
+        print(f"  {'ok ' if (present or name in _CONTRACTS) else '-- '} {name:20s} {note}")
 
     if problems:
         print("\nFAIL:", file=sys.stderr)

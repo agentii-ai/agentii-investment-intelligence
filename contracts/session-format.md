@@ -83,6 +83,6 @@ read_session(session_id: string, date?: string, range?: {start: int, end: int}) 
 
 ## Cross-Reference
 
-- ****: agentii.md memory index
-- ****: Two-tier output model with snapshots
-- ****: This contract
+- **FR-087**: agentii.md memory index
+- **FR-091**: Two-tier output model with snapshots
+- **FR-095**: This contract
