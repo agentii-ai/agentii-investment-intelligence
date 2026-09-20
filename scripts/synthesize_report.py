@@ -74,7 +74,18 @@ PACK_VERSION = "2.0"
 # the snapshot all feed the report, so all of them pin it (v0.1.0 hashed only
 # artifacts/). Outputs (report-input.md, report/content.html, thesis-report.*)
 # are deliberately excluded — a regenerated report must not self-stale.
-SOURCE_GLOBS = ["artifacts/**/*.md", "_cross/**/*.md", "snapshots/**/*.md"]
+#
+# `report/assets/**/*` (added 2026-09-19) pins the FILING FIGURES a thesis fetches
+# for itself. Without it a report could embed a raster that sources_hash did not
+# cover — it would pin the prose it rests on while carrying a picture it does not,
+# which is the exact asymmetry this programme spends its time removing. Non-
+# breaking by construction: source_files() collects only what the globs MATCH, so
+# for any thesis with no report/assets/ the file list is unchanged and the hash is
+# bit-identical. Note pathlib needs the trailing `/*` — `report/assets/**` alone
+# matches directories, never files, and would have pinned nothing while looking
+# like it pinned something.
+SOURCE_GLOBS = ["artifacts/**/*.md", "_cross/**/*.md", "snapshots/**/*.md",
+                "report/assets/**/*"]
 
 PAGES_COMMENT = ("<!-- PAGES — assembler injects the LLM-authored "
                  '<section class="page"> sequence -->')
@@ -302,16 +313,11 @@ def pack(thesis: Path, body_limit: int | None = None) -> tuple[Path, str]:
     metrics = extract_metrics(thesis)
     _require_metrics(metrics, thesis)
     out = thesis / "report-input.md"
-    write_boundary.write(
-        out,
-        pack_text(thesis, body_limit),
-        producer='synthesize_report')
+    _write_generated(out, pack_text(thesis, body_limit))
     metrics_path = thesis / "report" / "metrics.json"
-    write_boundary.write(
-        metrics_path,
-        json.dumps(metrics, indent=2, ensure_ascii=False,
-                                           default=_json_default) + "\n",
-        producer='synthesize_report')
+    _write_generated(metrics_path,
+                     json.dumps(metrics, indent=2, ensure_ascii=False,
+                                default=_json_default) + "\n")
     return out, sources_hash(thesis)
 
 
@@ -328,7 +334,28 @@ _CHART_REQUIRED = {
     "kpi_trend": ("x", "y"),
     "scatter": ("x", "y"),
     "scenario_tree": ("edges",),
+    # The one kind that is NOT drawn from data: `asset` names a filing figure the
+    # thesis fetched for itself (tools/fetch_filing_figures.py). `alt` is optional
+    # here but `_gate_charts` requires an accompanying .fig-caption, because a
+    # raster has no textual content of its own.
+    "filing_figure": ("asset",),
 }
+
+# HARD CAP on filing figures per report. This is a PLATFORM-PROTECTION limit, not
+# a layout one, and it is deliberate that it is a REFUSAL rather than a warning.
+#
+# agentii.ai serves each document from a rate-limited R2 origin, and obtaining a
+# figure means a full-document GET — there is no per-image endpoint, because the
+# filer's JPEGs are carried inline in the exhibit HTML. A report that embeds many
+# is therefore indistinguishable from a scraping job no matter what its author
+# intends, and it competes with every other reader for the same origin. The
+# product position is that people may READ filings on the platform; a report may
+# QUOTE a handful with attribution. Five is the quoted-with-attribution budget.
+#
+# The load-bearing limit is here rather than in the fetch tool because the report
+# is what a reader distributes, and a cap the assembler enforces cannot be
+# exceeded by any route into it — including an author who fetched assets by hand.
+MAX_FILING_FIGURES = 5
 _FORBIDDEN_DOC_RE = re.compile(r"(?i)<\s*!doctype\b|<\s*/?\s*(html|head|body|style|script)\b")
 _RESERVED_ID_RE = re.compile(r"^(cover-|stale-bar$)")
 
@@ -419,6 +446,7 @@ class _ContentParser(html.parser.HTMLParser):
 _CHART_KIND_ALTS = {
     "kpi_trend", "peer_bars", "waterfall", "scatter", "line", "bar", "chart",
     "trend", "sparkline", "area", "column", "pie", "donut", "histogram",
+    "filing_figure",  # a raster needs its alt to describe the figure, not the kind
 }
 
 # A caption must name UNITS. Q118 pairs this with Q97(2)'s axis requirement: the
@@ -548,7 +576,17 @@ def _gate_page_argument(content: str) -> list[str]:
 
 
 def _gate_charts(content: str) -> list[str]:
-    """T133 (Q118): caption present and human-readable; `alt` not a kind name."""
+    """T133 (Q118): caption present and human-readable; `alt` not a kind name.
+
+    ⚠️ The `<img>` and `<figure>` loops below are UNREACHABLE for the letter
+    report, and always have been: `_ALLOWED_TAGS` admits neither tag, so
+    `_validate_content` rejects any authored content carrying them before this
+    gate is ever consulted. They are kept rather than deleted so that widening
+    the whitelist cannot silently drop the enforcement — but no reader should
+    mistake them for running checks. For this template family Q118 is carried by
+    the `filing_figure` loop at the end, which is the only figure route the
+    whitelist permits.
+    """
     problems: list[str] = []
     for m in re.finditer(r"<img\b[^>]*>", content, re.I):
         tag = m.group(0)
@@ -577,6 +615,43 @@ def _gate_charts(content: str) -> list[str]:
                 f"a chart caption names no UNIT: {text[:70]!r}. Q118 requires the "
                 f"caption to name what is drawn, its units, and its source — the "
                 f"textual half of what Q97(2) requires geometrically.")
+    # filing_figure tokens (Q118 extended, 2026-09-19) — the one figure route the
+    # whitelist permits. A raster carries no text, no search and no basis, so its
+    # caption IS its provenance: what it is, its units, its citable source, and
+    # that it is issuer-produced and unaudited.
+    for m in re.finditer(
+            r'<div\b[^>]*data-chart="filing_figure"[^>]*>\s*</div>\s*'
+            r'(<p\b[^>]*class="[^"]*fig-caption[^"]*"[^>]*>.*?</p>)?',
+            content, re.S | re.I):
+        cap = m.group(1)
+        if not cap:
+            problems.append(
+                'a filing_figure token has no <p class="fig-caption"> immediately '
+                "after it — a raster carries no textual content, so Q118 requires "
+                "the caption to name what it is, its units, and its source")
+            continue
+        text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", cap)).strip()
+        if len(text) < 20:
+            problems.append(
+                f"a filing_figure caption is too short to name anything: {text!r}")
+        if not _UNIT_RX.search(text):
+            problems.append(
+                f"a filing_figure caption names no UNIT: {text[:70]!r}")
+        if not re.search(r'href\s*=\s*["\']https://agentii\.ai/v/\S+', cap, re.I):
+            problems.append(
+                f"a filing_figure caption carries no agentii.ai/v/ source link: "
+                f"{text[:70]!r} — an embedded filing image with no citable source "
+                f"is the least auditable artifact a report can carry")
+    # The platform-protection cap. Counted on TOKENS, so it binds the report as
+    # authored and cannot be evaded by how the assets arrived on disk.
+    n_figs = len(re.findall(r'<div\b[^>]*data-chart="filing_figure"', content, re.I))
+    if n_figs > MAX_FILING_FIGURES:
+        problems.append(
+            f"this report embeds {n_figs} filing figures; the cap is "
+            f"{MAX_FILING_FIGURES}. Fetching each one is a full-document GET against "
+            f"a rate-limited origin, so a report is indistinguishable from a scraper "
+            f"above this count — and it degrades the platform for every other reader. "
+            f"Quote the few that carry an argument; cite the rest by page link.")
     return problems
 
 
@@ -729,15 +804,31 @@ _CHART_TOKEN_RE = re.compile(
     r'(?=[^>]*\bdata-height="(\d+)")[^>]*>\s*</div>')
 
 
-def render_chart_tokens(content: str) -> str:
-    """Replace data-chart token divs with base64 SVG <img> (Q48). The img keeps
-    an explicit height so the overflow estimator counts it honestly."""
+def render_chart_tokens(content: str, thesis: Path | None = None) -> str:
+    """Replace data-chart token divs with base64 <img> (Q48). The img keeps
+    an explicit height so the overflow estimator counts it honestly.
+
+    Two families reach here. The five numeric kinds are DRAWN by chart_render
+    from the spec's data. `filing_figure` is the one kind that is not drawn: its
+    spec names a local asset the thesis fetched for itself, and the bytes are
+    inlined verbatim. It is the only route by which a raster can reach a report
+    — and it stays a token rather than an <img> in content.html, so the fragment
+    whitelist still holds and the figure is still born after validation.
+    """
 
     def _sub(m: re.Match) -> str:
         kind, spec_json, height = m.group(1), m.group(2), m.group(3)
-        svg = chart_render.render_svg(kind, json.loads(spec_json))
-        uri = chart_render.to_data_uri(svg)
-        return (f'<img src="{uri}" alt="{kind}" height="{height}" '
+        spec = json.loads(spec_json)
+        if kind == "filing_figure":
+            if thesis is None:
+                raise ValueError(
+                    "a filing_figure token needs the thesis dir to resolve its asset")
+            uri = chart_render.to_image_uri(thesis / spec["asset"])
+            alt = spec.get("alt") or kind
+        else:
+            uri = chart_render.to_data_uri(chart_render.render_svg(kind, spec))
+            alt = kind
+        return (f'<img src="{uri}" alt="{alt}" height="{height}" '
                 f'style="width:100%;object-fit:contain">')
 
     return _CHART_TOKEN_RE.sub(_sub, content)
@@ -1008,6 +1099,38 @@ def _print_heights(html_text: str, tier: int, over: list[int]) -> None:
         print(f"page {page['index'] + 1}: {page['height']:.0f}px / {limit:.0f}px — {status}")
 
 
+def _write_generated(path: Path, text: str, producer: str = "synthesize_report") -> None:
+    """Write a GENERATED artifact, replacing any prior copy — and VERIFY the verdict.
+
+    Measured 2026-09-19, thesis 003. Three consecutive `assemble` runs left
+    `thesis-report.html` byte-identical to a version **three content edits old**,
+    while every one of them printed `OK /…/thesis-report.html`. The render step
+    then produced pixels from that stale file, and the author's visual pass was
+    reviewing a document nobody had written.
+
+    The cause is not in this file: `write_boundary.write` applies Q127's fail-safe,
+    and for a document that declares no `writer:` that fail-safe is APPEND-ONLY.
+    An HTML report has no frontmatter to declare one in, so the SECOND write is
+    always refused — and this function's caller discarded the return value, so a
+    refusal was indistinguishable from a success.
+
+    Two corrections, and both are needed:
+      1. the stale copy is UNLINKED first. The assembler is the sole producer of
+         these paths (`thesis-report.html`, its markdown fallback) — they are
+         regenerated wholesale from `content.html` on every run, so a second write
+         is not a second writer. This is the semantic Q127 was protecting, not an
+         exemption from it; the guard still applies to every authored document.
+      2. the verdict is CHECKED. A refusal now raises instead of printing OK.
+    """
+    if path.exists():
+        path.unlink()
+    res = write_boundary.write(path, text, producer=producer)
+    if getattr(res, "verdict", "written") == "refused":
+        raise ValueError(
+            f"write boundary REFUSED {path.name}: "
+            + "; ".join(getattr(res, "reasons", []) or ["no reason given"]))
+
+
 def assemble(thesis: Path, out_path: Path | None = None, *,
              check_only: bool = False) -> tuple[Path | None, str, bool]:
     """Validate the LLM-authored content, assemble, gate, deliver (or degrade).
@@ -1049,7 +1172,7 @@ def assemble(thesis: Path, out_path: Path | None = None, *,
     for advisory in _quality_advisories(content):
         print(f"advisory: {advisory}", file=sys.stderr)
 
-    pages_html = _renumber_pages(render_chart_tokens(content))
+    pages_html = _renumber_pages(render_chart_tokens(content, thesis))
     shash = sources_hash(thesis)
     report_path = out_path or (thesis / "thesis-report.html")
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -1071,28 +1194,21 @@ def assemble(thesis: Path, out_path: Path | None = None, *,
                 return None, shash, False
             continue
         if not over:
-            write_boundary.write(
-                report_path,
-                html,
-                producer='synthesize_report')
+            _write_generated(report_path, html)
             return report_path, shash, False
 
     # Q47 failure semantics: markdown fallback + HTML draft with a banner.
     if not check_only:
         facts = _header_facts(thesis)
         md_path = report_path.with_suffix(".md")
-        write_boundary.write(
+        _write_generated(
             md_path,
             f"# {facts['name']} — Markdown Report "
-                               f"(HTML overflow gate unresolved)\n\n{pack_txt}",
-            producer='synthesize_report')
+            f"(HTML overflow gate unresolved)\n\n{pack_txt}")
         html = build_html(thesis, pages_html, shash, generated_at,
                           font_tier=len(check_page_overflow.FONT_TIERS) - 1,
                           draft=True, overflow_check=mode)
-        write_boundary.write(
-            report_path,
-            html,
-            producer='synthesize_report')
+        _write_generated(report_path, html)
     return report_path, shash, True
 
 

@@ -588,12 +588,32 @@ def parse_subs_to_pillars(spec_text: str) -> dict[str, list[str]]:
 
 def depth_to_modes(depth: str, registry: dict, skill: str) -> list[str]:
     """Q79 Depth-Tier merge: Deep/Full → all (expanded from the registry's mode
-    slugs); Standard/Light → the skill's essentials_modes (fallback default)."""
+    slugs); Standard/Light → the skill's essentials_modes.
+
+    ⚠️ An EMPTY `essentials_modes` is MISSING DATA, not a declaration of "no modes".
+    The previous fallback was the literal string `"default"`, which is **not a mode
+    any skill declares**. Measured 2026-09-19 at `comps` and `reverse-dcf`, whose
+    declared sets are `preflight / triggers / defaults / methodology /
+    retrieval-scope`: both have a real `references/modes.md`, both declare
+    `essentials_modes: []`, and the generator emitted `comps × default` (×11) and
+    `reverse-dcf × default` — a mode that does not exist. `plan_audit` returned 4/4.
+
+    Prefer a REAL declared slug; keep `"default"` only as a last resort for a skill
+    that declares no modes at all."""
     entry = next((s for s in registry.get("skills", [])
                   if s.get("skill_name") == skill), {})
+    declared = [m["slug"] for m in entry.get("modes", [])]
     if depth in ("deep", "full"):
-        return [m["slug"] for m in entry.get("modes", [])] or ["default"]
-    return list(entry.get("essentials_modes") or ["default"])
+        return declared or ["default"]
+    ess = list(entry.get("essentials_modes") or [])
+    if ess:
+        return ess
+    # Empty essentials → pick ONE real declared mode rather than inventing one.
+    # `methodology` (the derivation path) is the analytical core where it exists;
+    # otherwise take the skill's first declared mode, which is deterministic.
+    if "methodology" in declared:
+        return ["methodology"]
+    return declared[:1] or ["default"]
 
 
 def tasks_from_spec(spec_path: Path, registry: dict) -> list[str]:
@@ -635,10 +655,34 @@ def clarify_questions(spec_path: Path) -> list[dict]:
     """Phase 1 — a DETERMINISTIC scanner, never vibes. Candidate questions for
     underspecified spec items, each naming the field it unblocks."""
     text = spec_path.read_text(encoding="utf-8")
+    # NOTE (2026-09-20): `## Clarifications` is a RECORD of decisions, and it
+    # legitimately QUOTES the markers this scanner hunts for — so a spec's own
+    # answer fired the detector it was describing. Writing "005 labels them
+    # `**wrong_if** (label):`" was read as an unparseable falsifier, and quoting a
+    # `Subscribed**:` line as prose was read as a malformed subscription. Both
+    # appeared the moment the answers were encoded into the very file being
+    # scanned. Detectors that parse a DECLARATION out of a marker's payload read
+    # the body above the section and never the log; a mention is not a use. The two
+    # PRESENCE checks (`budget`, `expiry`) stay on the full text deliberately —
+    # they ask whether a token appears at all, which the log can legitimately
+    # answer — though they arguably belong on thesis.md, where both fields live.
+    # The split keys on the `## Clarifications` HEADING, deliberately: 008 writes
+    # its log as `**Clarifications**` (so body == text and it is not covered) AND
+    # mentions the word in prose at line 377 — splitting on the bare string would
+    # truncate the body at that mention and silently HIDE the very violations this
+    # scan exists to find. A narrower split that misses one heading style is the
+    # safe direction to err in.
+    body = text.split("## Clarifications", 1)[0]
     questions: list[dict] = []
     # 1. prose wrong_if (Q8 contract 4: must be machine-checkable)
-    for m in __import__("re").finditer(r"\*\*wrong_if\*\*:\s*(.+)$", text,
-                                       flags=__import__("re").MULTILINE):
+    # NOTE (2026-09-20): the old pattern required `:` IMMEDIATELY after
+    # `**wrong_if**` AND the payload on the same line. 005 labels every falsifier
+    # `**wrong_if** (runway):` with the payload on the next line, so 9 of its 11
+    # were never read — the other ten specs read 100%. A silent under-check is
+    # worse than a noisy false positive: a prose falsifier in that shape would
+    # pass unremarked. Now an optional parenthetical label is permitted and `\s*`
+    # after the colon steps over the newline, so a wrapped payload is read.
+    for m in re.finditer(r"\*\*wrong_if\*\*(?:\s*\([^)\n]*\))?\s*:\s*(.*)", body):
         w = m.group(1).strip()
         if not ("metric=" in w and "threshold=" in w and "source=" in w):
             questions.append({
@@ -649,15 +693,33 @@ def clarify_questions(spec_path: Path) -> list[dict]:
                             "(Q8 contract 4 rejects prose).",
                 "options": None})
     # 2. universe rows without inclusion rationale
-    for m in __import__("re").finditer(
-            r"^\|\s*([A-Z0-9]{1,5})\s*\|[^|]*\|[^|]*\|[^|]*\|\s*\|",
-            text, flags=__import__("re").MULTILINE):
-        questions.append({
-            "id": f"rationale-{m.group(1)}",
-            "target": f"universe row {m.group(1)}",
-            "question": f"Write the inclusion rationale for {m.group(1)} — every "
-                        f"ticker's membership must be justified (spec-template §2).",
-            "options": None})
+    # NOTE (2026-09-20): the old pattern demanded `| TICKER | a | b | c | <empty> |`
+    # and so read ANY four-cell row as a universe row. It fired on the NOT_READY
+    # availability tables (005 RDW; 006 SPIR, TSAT), on artifact-index rows (008),
+    # and in 009 on numbered list rows — reporting `rationale-1`, `rationale-3`, …
+    # which is not a ticker and not a universe row. It tested the TABLE's shape,
+    # never the rationale's presence. Now scoped to the §2 universe sections, the
+    # first cell must be ticker-shaped (>=1 letter; a bare digit is a list index),
+    # and the rationale is the row's LAST cell — the question is whether that cell
+    # is EMPTY, not how many columns the table has.
+    for section in re.finditer(r"^## 2[^\n]*$", text, flags=re.MULTILINE):
+        start = section.end()
+        nxt = text.find("\n## ", start)
+        section_body = text[start:nxt if nxt != -1 else len(text)]
+        # The row is matched WITHOUT its closing pipe, so the last element of the
+        # split IS the last real cell. Stripping trailing blanks instead would pop
+        # the very cell under test and the check could never fire.
+        for row in re.finditer(r"^\|\s*([A-Z][A-Z0-9.]{0,5})\s*\|(.+?)\|\s*$", section_body,
+                               flags=re.MULTILINE):
+            cells = row.group(2).split("|")
+            if cells and not cells[-1].strip():     # last real cell blank
+                questions.append({
+                    "id": f"rationale-{row.group(1)}",
+                    "target": f"universe row {row.group(1)}",
+                    "question": f"Write the inclusion rationale for {row.group(1)} — "
+                                f"every ticker's membership must be justified "
+                                f"(spec-template §2).",
+                    "options": None})
     # 3. budget undeclared (Q58)
     if "max_tasks" not in text:
         questions.append({"id": "budget", "target": "thesis budget",
@@ -683,10 +745,33 @@ def clarify_questions(spec_path: Path) -> list[dict]:
     #   (b) the test was `" × " not in s`, which accepts `skill × mode`. A
     #       ticker-less token contains ' × ' too, so the real Q79 violation was
     #       never caught. The ticker must be anchored on the left.
-    for m in __import__("re").finditer(r"Subscribed\*\*:\s*([^\n]+)", text):
-        subs = [s.strip() for s in m.group(1).split(",") if s.strip()]
-        malformed = [s for s in subs
-                     if not __import__("re").match(r"^`?[A-Z0-9.]{1,6} × ", s)]
+    # NOTE (2026-09-20): two more defects, both under-checks of the same class.
+    #   (c) THE LIST WRAPS. Reading `[^\n]+` read only the marker's own line, so a
+    #       block continued on following lines had its remaining pairs NEVER
+    #       validated — 008 has two such blocks, carrying `BA × business-model` and
+    #       `BA × recent-quarter`. The block is now read to its end: the first
+    #       following line that is not a backticked token.
+    #   (d) IT SPLIT THE LINE ON COMMAS, so trailing PROSE became phantom tokens.
+    #       A fragment is now a CANDIDATE token only if it is backticked (the unit
+    #       `skill_pillar_map` actually consumes — take what is inside the ticks) or
+    #       is a bare word with no whitespace (`NVDA, TSLA`). Prose is ignored; a
+    #       bare `skill` where `TICKER × skill` belongs is still caught.
+    for m in re.finditer(r"Subscribed\*\*:\s*(.*)", body):
+        block = [m.group(1)]
+        for line in body[m.end():].lstrip("\n").split("\n"):
+            if not line.strip().startswith("`"):
+                break
+            block.append(line)
+        toks: list[str] = []
+        for frag in (f.strip() for f in " ".join(block).split(",")):
+            if not frag:
+                continue
+            if "`" in frag:
+                toks.extend(re.findall(r"`([^`]+)`", frag))
+            elif " " not in frag:
+                toks.append(frag)
+        malformed = [t.strip() for t in toks
+                     if not re.match(r"^[A-Z0-9.]{1,6} × ", t.strip())]
         if malformed:
             questions.append({
                 "id": "subscriptions", "target": "pillar subscriptions",

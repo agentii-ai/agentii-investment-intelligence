@@ -1855,7 +1855,8 @@ skills:
     market_data_stage: none
   - slug: retrieval-scope
     market_data_stage: none
-  essentials_modes: []
+  essentials_modes:
+  - retrieval-scope
   sectors: []
   freshness_window: 7
   market_data_stage: none
@@ -2648,7 +2649,8 @@ skills:
     market_data_stage: late
   - slug: retrieval-scope
     market_data_stage: late
-  essentials_modes: []
+  essentials_modes:
+  - methodology
   sectors: []
   freshness_window: 7
   market_data_stage: late

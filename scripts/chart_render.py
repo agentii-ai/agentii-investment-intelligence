@@ -104,6 +104,30 @@ def to_data_uri(svg: str) -> str:
     return f"data:image/svg+xml;base64,{encoded}"
 
 
+def to_image_uri(path: Path) -> str:
+    """data: URI for a RASTER asset the thesis fetched for itself (filing figures).
+
+    Deliberately narrow: this is the only place a report reads a non-generated
+    image, and it exists because filer-embedded figures have no URL to point at
+    — agentii serves them inline in the exhibit HTML, so they arrive as bytes on
+    disk or not at all. Nothing here fetches; the assembler stays offline and the
+    asset is a pinned source like any other markdown file.
+
+    The mime is sniffed from MAGIC BYTES, never the extension: an asset whose
+    name disagrees with its content must fail loudly rather than be mislabelled
+    into a print artifact.
+    """
+    raw = path.read_bytes()
+    if raw.startswith(b"\xff\xd8\xff"):
+        fmt = "jpeg"
+    elif raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        fmt = "png"
+    else:
+        raise ValueError(
+            f"unsupported image asset {path.name}: not JPEG or PNG by magic bytes")
+    return f"data:image/{fmt};base64,{base64.b64encode(raw).decode('ascii')}"
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
     import json
