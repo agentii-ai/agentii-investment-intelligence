@@ -98,7 +98,31 @@ def main(argv: list[str] | None = None) -> int:
                                         "contradicts", "medium",
                                         restatement=True, values=rec["values"]))
         kept, overflow = cap_findings(findings)
-        print(f"contradictions: {len(kept)} (dropped {overflow.get('dropped', 0)})")
+        # FR-039/T019: `contradictions: 0` alone cannot be told from "the index read
+        # nothing" — thesis 003 reported exactly that on 0 of 45 artifacts carrying
+        # `entity_claims`. Print what was examined, and say when it was nothing.
+        _ex = idx.get("examined") or {}
+        # FR-038: an artifact excluded because it does not parse is printed FIRST and
+        # in full, before any count. The count is what a reader believes; this is what
+        # makes the count trustworthy.
+        for _u in (idx.get("unparseable") or [])[:5]:
+            print(f"  ! UNPARSEABLE — excluded from the index, so its claims are absent "
+                  f"from every number below (FR-038): {_u}")
+        if idx.get("mechanism_outcome") == "VACUOUS":
+            print(f"contradictions: NOT CHECKED — 0 of {_ex.get('artifacts_scanned', 0)} "
+                  f"artifact(s) carry `entity_claims`, so the index examined nothing and "
+                  f"a count of 0 would be arithmetically forced, not earned (FR-039)")
+        else:
+            print(f"contradictions: {len(kept)} (dropped {overflow.get('dropped', 0)}) "
+                  f"— examined {_ex.get('claims_scanned', 0)} claim(s) across "
+                  f"{_ex.get('artifacts_with_claims', 0)} of "
+                  f"{_ex.get('artifacts_scanned', 0)} artifact(s)"
+                  + (f"; {_ex['artifacts_unparseable']} artifact(s) excluded as "
+                     f"unparseable" if _ex.get("artifacts_unparseable") else "")
+                  + (f"; {_ex['claims_malformed']} malformed claim(s) not filed"
+                     if _ex.get("claims_malformed") else ""))
+        for _m in (idx.get("malformed") or [])[:5]:
+            print(f"  ! malformed: {_m}")
         for f in kept:
             print(f"  - [{f['severity']}] {f['entity']}.{f['metric']}@{f['period']} "
                   f"values={f.get('values')} id={f['id']}"

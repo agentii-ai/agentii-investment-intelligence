@@ -101,15 +101,40 @@ checked = 0
 #
 # Check numbers 14–17 are RECLAIMED (2026-09-21, spec 058 T003 / FR-007): 14 was
 # retired and 15–17 reserved, so all four occupied the namespace while examining
-# nothing. They are free for reuse and are no longer named in the surface table —
-# the inventory is now exactly the sections that examine something.
-SURFACES: list[tuple[str, int, str]] = []
+# nothing. They are free for reuse and are not named in the surface table — the
+# inventory is exactly the sections that examine something. Their old comments used
+# to sit at what is now Check 18's block, INSIDE a counted region: a reclaim note is
+# itself a naming of the reclaim, which is the thing FR-007 says not to count. Check
+# 26 was never assigned (git log -S"Check 26" is empty); its absence is a numbering
+# gap, not a lost check, and is recorded here so a later reader does not have to
+# re-derive that.
+#
+# THREE STATES, not two (spec 058 T001/T002/T003, FR-006):
+#
+#   1. examined N > 0                      → normal
+#   2. examined 0, declared pending        → reported, and FAILS on its expiry date
+#                                            (contracts/pending.yaml, FR-054)
+#   3. examined 0, conditional on an input → reported on EVERY run, and honoured only
+#      that does not exist yet               while that input is genuinely absent
+#
+# State 3 exists because two checks are dormant by construction, not by neglect:
+# Check 34 fires only when a workspace's `theses/INDEX.md` is committed, and Check 35
+# needs a contract plus its implementation. Marking them pending would invent an owner
+# and an expiry for work nobody owes; leaving them unmarked is what the 2026-09-21
+# audit found nine blocks doing — reporting no surface at all, which reads exactly like
+# a pass. A conditional declaration is honoured ONLY while its path is absent: if the
+# path exists and the section still examined nothing, that is an error, so the state
+# cannot be used to silence a section whose input is right there.
+SURFACES: list[tuple[str, int, str, str | None]] = []
 
 
-def _mark(name: str, note: str = "") -> None:
+def _mark(name: str, note: str = "", conditional: str | None = None) -> None:
     """Record the surface examined so far. Called at each section header; the
-    delta from the previous mark is that section's examined count."""
-    SURFACES.append((name, checked, note))
+    delta from the previous mark is that section's examined count.
+
+    `conditional` names the repo-relative path whose absence explains a zero surface.
+    See the three-states note above."""
+    SURFACES.append((name, checked, note, conditional))
 
 
 def err(msg: str) -> None:
@@ -471,13 +496,10 @@ if MCP_CANONICAL.exists():
 else:
     err("mcp-canonical: contracts/mcp-canonical.json missing (FR-010 / Round 4 Q15)")
 
-# --- Check 14: RETIRED (2026-06-13, Phase 23) — all commands/*.md files deleted per FR-014k.
-#     Formerly verified MODE_SYNTAX.md footer links on command files.
-
-# --- Check 15-17: reserved for Phase 4 (FR-044 protocol), Phase 9 (pre-publish gate),
-#     Phase 3 essentials.yaml presence.
-
 # --- Check 18: SKILL.md Preflight has agent call tracing instruction (FR-106g(c), Phase 22) ---
+# (The reclaimed numbers 14–17 and the never-assigned 26 are recorded at the SURFACES
+#  definition above, not here: a reclaim note inside a counted region occupies the
+#  inventory it declares empty — FR-007.)
 
 _mark('Check 18: SKILL.md Preflight has agent call tracing instruction (FR-106g(c), Phase 22)')
 for sk in SKILL_FILES:
@@ -982,6 +1004,37 @@ for _cmd in sorted(_VP.glob("*/commands/*.md")):
             f"in that vertical — the command points at nothing (Check 51)."
         )
 
+# --- spec 058 Check 52: artifact-frontmatter fields a gate reads must be declared ---
+_mark('Check 52: artifact-frontmatter fields a gate reads must be declared (FR-037)')
+# FR-037 / T015. Delegates, following Check 32's precedent — the rule is implemented
+# once, in scripts/check_gate_fields.py, which is also runnable standalone and tested.
+#
+# Why it exists: `entity_claims` is read by five gates and absent from 128 artifacts of
+# theses 001–003, so every cross-run contradiction check there was vacuous. Nothing
+# reported it, because nothing compared what the gates read against what the contract
+# declared. A gate whose input does not exist reports exactly what a satisfied gate
+# reports — FR-037 is that comparison, made executable.
+try:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import check_gate_fields as _cgf
+    _gf_problems, _gf_counts = _cgf.check_a()
+    # 7 gate scripts read + every script in scripts/ re-read to DERIVE the gate population
+    # (FR-037's `gates:` list is hand-maintained; check_gate_fields now computes what it
+    # should contain from the code and fails on a mismatch — spec 058 audit).
+    checked += _gf_counts["gates_scanned"] + _gf_counts.get("scripts_scanned", 0)
+    for _gf_p in _gf_problems:
+        err(_gf_p)
+    for _gf_c in _gf_counts["declared_but_unread"]:
+        warn(f"gate-fields: '{_gf_c}' is declared but read by no gate — a field recording "
+             f"a condition that triggers nothing: consume it or remove it (Check 52)")
+    for _gf_d in _gf_counts["declared_dynamic"]:
+        # The message carries its own heading ("declared-dynamic read: … ACCOUNTED FOR");
+        # prefixing it with a second one made the notice read as two claims.
+        warn(f"gate-fields: {_gf_d}")
+except Exception as _e:                       # noqa: BLE001
+    err(f"check 52 could not run: {type(_e).__name__}: {_e} — a check that "
+        f"cannot execute must say so, not pass (Q105)")
+
 # --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---
 
 _mark('Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23)')
@@ -1008,6 +1061,9 @@ for sk in SKILL_FILES:
 
 _mark('Check 29: Output Structure gate — ≥5 non-empty lines (FR-014e, Phase 23)')
 for sk in SKILL_FILES:
+    checked += 1  # Check 29 — walked the same SKILL_FILES Check 28 does; it counted
+    #                none of them until 2026-09-21, so its row reported the NEXT two
+    #                blocks' files (1 + 12) while claiming to be its own surface.
     text = sk.read_text()
     # Count non-empty lines between ## Output Structure and next ## heading
     structure_match = re.search(r"## Output Structure\s*\n(.*?)(?=\n## )", text, re.DOTALL)
@@ -1025,6 +1081,8 @@ for sk in SKILL_FILES:
 import re as _re
 
 COMMAND_FILES = sorted(PLUGINS.glob("vertical-plugins/*/commands/*.md"))
+
+_mark('Phase 28: Context-Optimization CI gates 1–12 (spec 023 T057–T084)')
 
 
 def _section(text: str, header: str) -> str:
@@ -1145,10 +1203,18 @@ for sk in SKILL_FILES:
     if _re.search(r"xlsx\.build|pptx\.build|pptx\.edit|pptx\.refresh", sk.read_text()):
         err(f"ctx-gate-office-tools: {rel(sk)}: stale abstract office tool (use contracts/office-tooling.md concrete path)")
 
+# Surface for the whole block. Twelve gates re-read the same two collections, so this
+# counts each file ONCE — the convention `_mark('9-12. SKILL.md structural checks')` (one
+# mark, four sub-checks, 149 files) already established. Counting per traversal would
+# report 1,839 here and inflate the gate total without telling a reader anything: the
+# question a surface row answers is WHICH files were examined, not how many times.
+checked += len({*SKILL_FILES, *COMMAND_FILES})
+
 # --- Check 30: Registry Sync — bijection on-disk skills <-> skill-registry.yaml
 #     (spec 039 Part I, FR-011/FR-012). A skill = a skills/agentii/<name>/ dir that
 #     contains a SKILL.md (shared dirs like .../agentii/references/ are NOT skills).
 REGISTRY_PATH = ROOT / "skill-registry.yaml"
+_mark('Check 30: Registry Sync — bijection on-disk skills <-> skill-registry.yaml')
 # self-test guard mirroring MIN_EXPECTED_SKILLS (baseline = 41 skills with SKILL.md)
 MIN_EXPECTED_REGISTRY = 55
 if REGISTRY_PATH.exists():
@@ -1196,6 +1262,7 @@ else:
 #     Copyleft sources (OpenBB, wbdata, ...) are reached out-of-process only.
 COPYLEFT_DENYLIST = {"openbb", "openbb_terminal", "wbdata"}
 DATA_TOOLS = ROOT / "data-tools"
+_mark('Check 30b: License boundary — MIT core must not import copyleft (Constitution VIII)')
 if DATA_TOOLS.exists():
     _import_re = re.compile(r"^\s*(?:import|from)\s+([a-zA-Z0-9_]+)", re.MULTILINE)
     for py in sorted(DATA_TOOLS.glob("*.py")):
@@ -1211,8 +1278,10 @@ if DATA_TOOLS.exists():
 # Every value lives on exactly one axis. CI fails on a value appearing on two
 # axes or on none — the closed-enum discipline that keeps eval corpora comparable.
 _taxonomy_path = ROOT / "contracts" / "taxonomy.yaml"
+_mark('Check 33: taxonomy axis uniqueness (Q76)')
 try:
     _tax = yaml.safe_load(_taxonomy_path.read_text(encoding="utf-8")) or {}
+    checked += 1
     _axes = _tax.get("axes") or {}
     _seen: dict[str, str] = {}
     for _axis, _values in _axes.items():
@@ -1233,10 +1302,14 @@ except (OSError, yaml.YAMLError) as e:
 # --- spec 046 Check 31: registry ↔ SKILL.md frontmatter sync (Q12) ----------
 # Safety-critical, not tidiness: the dispatcher reads gates from the derived
 # registry, so a stale registry means an out-of-date gate is silently in force.
+_mark('Check 31: registry ↔ SKILL.md frontmatter sync (Q12)')
 try:
     import sync_registry  # noqa: E402 — same-directory module
 
     _disk = {e["skill_name"]: e for e in sync_registry.build_entries()}
+    # The surface is the SKILL.md files re-parsed to build the disk side, not the one
+    # registry file compared against them — that is where the work and the risk are.
+    checked += len(_disk)
     _reg = {s.get("skill_name"): s for s in
             (yaml.safe_load(REGISTRY_PATH.read_text(encoding="utf-8")) or {}).get("skills", [])}
     for _name, _disk_entry in _disk.items():
@@ -1260,6 +1333,8 @@ except (OSError, yaml.YAMLError) as e:
 # Fixture-based (deterministic, no network): every ✅-status field in
 # get-realtime-quote-tool.md must appear in the ok-envelope the implementation
 # actually produces. The live half lives in tests/test_market_data_smoke.py.
+_mark('Check 35: tool contract ↔ implementation conformance (Q44/Q43)',
+      conditional='contracts/get-realtime-quote-tool.md')
 _CONTRACT_FIELD_MAP = {"ticker": "symbol", "last_close": "price",
                        "market_cap": "market_cap", "source": "source",
                        "stale": "stale"}
@@ -1282,6 +1357,11 @@ try:
     if _contract.is_file() and _impl.is_file():
         import importlib.util as _ilu
         import tempfile
+
+        # 3 = the contract, the implementation, and the cache module it is exercised
+        # through. Dormant by construction if the contract is absent (spec 058 T072 owns
+        # creating it), which is why the mark names that path as its condition.
+        checked += 3
 
         _spec = _ilu.spec_from_file_location("md_ck", _impl)
         _md = _ilu.module_from_spec(_spec)
@@ -1321,9 +1401,12 @@ except Exception as _e:  # noqa: BLE001 — conformance check must not break the
 # committed, its generated index must regenerate byte-identically — the Q12
 # pattern applied to derived views (a hand-edited index diverges). Dormant until
 # the first workspace is committed; active the moment one is.
+_mark('Check 34: a committed theses/INDEX.md is a proven derivative (Q75)',
+      conditional='theses/INDEX.md')
 for _idx in sorted(ROOT.rglob("theses/INDEX.md")):
     if ".tmp" in _idx.name or "node_modules" in _idx.parts:
         continue
+    checked += 1
     try:
         import importlib.util as _ilu
 
@@ -1353,10 +1436,17 @@ for _idx in sorted(ROOT.rglob("theses/INDEX.md")):
 # implemented correctly, URL-aware and verb-aware, in
 # scripts/check_no_baked_harness_strings.py. Two implementations of one check is
 # what Q12 rule 3 forbids, so the second copy is deleted and this one delegates.
+_mark('Check 32: no baked harness strings (Q34) — delegates')
 try:
     sys.path.insert(0, str(ROOT / "scripts"))
     import check_no_baked_harness_strings as _q34
-    for _f in _q34.check_a(_q34._verbs()):
+    _q34_problems, _q34_scanned = _q34.check_a(_q34._verbs())
+    # The delegate prints its own surface ("4,597 files scanned") and now RETURNS it,
+    # so this section's row reflects what ran instead of reporting zero — which is
+    # what it did until 2026-09-21, when the audit found this block among nine with no
+    # row at all and the row ABOVE it absorbing its neighbours' counts.
+    checked += _q34_scanned
+    for _f in _q34_problems:
         err(f"baked-harness-string: {_f}")
 except Exception as _e:                       # noqa: BLE001
     err(f"check 32 could not run: {type(_e).__name__}: {_e} — a check that "
@@ -1369,9 +1459,15 @@ except Exception as _e:                       # noqa: BLE001
 # skills packaged with 40 stale. It is verified by CONTENT HASH against the
 # source, and the check reports the surface it examined so a target list that
 # silently emptied cannot read as a pass.
+_mark('T114: the build output is verified, not just generated',
+      conditional='packaging/targets')
 try:
     _sources = _q34._sources()
     _build_problems, _build_counts = _q34.check_b(_sources)
+    # `total_files` = every (harness, skill) pair the delegate hash-compared. It is 0
+    # on a fresh clone, where `packaging/targets/` legitimately does not exist — the
+    # conditional above is what distinguishes "not built" from "examined nothing".
+    checked += _build_counts.get("total_files", 0)
     for _b in _build_problems:
         err(f"build-output: {_b}")
 except Exception as _e:                       # noqa: BLE001
@@ -1382,35 +1478,59 @@ except Exception as _e:                       # noqa: BLE001
 # T128: the surface table. Delta between consecutive marks = that section's
 # examined count; the final section runs to the end of the file.
 _rows = []
-for _i, (_name, _at, _note) in enumerate(SURFACES):
+for _i, (_name, _at, _note, _cond) in enumerate(SURFACES):
     _end = SURFACES[_i + 1][1] if _i + 1 < len(SURFACES) else checked
-    _rows.append((_name, _end - _at, _note))
+    _rows.append((_name, _end - _at, _note, _cond))
 
 _vacuous = []          # zero surface, undeclared → FAILS (FR-006)
 _pending_rows = []     # zero surface, declared pending → reported, and fails at expiry
-for _name, _n, _note in _rows:
+_cond_rows = []        # zero surface, input absent BY CONSTRUCTION → reported every run
+for _name, _n, _note, _cond in _rows:
     if _n != 0:
         continue
     _cov = _pending_covers(_name)
     if _cov:
         _pending_rows.append((_name, _cov))
+    elif _cond and not (ROOT / _cond).exists():
+        _cond_rows.append((_name, _cond))
+    elif _cond:
+        # The declaring side is the one that has to be honest here: `conditional` is
+        # tolerated only while its input is genuinely missing. If the path is there and
+        # the section still read nothing, the marker is silencing a live check.
+        err(f"surface: {_name}: declared conditional on {_cond!r}, which EXISTS, yet "
+            f"the section examined 0 files — a conditional declaration is honoured only "
+            f"while its input is absent (FR-006)")
     else:
         _vacuous.append((_name, _n, _note))
 
 # A pending declaration nothing consults is a declaration that cannot be acted on —
-# the same defect FR-040 names for `upstream_stale`.
+# the same defect FR-040 names for `upstream_stale`. The subject space is exactly
+# `check:<n>` (a zero-surface section), because that is the only deferral this gate can
+# VERIFY, and an entry it cannot verify would be a falsifiable claim wearing a date.
+# Deferrals whose consumer lives elsewhere — an API-repo header contract (T064), an
+# owner-run publish or migration (T124, T125) — are NOT expressible here and must not be
+# smuggled in: they get a standing notice instead (the `upstream_stale` treatment), and
+# each repository that needs the mechanism carries its own `contracts/pending.yaml`
+# enforced by its own gate. Stated in contracts/pending.yaml; see the 2026-09-21 audit.
 for _subj in sorted(set(PENDING) - _PENDING_CONSULTED):
     err(f"pending: {PENDING[_subj]['id']} declares subject {_subj!r}, which nothing "
-        f"consults — a deferral no check reads cannot expire usefully (FR-054)")
+        f"consults — a deferral no check reads cannot expire usefully (FR-054). "
+        f"Supported subject form: `check:<number>`, matching a section in the surface "
+        f"table (`python3 scripts/check.py --surfaces`). For a deferral this gate cannot "
+        f"verify, use a standing notice — not an entry here.")
 
 if "-v" in sys.argv or "--surfaces" in sys.argv:
     print("surface_measured — what each check actually examined")
     _pend_by_name = {_n: _e for _n, _e in _pending_rows}
-    for _name, _n, _note in _rows:
+    _cond_by_name = {_n: _c for _n, _c in _cond_rows}
+    for _name, _n, _note, _cond in _rows:
         if _n == 0 and _name in _pend_by_name:
             _e = _pend_by_name[_name]
             _tag = (f"PENDING {_e['id']} — no surface yet, owner {_e['owner']}, "
                     f"expires {_e['expires']}")
+        elif _n == 0 and _name in _cond_by_name:
+            _tag = (f"CONDITIONAL — no input at {_cond_by_name[_name]} "
+                    f"(activates when it appears)")
         elif _n == 0:
             _tag = "NO SURFACE REPORTED"
         else:
@@ -1426,6 +1546,15 @@ if "-v" in sys.argv or "--surfaces" in sys.argv:
         print(f"  NOTE   {len(_pending_rows)} section(s) have no surface yet and are "
               f"declared pending (contracts/pending.yaml, FR-054). Each FAILS the gate "
               f"on its expiry date, and each is resolved by its named owner.")
+
+# Conditional sections are reported on EVERY run, not only under --surfaces. A section
+# that is dormant by construction is exactly as invisible as one that forgot to report,
+# so it takes the same treatment the `upstream_stale` field gets (FR-040): a standing
+# notice, so the condition cannot be forgotten. These are notices, not errors — no owner
+# owes them work — but a reader of the gate output learns which checks did not run.
+for _name, _cond in _cond_rows:
+    warn(f"conditional: {_name} — examined nothing because {_cond} does not exist in "
+         f"this repository; it activates when that path appears (FR-006, three states)")
 
 if _vacuous:
     print(f"surface_measured: {len(_vacuous)} of {len(_rows)} section(s) did not "
@@ -1449,8 +1578,15 @@ if notices:
         print(f"  ~ {n}", file=sys.stderr)
     print("", file=sys.stderr)
 if errors:
-    print(f"FAIL — {len(errors)} issue(s) across {checked} file(s):\n", file=sys.stderr)
+    print(f"FAIL — {len(errors)} issue(s) across {checked} file examination(s):\n",
+          file=sys.stderr)
     for e in errors:
         print(f"  ✗ {e}", file=sys.stderr)
     sys.exit(1)
-print(f"OK — {checked} file(s) checked, 0 issues, {len(notices)} notice(s).")
+# "examination(s)", not "file(s)": sections overlap by design — the same SKILL.md is
+# examined by a dozen of them — so this is the SUM of every section's surface, and
+# calling it a file count invited the reading that the kit has this many files. The
+# number that must be non-trivial for SC-009 is the section COUNT below it, and since
+# 2026-09-21 every row in the table is a section that actually examined something.
+print(f"OK — {checked} file examination(s) in {len(_rows)} section(s), 0 issues, "
+      f"{len(notices)} notice(s).")

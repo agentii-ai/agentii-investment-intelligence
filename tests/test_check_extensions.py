@@ -39,10 +39,19 @@ def sandbox(tmp_path):
     section that examines zero files fails the gate (FR-006). Omitting it made the
     sandbox a package with no marketplace manifest — a state the real kit is never
     in — so the fixture was incomplete, not the gate too strict.
+
+    `data-tools` is part of "sufficient" for the same reason, added 2026-09-21 when
+    the 2026-09-21 audit found Check 30b and Check 35 among the blocks that never
+    registered a surface. Both are now counted sections, so in a sandbox without
+    `data-tools/` they would report zero and fail — correctly, because `data-tools/`
+    is TRACKED: its absence is a defect, unlike `packaging/targets/` (gitignored build
+    output) and `theses/INDEX.md` (an uncommitted workspace), which are the two
+    sections that declare themselves conditional instead.
     """
     dst = tmp_path / "pkg"
     # Copy only what check.py touches to keep the fixture fast.
-    for sub in ["scripts", "contracts", "plugins", "managed-agent-cookbooks", ".claude-plugin"]:
+    for sub in ["scripts", "contracts", "plugins", "managed-agent-cookbooks",
+                ".claude-plugin", "data-tools"]:
         src = REPO_ROOT / sub
         if src.exists():
             shutil.copytree(src, dst / sub)
@@ -57,6 +66,44 @@ def test_baseline_green(sandbox):
     """The unmodified sandbox must pass check.py (incl. Check 30)."""
     res = _run_check(sandbox)
     assert res.returncode == 0, f"baseline check.py failed:\n{res.stdout}\n{res.stderr}"
+
+
+def test_a_conditional_section_reports_instead_of_passing_silently(sandbox):
+    """FR-006's third state — dormant by construction must be SAYABLE.
+
+    Two sections have no input in any clean checkout: Check 34 (a committed
+    `theses/INDEX.md`) and T114 (gitignored `packaging/targets/`). Before 2026-09-21
+    they reported no surface at all, which is indistinguishable from a pass. They now
+    carry a standing notice, so a reader of ANY gate run learns which checks did not
+    run — the same treatment `upstream_stale` gets under FR-040.
+    """
+    res = _run_check(sandbox)
+    out = res.stdout + res.stderr
+    assert res.returncode == 0, f"a conditional section failed the gate:\n{out}"
+    assert "conditional:" in out, (
+        "no conditional state was reported. The sandbox has no packaging/targets/ and no "
+        f"theses/INDEX.md, so at least one section is dormant — silently:\n{out}"
+    )
+    assert "activates when that path appears" in out, out
+
+
+def test_a_conditional_declaration_cannot_silence_a_present_input(sandbox):
+    """The state's own guard: it is honoured ONLY while the path is absent.
+
+    An empty `packaging/targets/` is the real-world shape of "someone made the directory
+    and nothing built" — the build check examines 0 files and, before this rule, reported
+    `0 expected, 0 stale-or-missing`, which reads as everything current. A marker that
+    could silence that would be worse than no marker.
+    """
+    (sandbox / "packaging" / "targets").mkdir(parents=True)
+    res = _run_check(sandbox)
+    out = res.stdout + res.stderr
+    assert res.returncode == 1, (
+        f"an empty packaging/targets/ passed the build check and no error was raised:\n{out}"
+    )
+    assert "declared conditional" in out and "EXISTS" in out, (
+        f"the failure did not name the conditional declaration as the cause:\n{out}"
+    )
 
 
 def test_check30_orphan_registry_entry_fails(sandbox):

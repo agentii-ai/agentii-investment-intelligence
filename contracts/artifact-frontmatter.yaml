@@ -1,0 +1,206 @@
+# artifact-frontmatter.yaml — every artifact-frontmatter field a gate reads.
+#
+# spec 058 FR-037 (T014). The rule this file exists to make checkable:
+#
+#   **The artifact contract MUST declare every field a gate reads, and a gate reading
+#   a field the contract does not declare MUST fail the contract check.**
+#
+# Why it is needed: `entity_claims` — read by `build_entity_index` and `g1_gate` — is
+# absent from 128 artifacts of theses 001–003, so every cross-run contradiction check
+# there is vacuous. Nothing reported that, because nothing compared what the gates read
+# against what the contract declared. A gate whose input does not exist reports exactly
+# what a satisfied gate reports.
+#
+# SCOPE. Two frontmatter populations exist in this kit and they are NOT the same
+# contract (spec 058, pass 6): **skill frontmatter** (`name`, `allowed_tools`, `role`,
+# `modes`, …) which `check.py` and `sync_registry.py` read, and **artifact frontmatter**
+# — what a skill's output carries — which the seven gates below read. This file is the
+# second. Mixing them is what produced the FR-090/skill-schema mislabel.
+#
+# Enforced by `scripts/check_gate_fields.py`: it scans `gates:` for frontmatter reads
+# and fails on any field not declared here. Loop-based reads are resolved too — see
+# `pin_tuple` below, because a detector that only understands `fm.get("literal")` would
+# silently miss five fields, which is this specification's defect applied to its own
+# enforcement.
+version: 1
+
+# The scripts whose artifact-frontmatter reads are in scope. Each reads `fm` as the
+# parsed frontmatter of a committed artifact.
+gates:
+  - converge.py
+  - g1_gate.py
+  - reduce_journals.py
+  - synthesize_report.py
+  - thesis_status.py
+  - portfolio_aggregate.py
+  - dispatch.py
+
+# A tuple of field names read in a loop. Declared so the detector resolves
+# `for pin in FIVE_PINS: fm.get(pin)` — without this, five fields would be invisible to
+# it, and an invisible read is an undeclared read the check cannot report.
+pin_tuple:
+  const: FIVE_PINS
+  defined_in: g1_gate.py
+  fields: [assumption_pin, corpus_version, as_of, constitution_pin, skill_pin]
+
+# Every field, with who reads it and HOW. `read_for: presence` means only truthiness is
+# tested (`if not fm.get(f)`), so a wrong or placeholder value is undetectable — which
+# is the distinction FR-002's criterion 6 exists to close.
+fields:
+  - name: as_of
+    read_by: [converge.py, dispatch.py, g1_gate.py, synthesize_report.py]
+    read_for: value
+  - name: assumption_pin
+    read_by: [g1_gate.py]
+    read_for: presence
+    note: >-
+      Read ONLY as one of FIVE_PINS, and only for truthiness. Nothing reads its value.
+      All 206 corpus artifacts carry it, so the check passes universally — see
+      `spec.md` Background §E and the Phase-1 note in `tasks.md` T025.
+  - name: blind_estimate
+    read_by: [g1_gate.py]
+    read_for: value
+  - name: budget
+    read_by: [thesis_status.py]
+    read_for: value
+  - name: capability_timeline
+    read_by: [synthesize_report.py]
+    read_for: value
+  - name: facts_count
+    read_by: [synthesize_report.py]
+    read_for: value
+    note: >-
+      One of four counts read in an inline tuple at `synthesize_report.py:256`
+      (`("facts_count", "deducted_count", "views_count", "citation_count")`). Part of
+      the FR-090 output schema — spec 023's, NOT the pins (see spec 058 pass 6). At
+      **0 of 206** in the corpus, so this gate accumulates zeroes. Found by
+      `check_gate_fields.py` on its first complete run, which is what it is for.
+  - name: deducted_count
+    read_by: [synthesize_report.py]
+    read_for: value
+    note: "FR-090 output schema; 0 of 206 in the corpus (see `facts_count`)."
+  - name: views_count
+    read_by: [synthesize_report.py]
+    read_for: value
+    note: "FR-090 output schema; 0 of 206 in the corpus (see `facts_count`)."
+  - name: citation_count
+    read_by: [synthesize_report.py]
+    read_for: value
+    note: >-
+      FR-090 output schema; 0 of 206 in the corpus. Note this is the *declared* count
+      field — the corpus instead carries 5,228 resolvable `agentii.ai/v/` links
+      inline, so the count is derivable but never written.
+  - name: conclusions
+    read_by: [synthesize_report.py]
+    read_for: value
+  - name: constitution_pin
+    read_by: [g1_gate.py, reduce_journals.py, synthesize_report.py]
+    read_for: value
+  - name: corpus_version
+    read_by: [g1_gate.py]
+    read_for: presence
+    note: >-
+      Same as `assumption_pin`: FIVE_PINS membership and truthiness only. Nothing reads
+      its value, so a stale corpus version is undetectable today.
+  - name: data_class
+    read_by: [g1_gate.py]
+    read_for: value
+  - name: data_quality_flags
+    read_by: [g1_gate.py]
+    read_for: value
+  - name: entity_claims
+    read_by: [converge.py, g1_gate.py, reduce_journals.py, synthesize_report.py, thesis_status.py]
+    read_for: value
+    note: >-
+      The field that motivated this contract. Absent from 128 of 206 artifacts, and the
+      absence made the contradiction index report `contradictions: 0` — a number that
+      was arithmetically forced rather than earned.
+  - name: key_metrics
+    read_by: [synthesize_report.py]
+    read_for: value
+  - name: method_selection
+    read_by: [g1_gate.py]
+    read_for: value
+  - name: mode
+    read_by: [g1_gate.py]
+    read_for: value
+  - name: pillar_verdicts
+    read_by: [synthesize_report.py]
+    read_for: value
+  - name: position_pct
+    read_by: [portfolio_aggregate.py, reduce_journals.py]
+    read_for: value
+  - name: sector
+    read_by: [reduce_journals.py]
+    read_for: value
+  - name: skill_pin
+    read_by: [converge.py, g1_gate.py]
+    read_for: value
+  - name: subscriptions
+    read_by: [thesis_status.py]
+    read_for: value
+  - name: tickers_covered
+    read_by: [synthesize_report.py]
+    read_for: value
+
+# Read paths whose field names this kit CANNOT enumerate, because the workspace supplies
+# them. FR-037 says the contract must declare every field a gate reads; for these, what
+# can honestly be declared is the PATH and its source — an enumeration would be fiction,
+# and a check that pretended to verify it would be this specification's defect.
+#
+# A read matching one of these is reported as declared-dynamic by check_gate_fields.py;
+# a read matching none of them is reported as unresolved and fails. That distinction is
+# the point: `unresolved: 0` must mean "every read was accounted for", never "none found".
+dynamic_reads:
+  - script: g1_gate.py
+    var: field
+    at: "fm.get(field) where field = c.get('field') for c in constitution['constraints']"
+    source: >-
+      the WORKSPACE constitution's `constraints[]` — each constraint names the artifact
+      field it bounds and the max it allows. Kit-side there is no list to declare; the
+      same gate reads different fields in different workspaces.
+    consequence: >-
+      a value bound applies only in workspaces that declare it, and nothing reports the
+      absence — a workspace with no constraints gets no value checking and no notice.
+  - script: converge.py
+    var: pin
+    at: "fm.get(pin) for pin, current in current_pins.items()"
+    source: >-
+      `current_pins`, a parameter of both `_evaluate_stale()` and `run()` — supplied by
+      the caller, and in practice the five pin names.
+    consequence: >-
+      what converge compares against is decided by its caller, so a caller passing an
+      incomplete `current_pins` narrows the staleness check without saying so.
+  - script: dispatch.py
+    var: pin
+    at: "fm.get(pin) for pin, current in current_pins.items()"
+    source: >-
+      same shape as `converge.py`'s — `current_pins` arrives as a parameter. This file
+      reads `pin` under TWO bindings: the generator `any(... for pin in
+      g1_gate.FIVE_PINS)` (resolvable, covered by `pin_tuple`) and this `.items()` loop.
+    consequence: >-
+      that `pin` here is caller-supplied is why the detector reports one binding rather
+      than merging them: a single-binding implementation classified this file's read as
+      resolved and stopped looking.
+  - script: dispatch.py
+    var: p
+    at: "fm.get(p) for p in g1_gate.FIVE_PINS (via any(...))"
+    resolves_to: pin_tuple
+  - script: thesis_status.py
+    var: p
+    at: "{p: fm.get(p) for p in g1_gate.FIVE_PINS}"
+    resolves_to: pin_tuple
+
+# Fields that exist in artifacts but are read by NO gate. Recorded, not declared —
+# §D/FR-040's rule is that a field recording a condition must trigger an action or be
+# removed, and these are the candidates for a workspace migration the owner runs.
+unread:
+  - name: upstream_stale
+    carried_by: 41 artifacts in the SPACX workspace (mandatory and correct in all 41)
+    read_by: >-
+      nothing in this file's `gates` — the only reference anywhere in the kit is
+      `scripts/check.py`, which does not read artifact frontmatter at all
+    status: >-
+      FR-040 / spec 058 T020. Not 058's to remove — the field is declared by the
+      workspace's contract, not this kit's. Either a gate consumes it or the owner
+      runs a migration; see T020 and T124's class of owner-run items.

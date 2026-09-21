@@ -2,12 +2,28 @@
 name: comps
 multi_ticker_semantics: target_with_required_peers
 description: Comparable company analysis, trading comps, peer multiples, EV/EBITDA comparison, P/E benchmarking, comps table, relative valuation, industry multiples, precedent transactions, trading comparable analysis
-# Curated subset inherited from skill-registry.yaml (spec 058 T004, resolving Check 31).
-# Its provenance is unexplained: the kit's only documented derivation — "essentials_modes =
-# their first <=3 modes" (scripts/mode_backfill.py) — would give [preflight, triggers,
-# defaults], which are this file's own document sections, not analysis modes. Declared here
-# so the source of truth stops contradicting the registry. The curation itself is OUTSTANDING
-# and belongs to whoever owns this skill's methodology; this declaration is not a review of it.
+# Curated subset — provenance RECORDED 2026-09-21 (spec 058 T004/T005, FR-051).
+#
+# This value was NOT curated and reviewed. It reached the generated
+# `skill-registry.yaml` first, by a hand-edit of that file on 2026-09-20 (commit
+# `aea28b1`, "test and debug"), which put the repo red on Check 31 — the registry said
+# `[retrieval-scope]` while this file declared no `essentials_modes` at all. Spec 058
+# then reconciled the divergence by declaring the registry's value here, which is the
+# declaration FR-051 asks for (the source of truth is this file; `sync-registry.sh`
+# regenerates the registry from it — `sync_registry.build_entries()` reads
+# `essentials_modes` straight from this frontmatter, so a hand-edit to the registry
+# cannot survive a check).
+#
+# What is still OPEN is the curation itself: nobody has judged whether
+# `retrieval-scope` is the right default for this skill. The kit's only documented
+# derivation, `essentials_modes = first <=3 modes` (scripts/mode_backfill.py), would
+# give `[preflight, triggers, defaults]` — this file's own document sections, not
+# analysis modes — which is why that derivation is not what was applied. Note the
+# asymmetry a reviewer should start from: `reverse-dcf` declares the SAME five modes
+# (`preflight, triggers, defaults, methodology, retrieval-scope`) and defaulted to
+# `[methodology]`, which is what `depth_to_modes`'s own fallback prefers where it
+# exists. Two skills, identical declared sets, different answers, no recorded reason.
+# Owner: whoever owns this skill's methodology.
 essentials_modes: [retrieval-scope]
 temporal_scope:
  default_quarters: 4

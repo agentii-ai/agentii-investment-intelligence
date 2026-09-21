@@ -2,12 +2,25 @@
 name: reverse-dcf
 multi_ticker_semantics: target_with_optional_peers
 description: Reverse DCF valuation, implied growth rate, market expectations analysis, reverse discounted cash flow, implied valuation assumptions, market-implied projections, DCF sanity check
-# Curated subset inherited from skill-registry.yaml (spec 058 T005, resolving Check 31).
-# Its provenance is unexplained: the kit's only documented derivation — "essentials_modes =
-# their first <=3 modes" (scripts/mode_backfill.py) — would give [preflight, triggers,
-# defaults], which are this file's own document sections, not analysis modes. Declared here
-# so the source of truth stops contradicting the registry. The curation itself is OUTSTANDING
-# and belongs to whoever owns this skill's methodology; this declaration is not a review of it.
+# Curated subset — provenance RECORDED 2026-09-21 (spec 058 T004/T005, FR-051).
+#
+# This value was NOT curated and reviewed. It reached the generated
+# `skill-registry.yaml` first, by a hand-edit of that file on 2026-09-20 (commit
+# `aea28b1`, "test and debug"), which put the repo red on Check 31 — the registry said
+# `[methodology]` while this file declared no `essentials_modes` at all. Spec 058 then
+# reconciled the divergence by declaring the registry's value here, which is the
+# declaration FR-051 asks for (the source of truth is this file; `sync-registry.sh`
+# regenerates the registry from it — `sync_registry.build_entries()` reads
+# `essentials_modes` straight from this frontmatter, so a hand-edit to the registry
+# cannot survive a check).
+#
+# What is still OPEN is the curation itself: nobody has judged whether `methodology` is
+# the right default for this skill. It is at least the value `depth_to_modes`'s own
+# fallback would pick ("prefer `methodology`, the derivation path, where it exists"),
+# which `comps` — same five declared modes — does not follow, having defaulted to
+# `retrieval-scope`. The asymmetry is recorded in both files rather than resolved here:
+# choosing between them is a methodology decision, not a gate's. Owner: whoever owns
+# this skill's methodology.
 essentials_modes: [methodology]
 temporal_scope:
  default_quarters: 4

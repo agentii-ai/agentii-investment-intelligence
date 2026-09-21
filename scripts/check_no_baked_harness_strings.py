@@ -70,8 +70,14 @@ def _sources() -> dict[str, Path]:
     return out
 
 
-def check_a(verbs: set[str]) -> list[str]:
-    """No harness-specific command invocation in the core tree."""
+def check_a(verbs: set[str]) -> tuple[list[str], int]:
+    """No harness-specific command invocation in the core tree.
+
+    Returns `(problems, files_scanned)`. The count has always been computed and
+    printed; it is RETURNED as of 2026-09-21 (spec 058's surface audit) so the
+    delegating block in `check.py` can register the surface it actually has, instead
+    of reporting zero and letting a neighbouring section's count stand in for it.
+    """
     problems: list[str] = []
     scanned = 0
     for p in sorted(KIT.rglob("*")):
@@ -90,7 +96,7 @@ def check_a(verbs: set[str]) -> list[str]:
                 if m.group(1) in verbs:
                     problems.append(f"{rel}:{i} baked command invocation {m.group(0)!r}")
     print(f"  A. baked harness strings — {scanned} files scanned, {len(problems)} findings")
-    return problems
+    return problems, scanned
 
 
 def check_b(sources: dict[str, Path]) -> tuple[list[str], dict[str, int]]:
@@ -125,7 +131,7 @@ def check_b(sources: dict[str, Path]) -> tuple[list[str], dict[str, int]]:
         # incomplete — because that means someone built it and it drifted.
         print(f"  B. build output — NOT BUILT (`{TARGETS.name}/` absent; gitignored "
               f"build output). Run `python3 packaging/export.py` to verify it.")
-        return [], {"__not_built__": 0}
+        return [], {"total_files": 0, "stale_or_missing": 0}
     for harness in sorted(d.name for d in TARGETS.iterdir() if d.is_dir()):
         stat = per.setdefault(harness, {"ok": 0, "stale": 0, "missing": 0})
         for skill, src in sorted(sources.items()):
@@ -148,7 +154,8 @@ def check_b(sources: dict[str, Path]) -> tuple[list[str], dict[str, int]]:
         print(f"       {h:<14} ok {v['ok']:>3}  stale {v['stale']:>3}  missing {v['missing']:>3}")
     print("       (packaging/targets/ is gitignored build output — fix with"
           " `python3 packaging/export.py`)")
-    return problems, {h: v["stale"] + v["missing"] for h, v in per.items()}
+    return problems, {"total_files": tot, "stale_or_missing": tot_bad,
+                      **{h: v["stale"] + v["missing"] for h, v in per.items()}}
 
 
 def main() -> int:
@@ -163,7 +170,7 @@ def main() -> int:
         return 2
     print(f"Q34 — harness independence (spec 046)\n  command verbs: {sorted(verbs)}\n")
 
-    pa = check_a(verbs)
+    pa, _scanned = check_a(verbs)
     pb, _ = check_b(sources)
     problems = pa + pb
 

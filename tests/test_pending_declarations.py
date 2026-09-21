@@ -96,6 +96,29 @@ def test_an_unparseable_expiry_fails(tmp_path):
     assert "is not an ISO date" in out, f"a non-ISO expiry did not fail:\n{out}"
 
 
+def test_the_subject_space_is_check_numbers_and_the_message_says_so(tmp_path):
+    """FR-054 / the 2026-09-21 audit — the vocabulary is pinned, not implied.
+
+    The audit's finding was that this mechanism can hold exactly one kind of deferral:
+    a zero-surface section, which is the only one the gate can verify. A reader who
+    reaches this error is holding an entry it cannot express — a task id, a requirement
+    id, an owner-run migration — and the failure has to tell them the supported form and
+    the alternative, or the next entry adds an unsupported subject and the error reads as
+    a bug in the gate rather than a rule of the mechanism.
+    """
+    root = _sandbox(tmp_path)
+    _edit(root, "subject: check:8", "subject: task:T125")
+    out = _run(root)
+    assert "nothing " in out and "consults" in out, (
+        f"an unsupported subject was accepted:\n{out}")
+    assert "check:<number>" in out, (
+        f"the failure does not name the supported subject form — a reader cannot fix it "
+        f"without reading check.py:\n{out}")
+    assert "standing notice" in out, (
+        f"the failure does not name the alternative for a deferral this gate cannot "
+        f"verify, so the next reader will widen the mechanism instead:\n{out}")
+
+
 def test_a_subject_nothing_consults_fails(tmp_path):
     """A declaration no check reads cannot expire usefully — FR-040's defect.
 

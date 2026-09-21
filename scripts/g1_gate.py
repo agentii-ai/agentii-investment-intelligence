@@ -37,9 +37,16 @@ def parse_frontmatter(text: str) -> dict:
     block rather than at byte 0, and the report was indistinguishable from a thesis
     that genuinely declared nothing.
 
-    The return type is kept (`{}`) because twelve call sites test it with `if not fm`
-    to mean "no frontmatter" — widening it would change those silently. Use
-    `has_frontmatter` to disambiguate, or `describe_frontmatter_problems` to report."""
+    The return type is kept (`{}`) because call sites test it for falsiness (`if not fm`)
+    to mean "no frontmatter" — widening it would change those silently. Measured
+    2026-09-21: **8** such tests across `scripts/` (`grep -rn "if not fm" scripts/`).
+    Use `has_frontmatter` to disambiguate, or `describe_frontmatter_problems` to report.
+
+    The count is given as a figure-with-a-date rather than as a fact, because the two
+    docstrings in this file disagreed about it (twelve here, thirteen below) and a
+    number nobody re-measures is how that happens. `journal_frontmatter` moved to the
+    strict parser during this audit, which is why the figure is 8 and not the 9 a
+    reader could have derived from the previous revision."""
     if not text.startswith("---"):
         return {}
     try:
@@ -57,6 +64,40 @@ def has_frontmatter(text: str) -> bool:
     return text.startswith("---")
 
 
+class FrontmatterError(ValueError):
+    """The block starts with `---` and does not parse.
+
+    Distinct from `{}`, which means "no block, or an empty one". FR-038: a parse failure
+    MUST NOT present as a set of missing fields."""
+
+
+def parse_frontmatter_strict(text: str) -> dict:
+    """`parse_frontmatter`, but a YAML error RAISES instead of returning `{}`.
+
+    `parse_frontmatter` cannot tell "no frontmatter" from "unparseable frontmatter", and
+    the call sites that depend on that `{}` (8 as measured 2026-09-21 — see the note on
+    `parse_frontmatter`) ask a *presence* question and are unaffected. The callers that
+    REPORT problems are not unaffected: a `\\$` where
+    `` `$` `` was meant is an invalid YAML escape, and the observed result was
+    `parsed keys: []` presented as **five missing pins** (spec 058 §D). That sends a
+    reader to add five fields to a document that already carries all five, in a place
+    the parser never looked.
+
+    Use this wherever the answer becomes a message; keep `parse_frontmatter` for
+    truthiness.
+    """
+    if not text.startswith("---"):
+        return {}
+    try:
+        _, fm, _ = text.split("---", 2)
+    except ValueError as e:          # no closing `---`
+        raise FrontmatterError(f"the `---` block is never closed: {e}") from e
+    try:
+        return yaml.safe_load(fm) or {}
+    except yaml.YAMLError as e:
+        raise FrontmatterError(str(e)) from e
+
+
 def describe_frontmatter_problems(text: str, *, where: str = "") -> list[str]:
     """`check_frontmatter`, but a FORMAT failure is reported as one.
 
@@ -68,7 +109,14 @@ def describe_frontmatter_problems(text: str, *, where: str = "") -> list[str]:
         return [f"{where + ': ' if where else ''}no frontmatter — the document does "
                 f"not begin with `---` at byte 0, so EVERY field check is unavailable. "
                 f"This is a FORMAT failure, not missing fields."]
-    return check_frontmatter(parse_frontmatter(text))
+    try:
+        fm = parse_frontmatter_strict(text)
+    except FrontmatterError as e:
+        return [f"{where + ': ' if where else ''}frontmatter does not PARSE — {e}. "
+                f"The block exists and is malformed. This is a FORMAT failure and MUST "
+                f"NOT be reported as missing fields: every check below would name a "
+                f"field absent from a document that may carry it (FR-038)."]
+    return check_frontmatter(fm)
 
 
 def check_frontmatter(fm: dict) -> list[str]:
@@ -85,7 +133,16 @@ def check_frontmatter(fm: dict) -> list[str]:
 
 
 def check_artifact(path: Path) -> list[str]:
-    return check_frontmatter(parse_frontmatter(path.read_text(encoding="utf-8")))
+    """Frontmatter problems for one artifact.
+
+    Routed through `describe_frontmatter_problems` so a FORMAT failure is reported as
+    one. It previously called `check_frontmatter(parse_frontmatter(...))` directly,
+    which turned an unparseable block into "missing pin" five times over — the reported
+    defect of spec 058 §D. The reporter that fixes this existed and had **no callers**;
+    writing it was not the same as wiring it.
+    """
+    return describe_frontmatter_problems(path.read_text(encoding="utf-8"),
+                                         where=path.name)
 
 
 # =============================================================================
@@ -428,8 +485,15 @@ def check_artifact_full(path: Path, *, constitution_path: Path | None = None,
     """The complete G1 rule set. Returns (problems, notices) when with_notices,
     else the problems list (S1 callers' shape preserved)."""
     text = path.read_text(encoding="utf-8")
-    fm = parse_frontmatter(text)
     notices: list[str] = []
+    try:
+        fm = parse_frontmatter_strict(text)
+    except FrontmatterError:
+        # Report the FORMAT failure alone. Continuing would run every field check
+        # against `{}` and name fields that the document may well carry — the defect
+        # this branch exists to prevent (FR-038).
+        problems = describe_frontmatter_problems(text, where=path.name)
+        return (problems, notices) if with_notices else problems
     problems = check_frontmatter(fm)
     problems += _check_corpus_framing(text, fm)
     problems += _check_lookahead(fm)

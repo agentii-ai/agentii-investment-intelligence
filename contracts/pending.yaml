@@ -21,8 +21,30 @@
 #     because a field that records a condition without triggering anything is the
 #     same defect FR-040 names for `upstream_stale`
 #
-# Consumed today by: the zero-surface rule (FR-006/T002) for `check:8`. Add a subject
-# only when something reads it — see the rule above.
+# THE SUBJECT SPACE IS `check:<number>`, AND NOTHING ELSE (2026-09-21 audit)
+#
+# An entry's subject must name a section in `check.py`'s surface table
+# (`python3 scripts/check.py --surfaces`), which is the only deferral this gate can
+# VERIFY: it can see that the section examined nothing and that the entry exists.
+#
+# The narrower question is why nothing else is accepted. A deferral the gate cannot
+# verify would be a claim wearing a date — precisely the shape FR-040 rejects for
+# `upstream_stale` ("a freshness field that every artifact carries and no process reads
+# is not a control; it is a comment"). So deferrals whose consumer is elsewhere are
+# declared elsewhere, and each carries a STANDING NOTICE instead of an expiry:
+#
+#   * T064 — the Sunset/X-API-Deprecated header contract. Its consumer is a test in
+#     `agentii-ai`, so its declaration belongs to that repository, enforced by that
+#     repository's gate. This file is one INSTANCE of the rule, not the rule.
+#   * T124 — the user-local marketplace install. Refreshing it means publishing, which
+#     is outward-facing and the owner's call.
+#   * T125 / FR-040 — `upstream_stale` in the B/ workspaces. An expiry here would fail
+#     THIS gate for a workspace owner's inaction, in a repository that does not contain
+#     the field. It gets the treatment this file's rule prescribes instead: Check 52
+#     reports the field on every run.
+#
+# Consumed today by: the zero-surface rule (FR-006/T002) for `check:8` — the one
+# deferral in this repository that a gate can see and a date can act on.
 version: 1
 pending:
   - id: P1
