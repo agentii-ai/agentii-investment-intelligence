@@ -106,4 +106,3 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 - `read_source_outline`
 - `search_keyword_in_source`
 
-<!-- END port-dimension-prompts methodology + modes -->

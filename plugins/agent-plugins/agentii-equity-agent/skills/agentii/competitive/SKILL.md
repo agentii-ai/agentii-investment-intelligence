@@ -40,27 +40,25 @@ Run the canonical pre-flight sequence — MCP health probe, ticker resolution, w
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
-- analyze dim competitive landscape
-- run dim competitive landscape analysis
-- produce dim competitive landscape report
-- dim competitive landscape breakdown
-- dim competitive landscape deep dive
-- build a dim competitive landscape
-- assess dim competitive landscape
-- quantify dim competitive landscape
-- compare dim competitive landscape across peers
-- review dim competitive landscape for
-- generate dim competitive landscape on
-- dim competitive landscape for investment decision
+- analyze competitive landscape
+- run competitive landscape analysis
+- produce competitive landscape report
+- competitive landscape breakdown
+- competitive landscape deep dive
+- build a competitive landscape
+- assess competitive landscape
+- quantify competitive landscape
+- compare competitive landscape across peers
+- review competitive landscape for
+- generate competitive landscape on
+- competitive landscape for investment decision
 
 ## Defaults
 
 | Parameter | Default | Notes |
 |---|---|---|
-| lookback_years | 3 | Historical data window |
+| lookback_quarters | 4 | Historical data window — matches `temporal_scope.default_quarters` |
 | include_peers | false | Whether to surface a peer comparison block |
-
-<!-- BEGIN port-dimension-prompts methodology + modes -->
 
 ## Methodology
 

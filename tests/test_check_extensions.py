@@ -11,6 +11,7 @@ These run check.py in a copied sandbox so the real tree is never mutated.
 """
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import sys
@@ -156,3 +157,101 @@ def test_license_boundary_allows_permissive_import(sandbox):
     (dt / "ok_source.py").write_text("import yfinance  # Apache-2.0 — fine\n")
     res = _run_check(sandbox)
     assert res.returncode == 0, f"permissive import wrongly failed:\n{res.stdout}\n{res.stderr}"
+
+
+# ── spec 058 Check 53 / T129: the retired port residues stay gone (FR-045) ──
+
+def _a_sandbox_skill(sandbox):
+    return sorted((sandbox / "plugins").glob(
+        "vertical-plugins/*/skills/agentii/*/SKILL.md"))[0]
+
+
+def test_check54_a_skill_declaring_no_section_list_is_reported(sandbox):
+    """T038 / FR-044, FR-048 — 'declares nothing' is a REPORTED state, not an exemption.
+
+    FR-048's own measurement: all 70 analysis skills declare ≥3 numbered elements (floor 5),
+    so there is no exception in the corpus. The fixture creates one — an analysis skill that
+    enumerates nothing — because a check that only ever passes is the defect this
+    specification exists to remove."""
+    sk = _a_sandbox_skill(sandbox)
+    text = sk.read_text()
+    stripped = re.sub(r"(?m)^\s*\d+\.\s+\S.*$", "", text)      # remove every numbered element
+    assert stripped != text, "the fixture removed nothing — the skill has no numbered lines"
+    sk.write_text(stripped)
+    res = _run_check(sandbox)
+    out = res.stdout + res.stderr
+    assert res.returncode == 1, f"a skill declaring nothing passed:\n{out}"
+    assert "declares-nothing" in out, out
+    assert "FR-044" in out, f"the report does not cite the requirement it serves:\n{out}"
+
+
+def test_check54_exempts_by_declared_role_not_by_absence(sandbox):
+    """The distinction that matters: the 10 kit/orchestrator skills have no
+    `## Output Structure` at all, and they must stay outside the population — but because
+    they DECLARE a different role, not because they lack the section. A rule that exempted
+    absence would exempt a broken analysis skill identically.
+
+    The fixture proves the exemption is role-driven: it makes an ANALYSIS skill look like the
+    kit skills (no Output Structure section whatsoever) and the check must still fail it."""
+    sk = _a_sandbox_skill(sandbox)
+    text = sk.read_text()
+    sk.write_text(re.sub(r"(?ms)^## Output Structure\s*\n.*?(?=\n## )", "", text, count=1))
+    res = _run_check(sandbox)
+    out = res.stdout + res.stderr
+    assert res.returncode == 1 and "declares-nothing" in out, (
+        f"an analysis skill with no Output Structure section was silently exempted:\n{out}")
+
+
+def test_check53_the_port_sentinel_fails(sandbox):
+    """T129's negative fixture. The sentinel's producer is RETIRED (2026-06-13, FR-014c)
+    and cannot run — its body is not valid Python — so a skill carrying it carries dead
+    weight, and `T034` removed it from all 14 files.
+
+    The assertion names the sentinel AND the file, because "a check failed" is not a
+    message an implementer can act on."""
+    sk = _a_sandbox_skill(sandbox)
+    sk.write_text(sk.read_text() + "\n<!-- BEGIN port-dimension-prompts methodology + modes -->\n")
+    res = _run_check(sandbox)
+    out = res.stdout + res.stderr
+    assert res.returncode == 1, f"a shipped sentinel passed the gate:\n{out}"
+    assert "ported-sentinel" in out and "port-dimension-prompts" in out, out
+    assert sk.name in out and sk.parent.name in out, f"the failure did not name the file:\n{out}"
+
+
+def test_check53_the_dim_token_fails(sandbox):
+    """The other residue: the literal `dim` placeholder in a Triggers bullet, where a
+    dimension name belongs. 84 of these were removed across the seven."""
+    sk = _a_sandbox_skill(sandbox)
+    sk.write_text(sk.read_text().replace(
+        "\n## Defaults", "\n## Triggers\n\n- analyze dim competitive landscape\n\n## Defaults", 1))
+    res = _run_check(sandbox)
+    out = res.stdout + res.stderr
+    assert res.returncode == 1, f"a `dim` placeholder passed the gate:\n{out}"
+    assert "placeholder-token" in out and "'- analyze dim'" in out, out
+
+
+def test_check53_does_not_fire_on_the_legitimate_placeholder_forms(sandbox):
+    """The false-positive guard, and the reason the rule is narrow: `{ticker}`-style
+    placeholders are CORRECT in a SKILL.md — it is an instruction, which is why
+    `validate-citations.py` accepts them — so a general "unsubstituted variable" rule would
+    fail most of the kit.
+
+    The evidence is the kit itself, which needs no fixture: the shipped skills use those
+    forms throughout, and the gate must stay green over them. The first version of this
+    test planted a SECOND `## Triggers` block in the sandbox and failed on an unrelated
+    rule (a Triggers block needs ≥10 items) — the fixture broke the file, not the check.
+    Asserting on the real tree is both simpler and stronger, and the non-vacuity assertion
+    below is what stops it passing because nothing was there to flag.
+    """
+    shipped = [f for f in (sandbox / "plugins").glob(
+        "vertical-plugins/*/skills/agentii/*/SKILL.md") if not f.is_symlink()]
+    with_placeholders = [f for f in shipped
+                         if "{ticker}" in f.read_text(encoding="utf-8", errors="ignore")]
+    assert len(with_placeholders) > 20, (
+        f"only {len(with_placeholders)} shipped skill(s) use the legitimate `{{ticker}}` "
+        f"form — if that is now rare, this test proves nothing about false positives")
+
+    res = _run_check(sandbox)
+    out = res.stdout + res.stderr
+    assert "placeholder-token" not in out and "ported-sentinel" not in out, (
+        f"Check 53 flagged the kit's own instruction style:\n{out}")

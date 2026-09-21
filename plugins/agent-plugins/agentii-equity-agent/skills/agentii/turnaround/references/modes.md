@@ -112,4 +112,3 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 - `search_keyword_in_source`
 - `search_xbrl_facts`
 
-<!-- END port-dimension-prompts methodology + modes -->

@@ -38,27 +38,25 @@ Run the canonical pre-flight sequence — MCP health probe, ticker resolution, w
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
-- analyze dim turnaround stagnation
-- run dim turnaround stagnation analysis
-- produce dim turnaround stagnation report
-- dim turnaround stagnation breakdown
-- dim turnaround stagnation deep dive
-- build a dim turnaround stagnation
-- assess dim turnaround stagnation
-- quantify dim turnaround stagnation
-- compare dim turnaround stagnation across peers
-- review dim turnaround stagnation for
-- generate dim turnaround stagnation on
-- dim turnaround stagnation for investment decision
+- analyze turnaround stagnation
+- run turnaround stagnation analysis
+- produce turnaround stagnation report
+- turnaround stagnation breakdown
+- turnaround stagnation deep dive
+- build a turnaround stagnation
+- assess turnaround stagnation
+- quantify turnaround stagnation
+- compare turnaround stagnation across peers
+- review turnaround stagnation for
+- generate turnaround stagnation on
+- turnaround stagnation for investment decision
 
 ## Defaults
 
 | Parameter | Default | Notes |
 |---|---|---|
-| lookback_years | 3 | Historical data window |
+| lookback_quarters | 4 | Historical data window — matches `temporal_scope.default_quarters` |
 | include_peers | false | Whether to surface a peer comparison block |
-
-<!-- BEGIN port-dimension-prompts methodology + modes -->
 
 ## Methodology
 

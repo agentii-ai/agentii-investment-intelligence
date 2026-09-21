@@ -1035,6 +1035,84 @@ except Exception as _e:                       # noqa: BLE001
     err(f"check 52 could not run: {type(_e).__name__}: {_e} — a check that "
         f"cannot execute must say so, not pass (Q105)")
 
+# --- spec 058 Check 53: no port sentinel, no placeholder dimension token (FR-045) ---
+# The seven machine-ported equity-research-core skills carried
+# `<!-- BEGIN port-dimension-prompts methodology + modes -->` in `SKILL.md` and its END twin
+# in `references/modes.md`, plus **12 literal `dim` tokens** in their Triggers blocks, where
+# a dimension name belongs — so the block read `- analyze dim competitive landscape`.
+#
+# Their producer is RETIRED (2026-06-13, FR-014c) and its body is not valid Python — a state
+# `tests/test_write_boundary.py:107–133` already reports — so nothing will ever consume the
+# sentinels again. They are dead weight in shipped skills. Measured 2026-09-21: T034 removed
+# 84 tokens and 14 sentinels from the vertical tree, and T037 propagated that to the bundle.
+#
+# NARROW ON PURPOSE. `{ticker}`-style placeholders are LEGITIMATE in a SKILL.md — the file is
+# an instruction, which is why `validate-citations.py` accepts them — so a general
+# "unsubstituted variable" rule would fire on correct content. This matches exactly two
+# things: the retired sentinel (either form) and the bare `dim` TOKEN at the start of a
+# Triggers bullet. Both are unmistakeable; neither has a legitimate use.
+_mark('Check 53: no port sentinel and no placeholder dimension token (FR-045)')
+_PORT_SENTINEL = "port-dimension-prompts"
+_DIM_TOKEN = re.compile(r"(?m)^\s*[-*]\s+(?:[a-z]+ )*\bdim\b")
+for _sk in SKILL_FILES:
+    checked += 1
+    _t = _sk.read_text()
+    if _PORT_SENTINEL in _t:
+        err(f"ported-sentinel: {rel(_sk)}: carries the retired port sentinel "
+            f"`{_PORT_SENTINEL}` — its producer is retired (FR-014c) and nothing consumes "
+            f"it, so a shipped skill must not carry it (FR-045)")
+    for _m in _DIM_TOKEN.finditer(_t):
+        err(f"placeholder-token: {rel(_sk)}: {_m.group(0).strip()!r} — the literal `dim` "
+            f"token is an unsubstituted placeholder in a Triggers bullet (FR-045)")
+    # The END sentinel travelled with the mode sections into references/modes.md, so the
+    # pair is checked as a pair: scanning SKILL.md alone would certify a clean skill whose
+    # references still carried half of it.
+    _modes = _sk.parent / "references" / "modes.md"
+    if _modes.is_file():
+        checked += 1
+        if _PORT_SENTINEL in _modes.read_text(encoding="utf-8", errors="ignore"):
+            err(f"ported-sentinel: {rel(_modes)}: carries the retired port sentinel — the "
+                f"END half of the pair (FR-045)")
+
+# --- spec 058 Check 54: every analysis skill declares a section list (FR-044, FR-048) ---
+# FR-048: the enforced core applies to every analysis skill that declares it — over the
+# registry's 80 skills that is **70 analysis skills, all of them declaring ≥3 numbered
+# elements in `## Output Structure` (floor 5, maximum 13)**. So there is no exception to
+# tolerate, and a check written to tolerate one would be tolerating something that does not
+# exist. FR-044 is the other half: a skill whose `references/output-structure.md` enumerates
+# no sections MUST NOT be treated as having a declared structure — it declares NOTHING, and
+# that state is reported here rather than passed over.
+#
+# THE EXEMPTION IS BY DECLARED ROLE, never by absence, and it is already made: line 402
+# filters SKILL_FILES with `_meta_role(sk)`, so the 9 kit and 1 orchestrator skills — which
+# have no `## Output Structure` section at all — are outside this population by their own
+# declaration. Exempting them for LACKING the section would exempt a broken analysis skill
+# for exactly the same reason, which is the defect this check exists to remove.
+#
+# Self-test in the shape of MIN_EXPECTED_SKILLS: if the role filter broke, the population
+# would collapse and this check would report clean while examining nothing.
+_mark('Check 54: every analysis skill declares a section list (FR-044, FR-048)')
+NUM_MIN_ELEMENTS = 3
+MIN_EXPECTED_ANALYSIS = 60          # measured 2026-09-21: 70 analysis + 9 bundle copies
+_OUT_BLOCK = re.compile(r"(?m)^## Output Structure\s*\n(.*?)(?=\n## |\Z)", re.DOTALL)
+_NUMBERED_ELEMENT = re.compile(r"(?m)^\s*\d+\.\s+\S")
+if len(SKILL_FILES) < MIN_EXPECTED_ANALYSIS:
+    err(f"check-config: SKILL_FILES holds {len(SKILL_FILES)} file(s) (expected >= "
+        f"{MIN_EXPECTED_ANALYSIS}) — Check 54 would be a no-op")
+for _sk in SKILL_FILES:
+    checked += 1
+    _blk = _OUT_BLOCK.search(_sk.read_text())
+    _n = len(_NUMBERED_ELEMENT.findall(_blk.group(1))) if _blk else 0
+    if _n == 0:
+        err(f"declares-nothing: {rel(_sk)}: `## Output Structure` enumerates no elements. "
+            f"This is the 'the skill declares nothing and cannot be held to it' state "
+            f"FR-044 says must be REPORTED rather than silently exempted — the skill needs "
+            f"its section list, or an explicit record that it has none (FR-044, FR-048)")
+    elif _n < NUM_MIN_ELEMENTS:
+        err(f"declares-too-little: {rel(_sk)}: {_n} element(s) in `## Output Structure`; "
+            f"the enforced floor is {NUM_MIN_ELEMENTS} and the measured corpus floor is 5 "
+            f"(FR-048)")
+
 # --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---
 
 _mark('Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23)')

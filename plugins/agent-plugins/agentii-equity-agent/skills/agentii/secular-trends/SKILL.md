@@ -36,27 +36,25 @@ Run the canonical pre-flight sequence — MCP health probe, ticker resolution, w
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
-- analyze dim secular tech trends
-- run dim secular tech trends analysis
-- produce dim secular tech trends report
-- dim secular tech trends breakdown
-- dim secular tech trends deep dive
-- build a dim secular tech trends
-- assess dim secular tech trends
-- quantify dim secular tech trends
-- compare dim secular tech trends across peers
-- review dim secular tech trends for
-- generate dim secular tech trends on
-- dim secular tech trends for investment decision
+- analyze secular tech trends
+- run secular tech trends analysis
+- produce secular tech trends report
+- secular tech trends breakdown
+- secular tech trends deep dive
+- build a secular tech trends
+- assess secular tech trends
+- quantify secular tech trends
+- compare secular tech trends across peers
+- review secular tech trends for
+- generate secular tech trends on
+- secular tech trends for investment decision
 
 ## Defaults
 
 | Parameter | Default | Notes |
 |---|---|---|
-| lookback_years | 3 | Historical data window |
+| lookback_quarters | 4 | Historical data window — matches `temporal_scope.default_quarters` |
 | include_peers | false | Whether to surface a peer comparison block |
-
-<!-- BEGIN port-dimension-prompts methodology + modes -->
 
 ## Methodology
 

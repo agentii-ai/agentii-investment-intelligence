@@ -35,27 +35,25 @@ Run the canonical pre-flight sequence — MCP health probe, ticker resolution, w
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
-- analyze dim valuation methods
-- run dim valuation methods analysis
-- produce dim valuation methods report
-- dim valuation methods breakdown
-- dim valuation methods deep dive
-- build a dim valuation methods
-- assess dim valuation methods
-- quantify dim valuation methods
-- compare dim valuation methods across peers
-- review dim valuation methods for
-- generate dim valuation methods on
-- dim valuation methods for investment decision
+- analyze valuation methods
+- run valuation methods analysis
+- produce valuation methods report
+- valuation methods breakdown
+- valuation methods deep dive
+- build a valuation methods
+- assess valuation methods
+- quantify valuation methods
+- compare valuation methods across peers
+- review valuation methods for
+- generate valuation methods on
+- valuation methods for investment decision
 
 ## Defaults
 
 | Parameter | Default | Notes |
 |---|---|---|
-| lookback_years | 3 | Historical data window |
+| lookback_quarters | 4 | Historical data window — matches `temporal_scope.default_quarters` |
 | include_peers | false | Whether to surface a peer comparison block |
-
-<!-- BEGIN port-dimension-prompts methodology + modes -->
 
 ## Methodology
 

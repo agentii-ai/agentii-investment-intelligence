@@ -36,27 +36,25 @@ Run the canonical pre-flight sequence — MCP health probe, ticker resolution, w
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
-- analyze dim growth strategy
-- run dim growth strategy analysis
-- produce dim growth strategy report
-- dim growth strategy breakdown
-- dim growth strategy deep dive
-- build a dim growth strategy
-- assess dim growth strategy
-- quantify dim growth strategy
-- compare dim growth strategy across peers
-- review dim growth strategy for
-- generate dim growth strategy on
-- dim growth strategy for investment decision
+- analyze growth strategy
+- run growth strategy analysis
+- produce growth strategy report
+- growth strategy breakdown
+- growth strategy deep dive
+- build a growth strategy
+- assess growth strategy
+- quantify growth strategy
+- compare growth strategy across peers
+- review growth strategy for
+- generate growth strategy on
+- growth strategy for investment decision
 
 ## Defaults
 
 | Parameter | Default | Notes |
 |---|---|---|
-| lookback_years | 3 | Historical data window |
+| lookback_quarters | 4 | Historical data window — matches `temporal_scope.default_quarters` |
 | include_peers | false | Whether to surface a peer comparison block |
-
-<!-- BEGIN port-dimension-prompts methodology + modes -->
 
 ## Methodology
 

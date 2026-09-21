@@ -2,6 +2,16 @@
 
 Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a compact summary under `## Output Structure`.
 
+**Sections** (this skill's own declared elements; each maps to the modes in
+`references/modes.md`, which carry the per-mode focus and tool list):
+
+1. **Executive Summary** (≤200 words) — headline conclusions for this dimension
+2. **Analyst Valuation Methods Comparison** (mode: analyst-valuation-methods-comparison)
+3. **Comprehensive Valuation Summary Analysis** (mode: comprehensive-valuation-summary-analysis)
+4. **Valuation Assumptions Extraction** (mode: valuation-assumptions-extraction)
+5. **Coverage Gaps & Citations** — data not retrievable + citation index in `{ticker} {citation_id} page<N>` format
+
+
 The final deliverable MUST be written as a markdown file to the workspace using the convention :
 
 ```

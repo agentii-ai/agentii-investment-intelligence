@@ -35,27 +35,25 @@ Run the canonical pre-flight sequence — MCP health probe, ticker resolution, w
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
 ## Triggers
 
-- analyze dim risk analysis
-- run dim risk analysis analysis
-- produce dim risk analysis report
-- dim risk analysis breakdown
-- dim risk analysis deep dive
-- build a dim risk analysis
-- assess dim risk analysis
-- quantify dim risk analysis
-- compare dim risk analysis across peers
-- review dim risk analysis for
-- generate dim risk analysis on
-- dim risk analysis for investment decision
+- analyze risk analysis
+- run risk analysis analysis
+- produce risk analysis report
+- risk analysis breakdown
+- risk analysis deep dive
+- build a risk analysis
+- assess risk analysis
+- quantify risk analysis
+- compare risk analysis across peers
+- review risk analysis for
+- generate risk analysis on
+- risk analysis for investment decision
 
 ## Defaults
 
 | Parameter | Default | Notes |
 |---|---|---|
-| lookback_years | 3 | Historical data window |
+| lookback_quarters | 4 | Historical data window — matches `temporal_scope.default_quarters` |
 | include_peers | false | Whether to surface a peer comparison block |
-
-<!-- BEGIN port-dimension-prompts methodology + modes -->
 
 ## Methodology
 

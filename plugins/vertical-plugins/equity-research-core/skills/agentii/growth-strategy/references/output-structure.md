@@ -2,6 +2,18 @@
 
 Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a compact summary under `## Output Structure`.
 
+**Sections** (this skill's own declared elements; each maps to the modes in
+`references/modes.md`, which carry the per-mode focus and tool list):
+
+1. **Executive Summary** (≤200 words) — headline conclusions for this dimension
+2. **Growth Strategy Assessment** (mode: growth-strategy-assessment)
+3. **Organic Growth Drivers Analysis** (mode: organic-growth-drivers-analysis)
+4. **Organic Growth Driver Execution Assessment** (mode: organic-growth-driver-execution-assessment)
+5. **Inorganic Growth Drivers Analysis** (mode: inorganic-growth-drivers-analysis)
+6. **Inorganic Growth Driver Execution Assessment** (mode: inorganic-growth-driver-execution-assessment)
+7. **Coverage Gaps & Citations** — data not retrievable + citation index in `{ticker} {citation_id} page<N>` format
+
+
 The final deliverable MUST be written as a markdown file to the workspace using the convention :
 
 ```

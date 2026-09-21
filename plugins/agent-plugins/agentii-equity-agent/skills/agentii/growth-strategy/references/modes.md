@@ -314,4 +314,3 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 - {Highlight exceptional execution or significant challenges}
 - {Assess management's overall M&A and integration capabilities}
 
-<!-- END port-dimension-prompts methodology + modes -->
