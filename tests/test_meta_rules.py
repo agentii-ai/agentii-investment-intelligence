@@ -910,3 +910,54 @@ def test_check_58_the_hollow_test_detector_actually_fires():
         "detector produced a false positive on a legitimate test body: "
         f"{_hollow_test_functions(real)}"
     )
+
+
+# ── spec 058 T045 — a strict xfail is a promise, and the register is enforced ──
+
+# The ceiling, declared rather than implied: a strict xfail can only be added by raising
+# this number, which makes the growth a deliberate act instead of a drift. Measured
+# 2026-09-21: 9 pre-existing (D1, D2, D-capability, D5, D4, D4b, D-contract, D8, D8b) plus
+# 3 found by spec 058 T043 (two live CI failures and one vacuous scan).
+STRICT_XFAIL_CEILING = 12
+
+
+def _strict_xfails() -> list[tuple[str, int, str]]:
+    """`(file, line, reason)` for every `xfail(strict=True)` in the suite."""
+    out = []
+    for f in sorted((KIT / "tests").rglob("test_*.py")):
+        text = f.read_text(encoding="utf-8")
+        for m in re.finditer(r"mark\.xfail\((?P<body>.*?)\)\s*\n\s*def\s", text, re.S):
+            body = m.group("body")
+            if "strict=True" not in body:
+                continue
+            r = re.search(r"reason=\(?\s*(?P<q>[\"'])(?P<text>.*?)(?P=q)", body, re.S)
+            out.append((str(f.relative_to(KIT)), text[:m.start()].count("\n") + 1,
+                        (r.group("text") if r else "").strip()))
+    return out
+
+
+def test_every_strict_xfail_carries_a_recorded_rationale():
+    """FR-005. `strict=True` already fails the suite the moment a defect is FIXED — pytest
+    does that unaided. What it cannot notice is an xfail that sits forever, so the tractable
+    half is the one asserted here: each one must say what it is waiting for.
+
+    The shape checked is `label: explanation` (every one of the 12 does), because a reason
+    that merely restates the test name tells a reader nothing about the defect.
+    """
+    bad = [(f, ln, r) for f, ln, r in _strict_xfails()
+           if len(r) < 40 or ":" not in r]
+    assert not bad, (
+        "strict xfail(s) without a rationale naming the defect — an xfail nobody can act on "
+        "is the same as a test that was deleted:\n  "
+        + "\n  ".join(f"{f}:{ln}: {r[:80]!r}" for f, ln, r in bad))
+
+
+def test_the_strict_xfail_count_is_capped_and_visible():
+    """T045's forcing function. A register that can grow silently is not a register: adding
+    one requires raising the ceiling, which means someone decides it is justified.
+    """
+    xs = _strict_xfails()
+    assert len(xs) <= STRICT_XFAIL_CEILING, (
+        f"{len(xs)} strict xfail(s) against a declared ceiling of {STRICT_XFAIL_CEILING}. "
+        f"Fix one, or raise the ceiling deliberately and say why:\n  "
+        + "\n  ".join(f"{f}:{ln}: {r[:60]}…" for f, ln, r in xs))

@@ -1113,6 +1113,28 @@ for _sk in SKILL_FILES:
             f"the enforced floor is {NUM_MIN_ELEMENTS} and the measured corpus floor is 5 "
             f"(FR-048)")
 
+# --- spec 058 Check 55: every script CI runs is exercised by a test (FR-003) ---
+# Delegates, following Check 32/52's precedent: the rule is implemented once, in
+# `scripts/check_script_coverage.py`, runnable standalone and tested.
+#
+# Why it belongs in THIS gate: measured 2026-09-21, seven CI-run scripts were reached by no
+# test — and running them found that **two fail** (34 violations in
+# `validate-multi-ticker-syntax.py`, one in `validate-prose-safety.py`) and a third passes
+# having scanned zero files. `check.py` does not invoke those scripts, so the local gate was
+# green while CI was red, which is this specification's defect class in its purest form.
+_mark('Check 55: every CI-run script is exercised by a test (FR-003)')
+try:
+    import check_script_coverage as _csc
+    _sc_problems, _sc_counts = _csc.check()
+    # The surface is the CI-run scripts examined; a population that collapsed to nothing
+    # would make this check pass without meaning anything (the delegate refuses that too).
+    checked += len(_sc_counts["ci_run"])
+    for _sc_p in _sc_problems:
+        err(_sc_p)
+except Exception as _e:                       # noqa: BLE001
+    err(f"check 55 could not run: {type(_e).__name__}: {_e} — a check that cannot "
+        f"execute must say so, not pass (Q105)")
+
 # --- Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23) ---
 
 _mark('Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23)')
