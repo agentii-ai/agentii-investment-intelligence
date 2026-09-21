@@ -38,6 +38,7 @@ own went stale, which is the whole subject.
 """
 from __future__ import annotations
 
+import ast
 import collections
 import json
 import re
@@ -819,3 +820,93 @@ def test_check_49_the_disclaimer_gate_runs_and_passes():
     # And it must still be REPORTING coverage, not passing by finding nothing.
     assert "placement-table coverage" in res.stdout, res.stdout
     assert "thesis-report.html" in res.stdout
+
+
+# ── spec 058 T007 — a test function must assert something, or be able to raise ──
+
+def _hollow_test_functions(src: str) -> list[str]:
+    """Names of `test_*` functions in `src` that neither assert nor call anything.
+
+    A body of `pass`, a docstring, or comments only is indistinguishable from a
+    passing test when the suite runs — which is the defect spec 058 exists to
+    remove, found in `agentii-ai/tests/` as 34 assertion-free contract cases
+    marked `[x]` complete. This detector is deliberately syntactic: it asks
+    whether the body contains an `Assert` node or any `Call` (a call can raise,
+    which FR-004 accepts as evidence the test executed something).
+    """
+    out: list[str] = []
+    for node in ast.walk(ast.parse(src)):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not node.name.startswith("test_"):
+            continue
+        body = ast.walk(node)
+        if any(isinstance(n, ast.Assert) for n in body):
+            continue
+        if any(isinstance(n, ast.Call) for n in ast.walk(node)):
+            continue
+        out.append(f"line {node.lineno}: {node.name}")
+    return out
+
+
+def test_check_58_no_test_function_is_assertion_and_call_free():
+    """Every `test_*` function in the suite must assert or call something.
+
+    FR-004. Measured 2026-09-21: 0 offenders across 54 test files, so this
+    check passes today — which is why the next test exists.
+    """
+    offenders: dict[str, list[str]] = {}
+    for f in sorted((KIT / "tests").rglob("test_*.py")):
+        bad = _hollow_test_functions(f.read_text(encoding="utf-8"))
+        if bad:
+            offenders[str(f.relative_to(KIT))] = bad
+    assert not offenders, (
+        "test function(s) with no assertion and no call — the suite reports them "
+        "as passing while they verify nothing (FR-004):\n"
+        + "\n".join(f"  {k}\n" + "\n".join(f"    {v}" for v in vs)
+                    for k, vs in offenders.items())
+    )
+
+
+def test_check_58_the_hollow_test_detector_actually_fires():
+    """The detector above must fail on a deliberately hollow case.
+
+    Without this, `test_check_58_no_test_function_is_assertion_and_call_free`
+    passes today for a reason that cannot be distinguished from a broken
+    detector: the suite currently has no offenders, so a detector that returned
+    `[]` unconditionally would look identical. This asserts the three shapes it
+    must catch, and two real shapes it must NOT flag.
+    """
+    hollow = (
+        "def test_docstring_only():\n"
+        "    '''Records the intent; the assertion was never written.'''\n"
+        "\n"
+        "def test_pass_only():\n"
+        "    pass\n"
+        "\n"
+        "def test_ellipsis_only():\n"
+        "    # the check goes here\n"
+        "    ...\n"
+    )
+    found = _hollow_test_functions(hollow)
+    assert len(found) == 3, f"detector missed a hollow case: {found}"
+    assert all(any(n in f for n in ("docstring_only", "pass_only", "ellipsis_only"))
+               for f in found), found
+
+    # And it must NOT flag: a bare assert, a call with no assert, and
+    # `pytest.raises` (a Call) — the three legitimate shapes in this suite.
+    real = (
+        "def test_asserts():\n"
+        "    assert 1 == 1\n"
+        "\n"
+        "def test_calls_only():\n"
+        "    subprocess.run(['true'])\n"
+        "\n"
+        "def test_raises():\n"
+        "    with pytest.raises(ValueError):\n"
+        "        int('x')\n"
+    )
+    assert _hollow_test_functions(real) == [], (
+        "detector produced a false positive on a legitimate test body: "
+        f"{_hollow_test_functions(real)}"
+    )

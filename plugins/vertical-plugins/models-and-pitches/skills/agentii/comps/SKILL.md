@@ -2,6 +2,13 @@
 name: comps
 multi_ticker_semantics: target_with_required_peers
 description: Comparable company analysis, trading comps, peer multiples, EV/EBITDA comparison, P/E benchmarking, comps table, relative valuation, industry multiples, precedent transactions, trading comparable analysis
+# Curated subset inherited from skill-registry.yaml (spec 058 T004, resolving Check 31).
+# Its provenance is unexplained: the kit's only documented derivation — "essentials_modes =
+# their first <=3 modes" (scripts/mode_backfill.py) — would give [preflight, triggers,
+# defaults], which are this file's own document sections, not analysis modes. Declared here
+# so the source of truth stops contradicting the registry. The curation itself is OUTSTANDING
+# and belongs to whoever owns this skill's methodology; this declaration is not a review of it.
+essentials_modes: [retrieval-scope]
 temporal_scope:
  default_quarters: 4
  max_quarters: 12

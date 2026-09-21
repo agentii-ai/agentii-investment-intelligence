@@ -32,10 +32,17 @@ def _run_check(root: Path) -> subprocess.CompletedProcess:
 
 @pytest.fixture
 def sandbox(tmp_path):
-    """A minimal copy of the package sufficient to run check.py."""
+    """A minimal copy of the package sufficient to run check.py.
+
+    `.claude-plugin` is part of "sufficient": section 7 ("marketplace source paths
+    resolve") reads `.claude-plugin/marketplace.json`, and since spec 058 T002 a
+    section that examines zero files fails the gate (FR-006). Omitting it made the
+    sandbox a package with no marketplace manifest — a state the real kit is never
+    in — so the fixture was incomplete, not the gate too strict.
+    """
     dst = tmp_path / "pkg"
     # Copy only what check.py touches to keep the fixture fast.
-    for sub in ["scripts", "contracts", "plugins", "managed-agent-cookbooks"]:
+    for sub in ["scripts", "contracts", "plugins", "managed-agent-cookbooks", ".claude-plugin"]:
         src = REPO_ROOT / sub
         if src.exists():
             shutil.copytree(src, dst / sub)

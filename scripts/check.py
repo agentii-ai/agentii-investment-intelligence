@@ -48,6 +48,7 @@ agentic-search mechanisms FR-056, FR-058, FR-060, FR-064):
 
 Exit 0 if clean, 1 otherwise. Requires: pyyaml, jsonschema.
 """
+import datetime
 import json
 import re
 import sys
@@ -72,34 +73,36 @@ checked = 0
 #
 # `checked` is GLOBAL. A check that examines nothing adds nothing to it and
 # reports no errors — which reads exactly like a clean result. That is Q105's
-# defect (`VACUOUS`) at the level of the gate runner itself, and this file has
-# three of its own instances:
+# defect (`VACUOUS`) at the level of the gate runner itself.
 #
-#   * Check 32 scans `plugins/vertical-plugins/scenarios/**/*` and uses the
-#     LITERAL `"/agentii." in text` form that spec 046's corrected Q34 rule 3
-#     calls unimplementable. It reported 0 findings over 48 files — because the
-#     four files containing `agentii.ai` spell it `mcp.agentii.ai` /
-#     `www.agentii.ai`, which have no preceding `/`. **It does not fire by
-#     luck.** The first `https://agentii.ai/v/...` citation added under
-#     `scenarios/` fires it falsely, and the same rule is implemented a second
-#     time in scripts/check_no_baked_harness_strings.py (URL-aware, verb-aware).
-#     Two implementations of one check is what Q12 rule 3 forbids.
-#   * Check 14 is RETIRED and Check 15-17 are RESERVED — three numbers that
-#     occupy the namespace and examine nothing.
+# Each section marks its surface on entry and counts every file it walks, so the
+# delta between consecutive marks is that section's examined count.
 #
-# So each section declares the size of what it examined.
+# WHAT A ZERO MEANS, corrected 2026-09-21 (spec 058 T001/T002, FR-006): every
+# section now counts, so a zero delta means the section genuinely walked an empty
+# tree — not "forgot to report". A zero therefore FAILS the gate; it is no longer
+# a warning. Before T001, 13 of 24 sections reported nothing and a zero was
+# ambiguous between the two states. Section 4 ("reference resolution") is the
+# case that motivated the correction: it read every managed-agent yml and counted
+# none of them, reporting 0 while examining plenty.
 #
-# WHAT A ZERO MEANS HERE, stated precisely because the first version of this
-# comment got it wrong: `checked` is incremented only by sections that count
-# their files. A section reporting 0 therefore means **it did not report its
-# surface** — NOT necessarily that it examined nothing. Verified: section 4
-# ("reference resolution") reads every managed-agent yml and counts none of
-# them, so it reports 0 while examining plenty. The two states are
-# indistinguishable from `checked` alone, and the honest label is the one this
-# prints: NO SURFACE REPORTED.
+# HISTORY — kept, because the stale version of this comment caused a real
+# misdiagnosis. Check 32 previously carried its OWN copy of spec 046 Q34's rule
+# in the literal `"/agentii." in text` form, which the corrected rule 3 calls
+# unimplementable. It reported 0 findings over 48 files and **did not fire by
+# luck**: the first `https://agentii.ai/v/...` citation added under `scenarios/`
+# would have fired it falsely, and the same rule was implemented a second time in
+# scripts/check_no_baked_harness_strings.py (URL-aware, verb-aware). **That was
+# repaired on 2026-09-18** — the second copy is deleted and Check 32 delegates to
+# that module, which reports its own surface (4,842 files scanned). Spec 058's
+# Background §A read the old wording of this comment and recorded the *fixed*
+# defect as open; the comment was the cause, which is why it is corrected here
+# rather than deleted.
 #
-# Which is still exactly T128's requirement — "report the size and shape of the
-# surface examined" — and 13 of 22 sections do not.
+# Check numbers 14–17 are RECLAIMED (2026-09-21, spec 058 T003 / FR-007): 14 was
+# retired and 15–17 reserved, so all four occupied the namespace while examining
+# nothing. They are free for reuse and are no longer named in the surface table —
+# the inventory is now exactly the sections that examine something.
 SURFACES: list[tuple[str, int, str]] = []
 
 
@@ -126,6 +129,64 @@ def rel(p: Path) -> str:
         return str(p)
 
 
+
+# ── spec 058 T011 / FR-054: declared deferrals ──────────────────────────────
+#
+# Two states read identically from `checked` alone, and FR-006 only names one of them:
+#
+#   * a section that is BROKEN or unwired — it examines nothing because nothing is
+#     wired to it. This MUST fail, and it does.
+#   * a section whose INPUT does not exist yet — it examines nothing because there is
+#     nothing to examine. Failing is wrong (the section is correct; its subject is
+#     absent) and reporting clean is wrong (a vacuous section must never read as
+#     productive). This file's business.
+#
+# `contracts/pending.yaml` is the third answer for the second state: a named owner, a
+# reason, and a date after which the gate fails. See that file for the rules.
+PENDING: dict[str, dict] = {}
+_PENDING_CONSULTED: set[str] = set()
+_PENDING_REQUIRED = ("id", "subject", "what", "owner", "expires", "reason")
+_PENDING_FILE = CONTRACTS / "pending.yaml"
+if _PENDING_FILE.is_file():
+    try:
+        _pdoc = yaml.safe_load(_PENDING_FILE.read_text()) or {}
+    except yaml.YAMLError as _e:
+        err(f"pending: {rel(_PENDING_FILE)}: {_e}")
+        _pdoc = {}
+    for _pe in _pdoc.get("pending") or []:
+        _pmissing = [k for k in _PENDING_REQUIRED if not _pe.get(k)]
+        if _pmissing:
+            err(f"pending: entry {_pe.get('id', '?')!r}: missing "
+                f"{', '.join(_pmissing)} — a deferral with no owner and no expiry is "
+                f"how a temporary state becomes permanent (FR-054)")
+            continue
+        try:
+            _pexp = datetime.date.fromisoformat(str(_pe["expires"]))
+        except ValueError:
+            err(f"pending: {_pe['id']}: expires={_pe['expires']!r} is not an ISO date "
+                f"(FR-054)")
+            continue
+        if _pexp < datetime.date.today():
+            err(f"pending: {_pe['id']} ({_pe['subject']}) EXPIRED {_pe['expires']} — "
+                f"owner: {_pe['owner']}. Resolve it or re-declare with a new date "
+                f"(FR-054).")
+            continue
+        PENDING[_pe["subject"]] = _pe
+
+
+def _pending_covers(name: str) -> dict | None:
+    """The pending declaration covering this section name, if any.
+
+    Subjects are `check:<n>`; section marks are `8. …` or `Check 20: …`, so the match
+    is on the leading number rather than the full string."""
+    for _subj, _e in PENDING.items():
+        _kind, _, _num = _subj.partition(":")
+        if _kind != "check" or not _num.isdigit():
+            continue
+        if re.match(rf"^(Check )?{_num}([.:]|$)", name):
+            _PENDING_CONSULTED.add(_subj)
+            return _e
+    return None
 # --- 1. YAML parse ----------------------------------------------------------
 
 _mark('1. YAML parse')
@@ -216,6 +277,7 @@ def check_refs(yml: Path) -> None:
 
 
 for yml in sorted(MANAGED.rglob("*.yaml")):
+    checked += 1  # 4. reference resolution
     check_refs(yml)
 
 # --- 5. agent-plugin bundled skills match vertical source ------------------
@@ -226,6 +288,7 @@ import filecmp
 # Keyed by skill name under the agentii namespace (skills/agentii/<name>/).
 src_by_name = {p.name: p for p in PLUGINS.glob("vertical-plugins/*/skills/agentii/*") if p.is_dir()}
 for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/agentii/*")):
+    checked += 1  # 5. bundled skills
     if not bundled.is_dir():
         continue
     src = src_by_name.get(bundled.name)
@@ -240,6 +303,7 @@ for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/agentii/*")):
 
 _mark('6. agent.md skill references')
 for md in sorted(PLUGINS.glob("agent-plugins/*/agents/*.md")):
+    checked += 1  # 6. agent.md skill references
     slug = md.parents[1].name
     sk_dir = PLUGINS / "agent-plugins" / slug / "skills" / "agentii"
     bundle = {p.name for p in sk_dir.iterdir() if p.is_dir()} if sk_dir.is_dir() else set()
@@ -256,6 +320,7 @@ _mark('7. marketplace source paths resolve')
 mp = ROOT / ".claude-plugin" / "marketplace.json"
 if mp.is_file():
     for p in json.loads(mp.read_text()).get("plugins", []):
+        checked += 1  # 7. marketplace
         src = (ROOT / p["source"]).resolve()
         if not (src / ".claude-plugin" / "plugin.json").is_file():
             err(f"marketplace: {p['name']} source -> {p['source']} (no plugin.json)")
@@ -270,7 +335,12 @@ for d in sorted(MANAGED.iterdir()):
     if not d.is_dir():
         continue
     if not (d / "agent.yaml").is_file():
-        continue  # cookbook not yet populated; skip required-file check
+        continue  # not yet populated — declared pending (check:8) in contracts/pending.yaml
+    # The surface is the cookbooks VALIDATED, not the directories walked. An earlier
+    # version counted every directory, which made this section report 1 while
+    # validating 0 — a vacuous section reading as productive, which is the defect
+    # FR-006 exists to catch (spec 058 U2, found by the Phase-1 analysis).
+    checked += 1
     for req in ("agent.yaml", "README.md", "steering-examples.json"):
         if not (d / req).is_file():
             err(f"missing: {rel(d)}/{req}")
@@ -448,6 +518,7 @@ else:
 
 _mark('Check 20: temporal_scope frontmatter field (FR-058)')
 for sk in SKILL_FILES:
+    checked += 1  # Check 20
     try:
         _, fm_text, _ = sk.read_text().split("---", 2)
         meta = yaml.safe_load(fm_text) or {}
@@ -571,6 +642,7 @@ if tnm_path.exists():
         pass
 
 for sk in SKILL_FILES:
+    checked += 1  # Check 21
     try:
         _, fm_text, _ = sk.read_text().split("---", 2)
         meta = yaml.safe_load(fm_text) or {}
@@ -627,6 +699,7 @@ for sk in SKILL_FILES:
 
 _mark('Check 22: three-layer protocol presence OR retrieval_scope opt-out (FR-056)')
 for sk in SKILL_FILES:
+    checked += 1  # Check 22
     try:
         _, fm_text, _ = sk.read_text().split("---", 2)
         meta = yaml.safe_load(fm_text) or {}
@@ -662,6 +735,7 @@ METHODOLOGY_SUBS = [
     "Protocol",
 ]
 for sk in SKILL_FILES:
+    checked += 1  # Check 23
     text = sk.read_text()
     if "## Methodology" not in text:
         err(
@@ -682,6 +756,7 @@ _mark('Check 24: models-and-pitches references/ directory (FR-068)')
 MODELS_DIR = PLUGINS / "vertical-plugins" / "models-and-pitches" / "skills" / "agentii"
 REQUIRED_REFS = {"formula-sheet.md", "validation-checklist.md", "institutional-defaults.md"}
 for sk_dir in sorted(MODELS_DIR.iterdir()) if MODELS_DIR.is_dir() else []:
+    checked += 1  # Check 24a
     if not sk_dir.is_dir():
         continue
     if not (sk_dir / "SKILL.md").is_file():
@@ -701,6 +776,7 @@ for sk_dir in sorted(MODELS_DIR.iterdir()) if MODELS_DIR.is_dir() else []:
 
 _mark('Check 24: models-and-pitches Deliverable Chain (FR-066)')
 for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else []:
+    checked += 1  # Check 24b
     text = sk_md.read_text()
     if "## Deliverable Chain" not in text:
         err(f"skill-chain: {rel(sk_md)}: missing '## Deliverable Chain' section (FR-066)")
@@ -721,6 +797,7 @@ for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else [
 
 _mark('Check 25: models-and-pitches Validation Gates (FR-067)')
 for sk_md in sorted(MODELS_DIR.glob("*/SKILL.md")) if MODELS_DIR.is_dir() else []:
+    checked += 1  # Check 25
     text = sk_md.read_text()
     if "## Validation Gates" not in text:
         err(f"skill-gates: {rel(sk_md)}: missing '## Validation Gates' section (FR-067)")
@@ -909,6 +986,7 @@ for _cmd in sorted(_VP.glob("*/commands/*.md")):
 
 _mark('Check 28: Output File gate — every SKILL.md must have ## Output File (FR-014e, Phase 23)')
 for sk in SKILL_FILES:
+    checked += 1  # Check 28
     text = sk.read_text()
     if "## Output File" not in text:
         err(
@@ -1308,21 +1386,46 @@ for _i, (_name, _at, _note) in enumerate(SURFACES):
     _end = SURFACES[_i + 1][1] if _i + 1 < len(SURFACES) else checked
     _rows.append((_name, _end - _at, _note))
 
-_vacuous = [r for r in _rows if r[1] == 0]   # "no surface reported", not "examined nothing"
+_vacuous = []          # zero surface, undeclared → FAILS (FR-006)
+_pending_rows = []     # zero surface, declared pending → reported, and fails at expiry
+for _name, _n, _note in _rows:
+    if _n != 0:
+        continue
+    _cov = _pending_covers(_name)
+    if _cov:
+        _pending_rows.append((_name, _cov))
+    else:
+        _vacuous.append((_name, _n, _note))
+
+# A pending declaration nothing consults is a declaration that cannot be acted on —
+# the same defect FR-040 names for `upstream_stale`.
+for _subj in sorted(set(PENDING) - _PENDING_CONSULTED):
+    err(f"pending: {PENDING[_subj]['id']} declares subject {_subj!r}, which nothing "
+        f"consults — a deferral no check reads cannot expire usefully (FR-054)")
 
 if "-v" in sys.argv or "--surfaces" in sys.argv:
     print("surface_measured — what each check actually examined")
+    _pend_by_name = {_n: _e for _n, _e in _pending_rows}
     for _name, _n, _note in _rows:
-        _tag = "NO SURFACE REPORTED" if _n == 0 else ""
+        if _n == 0 and _name in _pend_by_name:
+            _e = _pend_by_name[_name]
+            _tag = (f"PENDING {_e['id']} — no surface yet, owner {_e['owner']}, "
+                    f"expires {_e['expires']}")
+        elif _n == 0:
+            _tag = "NO SURFACE REPORTED"
+        else:
+            _tag = ""
         print(f"  {_n:>5}  {_name}{'  <- ' + _tag if _tag else ''}"
               + (f"   [{_note}]" if _note else ""))
-    # The numbers no section claims. Check 14 is RETIRED and 15-17 RESERVED;
-    # naming them here keeps the namespace honest.
-    print("  —      Check 14 (RETIRED 2026-06-13), Checks 15–17 (RESERVED): "
-          "occupy a number and examine nothing")
-    print("  NOTE   attribution is by `checked` delta, so a section that does not "
-          "count inflates the NEXT section's number; only the total ("
-          f"{checked}) is exact.")
+    # Checks 14–17 are reclaimed (spec 058 T003 / FR-007) and deliberately NOT
+    # named here: FR-007 says a number that examines nothing must not be counted
+    # as a check, and naming them in the inventory is counting them.
+    print("  NOTE   attribution is by `checked` delta; every section counts its own "
+          f"surface (T001), so each row is that section's examined count. Total: {checked}.")
+    if _pending_rows:
+        print(f"  NOTE   {len(_pending_rows)} section(s) have no surface yet and are "
+              f"declared pending (contracts/pending.yaml, FR-054). Each FAILS the gate "
+              f"on its expiry date, and each is resolved by its named owner.")
 
 if _vacuous:
     print(f"surface_measured: {len(_vacuous)} of {len(_rows)} section(s) did not "
@@ -1331,6 +1434,13 @@ if _vacuous:
           f"the level of the gate runner itself:", file=sys.stderr)
     for _name, _n, _note in _vacuous:
         print(f"  ! {_name}", file=sys.stderr)
+        # FR-006 / T002: a section that examined nothing must FAIL, not warn.
+        # Every section now counts its surface (T001), so a zero delta is no
+        # longer "did not report" — it means the section walked an empty tree.
+        # Either way the gate must not read as clean.
+        err(f"surface: {_name}: examined 0 files. A check that examines nothing "
+            f"returns the same clean result as one that passes — report the "
+            f"surface or remove the check (FR-006).")
     print("", file=sys.stderr)
 
 if notices:

@@ -43,3 +43,10 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# A local skill/command install is a machine-local artifact, not source.
+# The kit's own .claude/ was committed once at 48/80 skills and 20/51 commands
+# and drifted invisibly to every gate (spec 058 T009 / FR-009). Only the install
+# paths are ignored — .claude/settings.json and agents/ stay committable.
+.claude/skills/
+.claude/commands/

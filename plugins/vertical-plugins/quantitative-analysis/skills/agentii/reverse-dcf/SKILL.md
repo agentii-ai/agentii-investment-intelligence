@@ -2,6 +2,13 @@
 name: reverse-dcf
 multi_ticker_semantics: target_with_optional_peers
 description: Reverse DCF valuation, implied growth rate, market expectations analysis, reverse discounted cash flow, implied valuation assumptions, market-implied projections, DCF sanity check
+# Curated subset inherited from skill-registry.yaml (spec 058 T005, resolving Check 31).
+# Its provenance is unexplained: the kit's only documented derivation — "essentials_modes =
+# their first <=3 modes" (scripts/mode_backfill.py) — would give [preflight, triggers,
+# defaults], which are this file's own document sections, not analysis modes. Declared here
+# so the source of truth stops contradicting the registry. The curation itself is OUTSTANDING
+# and belongs to whoever owns this skill's methodology; this declaration is not a review of it.
+essentials_modes: [methodology]
 temporal_scope:
  default_quarters: 4
  max_quarters: 12

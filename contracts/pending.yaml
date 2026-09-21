@@ -1,0 +1,41 @@
+# pending.yaml — work that is deferred, each entry with an owner and an expiry.
+#
+# spec 058 FR-054 (T011). A deferred state has to be DECLARED, because it is otherwise
+# indistinguishable from a satisfied one: an empty directory, an unpopulated table and a
+# surface nobody built all read exactly like a clean result. FR-006 says a check that
+# examined nothing MUST fail — which is right, but it leaves two states conflated:
+#
+#   * a check that is BROKEN or was never wired (must fail), and
+#   * a check whose input does not exist YET (must not read as clean either).
+#
+# This file is the second state, made explicit. It is not an exemption list: an entry
+# names a real owner and a real date, and passing that date fails the gate. A deferral
+# that is never revisited is how a temporary scaffold becomes the architecture, which is
+# why FR-054 mirrors the `xfail(strict=True)` discipline of FR-005.
+#
+# Enforced by scripts/check.py:
+#   * every entry MUST carry id, subject, what, owner, expires, reason — a partial
+#     declaration is a declaration that cannot be acted on
+#   * `expires` MUST parse as an ISO date, and an entry PAST its date FAILS the gate
+#   * `subject` MUST be consumed by something; an entry nothing reads is reported,
+#     because a field that records a condition without triggering anything is the
+#     same defect FR-040 names for `upstream_stale`
+#
+# Consumed today by: the zero-surface rule (FR-006/T002) for `check:8`. Add a subject
+# only when something reads it — see the rule above.
+version: 1
+pending:
+  - id: P1
+    subject: check:8
+    what: >-
+      managed-agent-cookbooks are not populated, so section 8's required-file check
+      runs over no cookbook at all
+    owner: spec 046 US7 (managed-agent cookbook authoring)
+    expires: 2026-12-31
+    reason: >-
+      Cookbooks are populated in Phase 7 / US7. Until then section 8 has nothing to
+      validate. Before this declaration it counted the directories it WALKED (1) rather
+      than the cookbooks it validates (0), which made a vacuous section read as
+      productive — spec 058 U2, found by the Phase-1 analysis. This entry lets the
+      section report the truth and still keep the gate green, and it expires so the
+      state cannot become permanent.
