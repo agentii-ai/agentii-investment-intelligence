@@ -6,7 +6,7 @@ temporal_scope:
   default_quarters: 4
   max_quarters: 12
   description: "4 quarters for option position analysis; 12 for volatility regime comparison."
-allowed_tools: [search_knowledge_entries, get_knowledge_entry, search_by_analogue, get_realtime_quote, get_options_chain]
+allowed_tools: [search_knowledge_entries, get_knowledge_entry, search_by_analogue, get_realtime_quote]
 retrieval_scope: structured_only
 min_tool_diversity: 4
 parameter_free: true
@@ -49,11 +49,19 @@ Options analysis powered by spec 037 L3/L4 knowledge base (K7).
 Run the canonical pre-flight sequence. See `contracts/preflight.md`.
 
 ## Data Source Priority
-1. Knowledge entries (K7 options frameworks) → 2. Options chain (live data) → 3. `search_by_analogue` for relevant cases
+1. Knowledge entries (K7 options frameworks) → 2. `search_by_analogue` for relevant cases
+
+**The options-chain input does not exist, and this skill must say so (spec 058 FR-028).** No route and no
+MCP tool on this deployment returns an option chain — `get_options_chain` is implemented nowhere, and this
+skill no longer declares it. So chain-derived quantities (bid/ask, open interest, per-strike Greeks,
+implied volatility by strike) have **no source**. They MUST NOT be presented as retrieved, estimated from
+the underlying's price, or reconstructed from memory. Name the missing input in the artifact, annotate
+`coverage_gap` per `contracts/error-handling-template.md`, and abstain from the parts of the analysis that
+depend on it. What remains is real: K7's frameworks apply to a name without a chain.
 
 ## Protocol
 1. **Framework Application** — apply K7 frameworks from `references/knowledge-frameworks.md`
-2. **Option Chain Analysis** — retrieve and analyze current option data
+2. **Option Chain Analysis** — **abstain**, and say why: no tool returns an option chain (see Data Source Priority). Apply the K7 frameworks and list the chain inputs that were unavailable instead of inferring them.
 3. **Analogue Retrieval** — query historical options/volatility cases
 
 ## Methodology
@@ -87,7 +95,7 @@ See ## Protocol section below.
 1. Executive Summary 2. Framework Analysis 3. Option Greeks & Metrics 4. Historical Analogues 5. Risk Profile 6. Scenarios
 
 ## Error Handling
-| Options chain unavailable | Proceed with framework-only analysis; flag `options_data: degraded` |
+| Options chain input — **no tool provides one** (`get_options_chain` is unimplemented; FR-028) | Framework-only analysis; name the missing input in the artifact and annotate `coverage_gap`. Never present chain-derived figures as retrieved. |
 
 ## Final Summary (TUI)
 Include `### Key Citations` block (0–10 /v/ URLs).
