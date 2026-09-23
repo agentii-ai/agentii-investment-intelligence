@@ -171,6 +171,69 @@ def _header_facts(thesis: Path) -> dict:
     return facts
 
 
+READABILITY_JSON = "report/readability.json"
+
+
+def _readability(thesis: Path) -> dict:
+    """The author's scored-tier record (058 FR-065, T091), read leniently like the header facts.
+
+    NOT IN `SOURCE_GLOBS`, deliberately. The score is a judgement ABOUT the report, not a source of it:
+    hashing it would make writing the score invalidate the sources hash that `pack` recorded, so an
+    author recording their own score would flip the report's staleness bar. The one field that says how
+    well the report reads must not be able to make the report look out of date.
+
+    Keys: `score` (1–25, the rubric total), `previous` (the last release's, or null), `explanation`
+    (required only when the score DROPPED — FR-065's consequence, and the reason the field is allowed
+    to exist at all: `FR-040` forbids a field that records a condition without triggering anything).
+    """
+    f = thesis / READABILITY_JSON
+    out = {"score": None, "previous": None, "explanation": "",
+           "cover": "not scored (058 FR-065)", "problems": []}
+    if not f.is_file():
+        # Absent is a STATE, not an error: a thesis whose report predates this tier still assembles.
+        # It is visible on the cover as "not scored" rather than as a number nobody earned — which is
+        # the difference between an unfilled field and a claim.
+        return out
+    try:
+        doc = json.loads(f.read_text(encoding="utf-8"))
+    except ValueError as e:
+        out["problems"].append(f"{READABILITY_JSON} is not valid JSON: {e}")
+        return out
+    if not isinstance(doc, dict):
+        out["problems"].append(f"{READABILITY_JSON} must be a JSON object")
+        return out
+
+    score, previous = doc.get("score"), doc.get("previous")
+    out["previous"] = previous
+    out["explanation"] = str(doc.get("explanation") or "").strip()
+
+    if score is None:
+        # Absent is not an error: a thesis whose report predates this tier still assembles. It is
+        # visible on the cover as "not scored" rather than as a number nobody earned.
+        out["cover"] = "not scored (058 FR-065)"
+        return out
+    if not isinstance(score, int) or not 1 <= score <= 25:
+        out["problems"].append(
+            f"{READABILITY_JSON}: `score` must be an integer 1–25 (five rubric criteria, 1–5 each), "
+            f"got {score!r}")
+        return out
+
+    out["score"] = score
+    out["cover"] = f"{score}/25"
+    # FR-065: a drop MUST be explained in the deliverable. The trigger is a REGRESSION, never an
+    # absolute threshold — no score is refused for being low, and the first report sets its own
+    # baseline. What is refused is a regression with no explanation, which is the one outcome that
+    # would leave the score recorded without consequence.
+    if isinstance(previous, int) and score < previous and not out["explanation"]:
+        out["problems"].append(
+            f"{READABILITY_JSON}: the readability score DROPPED from {previous} to {score} and no "
+            f"`explanation` is recorded. FR-065: a drop below the previous release's MUST be explained "
+            f"in the deliverable itself — add `explanation` (it is rendered on the cover beside the "
+            f"score), or restore the previous standard. The score is not a gate and is never refused "
+            f"for being low; an unexplained regression is what is refused.")
+    return out
+
+
 def _truncate_artifact(body: str, limit: int, path: Path) -> str:
     """Cut an artifact body at a paragraph boundary, with an explicit marker."""
     cut = body[:limit]
@@ -1107,6 +1170,15 @@ def build_html(thesis: Path, pages_html: str, shash: str, generated_at: str,
                         f'<td id="cover-pin">{esc(facts["pin"] or "—")}</td>', 1)
     html = html.replace('<td id="cover-as-of"></td>',
                         f'<td id="cover-as-of">{esc(facts["as_of"] or "—")}</td>', 1)
+    # T091/FR-065: the scored readability tier, on the cover beside the pins, with the regression
+    # explanation appended where one was required. Read here rather than passed in, so the cover and
+    # the gate read the same file through the same function — see `_readability`.
+    rd = _readability(thesis)
+    cover_rd = esc(rd["cover"])
+    if rd["explanation"]:
+        cover_rd += f' <span class="rd-note">{esc(rd["explanation"])}</span>'
+    html = html.replace('<td id="cover-readability"></td>',
+                        f'<td id="cover-readability">{cover_rd}</td>', 1)
     html = html.replace('<td id="cover-universe"></td>',
                         f'<td id="cover-universe">{esc(universe)}</td>', 1)
     html = html.replace('<td id="cover-generated"></td>',
@@ -1214,6 +1286,12 @@ def assemble(thesis: Path, out_path: Path | None = None, *,
     problems += _gate_page_argument(content)   # T135 (Q95 contracts 1, 2)
     problems += _gate_charts(content)
     problems += _gate_self_consistency(content, _load_metrics(thesis))
+    # T091/FR-065 — the ONE thing in the scored tier that can refuse. The score itself never does: it is
+    # not compared to any threshold, and a low score assembles exactly like a high one. What is refused
+    # is a REGRESSION WITH NO EXPLANATION, because "MUST be explained in the deliverable" with no
+    # consequence is the field-that-triggers-nothing defect FR-040 forbids — and because the first
+    # version of FR-065 was that defect, introduced in the act of fixing another one.
+    problems += _readability(thesis)["problems"]
     if problems:
         raise ValueError("content.html validation failed:\n- " + "\n- ".join(problems))
     for advisory in _quality_advisories(content):

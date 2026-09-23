@@ -66,6 +66,10 @@
   .claim { font-style: italic; font-size: 11.5pt; color: #222; margin: 4mm 0; }
   #cover-meta { margin: 4mm 0 6mm; }
   #cover-meta th { width: 38mm; }
+  /* The regression explanation FR-065 requires the deliverable to carry. Set smaller than the value it
+     annotates so the score stays the thing a reader sees first, and never hidden: an explanation that
+     is present but hard to find is a requirement met on paper. */
+  .rd-note { display: block; font-size: 9pt; opacity: 0.85; margin-top: 1mm; }
   .toc h2 { margin-top: 6mm; }
   .toc ol { padding-left: 6mm; }
   .toc a { text-decoration: none; }
@@ -218,6 +222,11 @@
   <table id="cover-meta">
     <tr><th>Constitution pin</th><td id="cover-pin"></td></tr>
     <tr><th>As of</th><td id="cover-as-of"></td></tr>
+    <!-- The scored readability tier, recorded BESIDE THE PINS (058 FR-065, T091). Filled by the
+         assembler from report/readability.json — the cover is template-owned, so the author cannot
+         write it here, and a score the author typed into content.html would be a claim with no
+         record. The number is a judgement, not a gate: this row never blocks a report. -->
+    <tr><th>Readability</th><td id="cover-readability"></td></tr>
     <tr><th>Universe</th><td id="cover-universe"></td></tr>
     <tr><th>Generated</th><td id="cover-generated"></td></tr>
   </table>

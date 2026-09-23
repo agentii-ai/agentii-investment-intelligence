@@ -542,3 +542,140 @@ def test_the_limit_of_this_change_is_pinned_rather_than_hidden():
     prose = " ".join(["Revenue therefore rose 12% to $1.2B in the quarter."] * 10)
     pages = f'<section class="page"><h2>Revenue mix moved 6 points</h2><p>{prose}</p></section>'
     assert synthesize_report._gate_page_argument(pages) == []
+
+
+# ── T090/T091 (FR-065): the scored readability tier's record and its one refusal ──────────────
+
+def _readability_dir(tmp_path, payload):
+    (tmp_path / "report").mkdir(parents=True, exist_ok=True)
+    if payload is not None:
+        (tmp_path / "report" / "readability.json").write_text(
+            payload if isinstance(payload, str) else json.dumps(payload), encoding="utf-8")
+    return tmp_path
+
+
+def test_an_unscored_report_records_that_rather_than_guessing(tmp_path):
+    """Absent is a STATE, not an error. A thesis whose report predates this tier still assembles."""
+    rd = synthesize_report._readability(_readability_dir(tmp_path, None))
+    assert rd["score"] is None and rd["problems"] == []
+    assert "not scored" in rd["cover"]
+
+
+def test_a_recorded_score_lands_on_the_cover(tmp_path):
+    rd = synthesize_report._readability(_readability_dir(tmp_path, {"score": 21, "previous": 18}))
+    assert (rd["score"], rd["problems"]) == (21, [])
+    assert rd["cover"] == "21/25"
+
+
+def test_a_score_outside_the_rubric_range_is_refused(tmp_path):
+    """Five criteria on 1–5, so 26 is not a harsh score — it is not a score."""
+    for bad in (0, 26, -1, "high", 4.5):
+        rd = synthesize_report._readability(_readability_dir(tmp_path, {"score": bad}))
+        assert rd["problems"] and "1–25" in rd["problems"][0], bad
+
+
+def test_a_dropped_score_must_be_explained(tmp_path):
+    """FR-065's consequence, and the ONLY thing in this tier that can refuse anything.
+
+    The score itself is never compared to a threshold — a low score assembles exactly like a high one,
+    because the trigger is a regression rather than an absolute. What is refused is a regression with
+    no explanation, which would leave the score recorded without consequence.
+    """
+    rd = synthesize_report._readability(_readability_dir(tmp_path, {"score": 12, "previous": 20}))
+    assert rd["problems"], "a drop with no explanation must be refused"
+    assert "MUST be explained" in rd["problems"][0]
+    assert "never refused for being low" in rd["problems"][0]
+
+
+def test_a_low_score_with_no_previous_release_is_not_a_regression(tmp_path):
+    """The first report sets its own baseline, so there is nothing to regress from."""
+    assert synthesize_report._readability(
+        _readability_dir(tmp_path, {"score": 5})).get("problems") == []
+    assert synthesize_report._readability(
+        _readability_dir(tmp_path, {"score": 5, "previous": None})).get("problems") == []
+
+
+def test_an_explained_drop_is_accepted_and_the_explanation_is_carried(tmp_path):
+    rd = synthesize_report._readability(_readability_dir(tmp_path, {
+        "score": 14, "previous": 19,
+        "explanation": "The launch-timing slide was cut for length, which cost the scenario criterion.",
+    }))
+    assert rd["problems"] == []
+    assert "launch-timing" in rd["explanation"]
+
+
+def test_malformed_readability_json_is_reported_not_ignored(tmp_path):
+    """A record that cannot be read must not read as "not scored" — that is the silent-empty defect."""
+    for bad in ("{not json", "[1,2,3]", '"a string"'):
+        rd = synthesize_report._readability(_readability_dir(tmp_path, bad))
+        assert rd["problems"], bad
+
+
+def test_the_template_carries_the_cover_anchor_the_assembler_fills(tmp_path):
+    """The guard against a SILENT no-op.
+
+    `build_html` fills the row with `html.replace(anchor, …)`, which does nothing at all if the anchor
+    is absent — no error, no warning, and every report quietly loses its readability score. So the
+    anchor is asserted rather than assumed.
+    """
+    template = synthesize_report.TEMPLATE.read_text(encoding="utf-8")
+    assert '<td id="cover-readability"></td>' in template
+
+
+_CONTENT_OK = """
+<section class="page">
+<h2>Margin holds above the peer set despite the mix shift</h2>
+<p>The quarter's revenue mix implies gross margin holds above the peer set, which argues for keeping the position at its cap rather than stepping down into the print. The mix shift accounts for most of the delta, so the conclusion does not depend on the one-off timing effect.</p>
+</section>
+"""
+
+
+def _thesis_for_readability(tmp_path):
+    thesis = tmp_path / "theses" / "001-x"
+    _write_artifact(thesis, "NVDA", "a.md")
+    (thesis / "report").mkdir(parents=True, exist_ok=True)
+    _write_outline(thesis)
+    (thesis / "report" / "content.html").write_text(_CONTENT_OK)
+    return thesis
+
+
+def test_assemble_refuses_an_unexplained_readability_regression(tmp_path):
+    """The consequence FR-065 requires, asserted at the ASSEMBLY, not only in the reader.
+
+    This is the one thing the scored tier can refuse, and it is deliberately not a threshold: nothing
+    here is compared to a quality bar. What is refused is a DROP with no explanation, because the
+    requirement is that a regression is explained in the deliverable — and a rule with no consequence
+    is the field-that-triggers-nothing defect FR-040 names, the very defect FR-065's first draft had.
+    """
+    thesis = _thesis_for_readability(tmp_path)
+    (thesis / "report" / "readability.json").write_text(
+        json.dumps({"score": 11, "previous": 20}), encoding="utf-8")
+    with pytest.raises(ValueError) as exc:
+        synthesize_report.assemble(thesis)
+    assert "MUST be explained" in str(exc.value)
+
+
+def test_assemble_accepts_the_same_drop_once_explained_and_puts_it_on_the_cover(tmp_path):
+    """And the other half: the fix is an explanation, not a better score."""
+    thesis = _thesis_for_readability(tmp_path)
+    (thesis / "report" / "readability.json").write_text(json.dumps({
+        "score": 11, "previous": 20,
+        "explanation": "Two scenario pages were cut for length.",
+    }), encoding="utf-8")
+    path, _shash, degraded = synthesize_report.assemble(thesis)
+    assert not degraded
+    html = path.read_text(encoding="utf-8")
+    assert "11/25" in html and "cut for length" in html
+
+
+def test_assemble_does_not_refuse_a_low_score(tmp_path):
+    """A LOW score is not a failure — FR-065 is explicit that there is no absolute threshold.
+
+    The pair to the regression test: 3/25 on a first report assembles cleanly, because the first report
+    sets its own baseline and no score was chosen in advance. A gate that refused a low score would be
+    the threshold-with-a-warning that `check_disclaimer.py` was before Check 48.
+    """
+    thesis = _thesis_for_readability(tmp_path)
+    (thesis / "report" / "readability.json").write_text(json.dumps({"score": 3}), encoding="utf-8")
+    path, _shash, degraded = synthesize_report.assemble(thesis)
+    assert not degraded and "3/25" in path.read_text(encoding="utf-8")

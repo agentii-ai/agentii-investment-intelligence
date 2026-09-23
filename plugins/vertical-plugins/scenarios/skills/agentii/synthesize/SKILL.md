@@ -47,6 +47,23 @@ python3 "$KIT/scripts/synthesize_report.py" pack --thesis <theses/{nnn}-{slug}>
 #    and <thesis>/report/metrics.json (numbers). Write
 #    <thesis>/report/content.html — the report's actual content is YOUR judgment.
 
+# 2b. SCORE (required — spec 058 FR-065). The blocking gate decides what TEXT can
+#     decide; it cannot see whether the report is any good, and "passes the gate"
+#     must never be read as "reads well". Run the scorer for the RUBRIC and the
+#     MEASURED evidence — the judgement is yours, the measurement is not:
+python3 "$KIT/scripts/score_report_readability.py" <thesis-dir>/report/content.html
+#     Then read the report and record your total (five criteria, 1–5 each → 1–25)
+#     in <thesis-dir>/report/readability.json:
+#       {"score": 21, "previous": 18, "explanation": ""}
+#     `previous` is the last RELEASED report's score; omit it (or write null) for a
+#     first report, which sets its own baseline — no score is chosen in advance.
+#     A score BELOW `previous` requires `explanation`, and `assemble` REFUSES the
+#     drop without one: FR-065's consequence is that a regression is explained in
+#     the deliverable, and a score recorded without consequence is the defect
+#     FR-040 forbids. A LOW score is not refused — only an unexplained regression.
+#     The score is rendered on the cover beside the pins (T091), so it has a named
+#     consumer: the human reviewer.
+
 # 3. ASSEMBLE — validate + inject + gate (advisories on stderr are guidance,
 #    the hard gates are silent until they fail):
 python3 "$KIT/scripts/synthesize_report.py" assemble --thesis <thesis-dir> --check-only  # fit loop
@@ -190,6 +207,13 @@ Author conservatively:
 8. Tier-0 `--check-only` pass AND `render` page-count == section-count AND
    every PNG visually verified clean (no clipped tables, no red overflow
    outlines, sane density).
+9. **Readability scored (FR-065).** `report/readability.json` carries the 1–25
+   total from `score_report_readability.py`, and a score below the previous
+   release's carries an `explanation`. `assemble` refuses a drop without one, so
+   a missing explanation is a hard stop, not a note. The score appears on the
+   cover beside the pins and is the ONLY readability signal a reader sees — the
+   blocking gate's pass is not a substitute, and the two are deliberately
+   reported separately so neither can be mistaken for the other.
 
 ## Regeneration discipline (Q50)
 
