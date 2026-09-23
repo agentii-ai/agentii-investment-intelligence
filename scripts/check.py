@@ -671,6 +671,19 @@ if trace_header_md.exists():
             f"x-agentii-trace-delivery.md does (spec 060 D-26, D-16)"
         )
 
+    # The sibling completion covers depth 0 (spec 060 D-23). The code returned early for a root —
+    # justified by its depth being trivially derivable — and that early return skipped the *label*
+    # too, so one composition tool's 38 root calls archived unlabelled on 2026-09-23 while the
+    # contract described a completion with no such qualification. The contract must now say which
+    # records the completion reaches, or the next implementation reads the same ambiguity.
+    checked += 1
+    if not re.search(r"[Dd]epth 0 counts|root agent'?s? repeated calls", header_text):
+        err(
+            f"agent tracing: {rel(trace_header_md)}: does not state that the sibling completion covers "
+            f"depth 0 (a root agent's repeated calls are siblings of one another) — spec 060 D-23, "
+            f"measured 2026-09-23"
+        )
+
 if trace_delivery_md.exists():
     delivery_text = trace_delivery_md.read_text()
 
