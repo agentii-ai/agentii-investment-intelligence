@@ -513,16 +513,97 @@ for sk in SKILL_FILES:
     else:
         err(f"agent tracing: {rel(sk)}: ## Preflight section not found")
 
-# --- Check 19: X-Agentii-Trace contract files exist + mcp-canonical.json _trace_note (FR-106g(c), Phase 22) ---
+# --- Check 19: X-Agentii-Trace contract pair states the SHIPPED behaviour (FR-106g(c), spec 060 T024-T026) ---
+#
+# As written (v1.0 of this check) it asserted only that two files exist. Both files existed, both
+# were frozen, and both described a mechanism the deployed MCP never had: a Redis-minted run_id,
+# `agent_traces` as the durable store, and a per-call re-mint as "graceful degradation". The check
+# passed the whole time. That is the same failure shape as the tracer itself — a gate that verifies
+# presence while the behaviour drifts — so it now asserts the properties a reader implements from:
+# the store that actually receives the row, the member tuple the hot tier actually holds, and the
+# absence of the two behaviours spec 060 removed.
+#
+# Absence assertions are the load-bearing ones here. A contract that *adds* the new story while
+# leaving the old paragraph in place still re-implements the dropped mint for anyone who reads it.
 
-_mark('Check 19: X-Agentii-Trace contract files exist + mcp-canonical.json _trace_note (FR-106g(c), Phase 22)')
-for contract_file in [
-    CONTRACTS / "x-agentii-trace-header.md",
-    CONTRACTS / "x-agentii-trace-delivery.md",
-]:
+_mark('Check 19: X-Agentii-Trace contract pair states the shipped behaviour (FR-106g(c), spec 060 T024-T026)')
+
+trace_header_md = CONTRACTS / "x-agentii-trace-header.md"
+trace_delivery_md = CONTRACTS / "x-agentii-trace-delivery.md"
+for contract_file in [trace_header_md, trace_delivery_md]:
     checked += 1
     if not contract_file.exists():
         err(f"agent tracing: {rel(contract_file)}: contract file missing (FR-106g(c))")
+
+if trace_header_md.exists():
+    header_text = trace_header_md.read_text()
+
+    checked += 1
+    if "usage_logs" not in header_text:
+        err(f"agent tracing: {rel(trace_header_md)}: does not name usage_logs as the durable store (spec 060 D-1)")
+
+    # The durable store the contract named before spec 060 was never written to. Naming it again — even
+    # to say "the old one" — is how a reader ends up querying a table that does not exist.
+    checked += 1
+    if "agent_traces" in header_text:
+        err(
+            f"agent tracing: {rel(trace_header_md)}: still names the retired agent_traces table; "
+            f"the record lands in usage_logs (spec 060 D-1)"
+        )
+
+    # The hot tier's member tuple. A reader reconstructing a tree from Redis needs this exactly: five
+    # fields, in this order, with depth NOT among them (depth is derived, not stored — spec 060 D-28).
+    checked += 1
+    if "agent|parent|instance|endpoint|status" not in header_text:
+        err(
+            f"agent tracing: {rel(trace_header_md)}: the 5-field member tuple "
+            f"`agent|parent|instance|endpoint|status` is not stated (spec 060 R-11)"
+        )
+
+    # FR-131: depth is auto-derived, never trusted from the header; FR-204: an identity is never
+    # accepted from a caller. A format line that advertises either invites exactly what they forbid.
+    checked += 1
+    if re.search(r"depth=\{", header_text) or re.search(r"user_id=\{", header_text):
+        err(
+            f"agent tracing: {rel(trace_header_md)}: the caller-facing format still advertises "
+            f"depth= or user_id= — both are platform-derived (FR-131, FR-204)"
+        )
+
+    # The pair must AGREE on who may supply `agent` (spec 060 D-26, added 2026-09-23). The delivery
+    # contract gained the proxy-supplied actor (`agent=mcp:{tool_name}` where the caller declared none)
+    # and this file still said "LLM agent" only — so the two halves of one mechanism described
+    # different ones, which is the divergence D-26 exists to remove and the reason a reader cannot
+    # resolve a conflict between them.
+    checked += 1
+    if "mcp:{tool" not in header_text:
+        err(
+            f"agent tracing: {rel(trace_header_md)}: does not state that the proxy supplies "
+            f"`agent=mcp:{{tool_name}}` where the caller declared no agent, while "
+            f"x-agentii-trace-delivery.md does (spec 060 D-26, D-16)"
+        )
+
+if trace_delivery_md.exists():
+    delivery_text = trace_delivery_md.read_text()
+
+    # Minted once per run, at initialize, and carried by the caller thereafter (spec 060 D-22). The
+    # contract must say so positively: "the server will inject it" was the old story and it is false —
+    # mcp-agentii has no env vars and no Redis, so nothing server-side can mint or remember an id.
+    checked += 1
+    if not re.search(r"mint\w*\s+once|once\s+per\s+run", delivery_text, re.I):
+        err(f"agent tracing: {rel(trace_delivery_md)}: does not state that the run_id is minted once (spec 060 D-22)")
+
+    checked += 1
+    if re.search(r"\bINCR\b", delivery_text):
+        err(f"agent tracing: {rel(trace_delivery_md)}: still documents the Redis INCR mint — removed (spec 060 D-22)")
+
+    # The graceful-degradation paragraph re-minted a fresh id when one was missing. That is the defect
+    # D-22 names, described as a feature. An absent id must record as untraced, never be invented.
+    checked += 1
+    if re.search(r"auto-?generat\w*", delivery_text, re.I):
+        err(
+            f"agent tracing: {rel(trace_delivery_md)}: still documents auto-generating a missing run_id; "
+            f"a call without one is recorded untraced and is never given a fresh id (spec 060 D-22)"
+        )
 
 checked += 1
 canonical_mcp = CONTRACTS / "mcp-canonical.json"
