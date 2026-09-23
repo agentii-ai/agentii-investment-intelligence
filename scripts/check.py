@@ -578,6 +578,10 @@ GENERATORS = [
     ROOT / "scripts/dev/trace_instruction_v1_1.py",
     ROOT / "scripts/scaffold_vertical.py",
     ROOT / "scripts/dev/complete-scaffolds.py",
+    # Superseded for the pointer (it re-inserts its own pre-flight line, see its docstring) but its
+    # constant is checked anyway: a file that *would* write the old pointer if run is exactly the kind
+    # of landmine this check exists to keep defused.
+    ROOT / "scripts/dev/ctx_opt_us2_preflight.py",
 ]
 checked += 1
 if CANONICAL_POINTER is None:

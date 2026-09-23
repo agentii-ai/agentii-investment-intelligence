@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """US2 (T016+T017): de-duplicate the inline Preflight boilerplate.
 
+**SUPERSEDED for the tracing pointer (2026-09-23) — do not re-run this script.** Its `TRACE_PTR` still
+holds the header-only pointer and it re-inserts its `PREFLIGHT_PTR` unconditionally, so a re-run would
+(a) write the pointer back without the `_run_id` carry Check 18 now requires and (b) duplicate the
+pre-flight line in the 30 skills that carry the longer wording. The pointer now lives in
+`scripts/dev/trace_instruction_v1_1.py` (idempotent, sentence-level, dry-run by default), and the
+sentence itself is declared once in `contracts/skill-methodology-template.md`; the constant below is
+kept in step with it so that this file, if it is ever revisited, cannot disagree with the repository.
+
+
 Within each SKILL.md `## Preflight` section, replace the four canonical
 boilerplate pieces (MCP curl probe, generic ticker-resolution paragraph,
 workspace style.md override paragraph, and the Agent Call Tracing paragraph)
@@ -26,10 +35,7 @@ PREFLIGHT_PTR = (
     "workspace `style.md` override, memory load, and coverage check. "
     "See `contracts/preflight.md`."
 )
-TRACE_PTR = (
-    "Include the `X-Agentii-Trace` header on every tool call per "
-    "`contracts/x-agentii-trace-header.md`."
-)
+TRACE_PTR = "Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned)."
 
 
 def migrate(text: str) -> str:
