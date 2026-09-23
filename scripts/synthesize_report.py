@@ -666,6 +666,24 @@ def _gate_page_argument(content: str) -> list[str]:
             # floor's finding is preferred where both fire, because it carries the ratio and is
             # therefore the one an author can act on.
             #
+            # CORRECTED 2026-09-24 — THE FLOOR IS NOT APPLIED HERE, AND THAT IS THE FIX.
+            #
+            # This function works PER PAGE; the interpretive floor was calibrated PER DOCUMENT
+            # (`contracts/report-readability.md` §2 row 5, 73 documents). A per-document threshold applied
+            # per page is a different measurement, and the difference is not a detail: pages are short
+            # enough that the ratio is mostly noise, and `MIN_NUMERIC_SENTENCES` then decides more cases
+            # than the ratio does. The floor now runs once per REPORT, in `assemble`, which is the
+            # granularity its threshold was derived at — so the convention is kept, at its own scale.
+            #
+            # The threshold itself was ALSO wrong and is re-derived: it was 0.25 against a claimed corpus
+            # minimum of 0.27, and re-measurement found the real minimum is **0.127** with **42%** of the
+            # archive below 0.25 (`scripts/measure_interpretive_floor.py`). It is now 0.117.
+            #
+            # WHAT REPLACES IT *HERE* IS UNCHANGED AND IS THE POINT OF T089: on a page, the rule is
+            # Q95 contract 2 — the prose must land on an implication — and the four-word proxy was
+            # replaced by nothing, because the defect was never that the proxy was too weak on a page. It
+            # was that ONE sentence certified a WHOLE PAGE of bare figures, and that page-level breadth is
+            # what the document-scope ratio now measures.
             # MEASURED, AND ONE LIMIT THAT IS NOT FIXED HERE. Ten sentences of "Revenue therefore rose
             # 12% to $1.2B" pass BOTH checks — `therefore` is an interpretation token, so the ratio is
             # 10/10. FR-067's example sentence is a restatement that no token list can separate from a
@@ -673,10 +691,7 @@ def _gate_page_argument(content: str) -> list[str]:
             # (`FR-065`, `score_report_readability.py`), which is where "the reading is shallow" can be
             # said at all. What this edit fixes is the BREADTH defect — one keyword in one sentence can
             # no longer certify a page of bare figures.
-            floor = check_report_readability.check_interpretive_floor(prose)
-            if floor:
-                problems.extend(f"page {i}: {finding}" for finding in floor)
-            elif not _CONCLUSION_RX.search(prose):
+            if not _CONCLUSION_RX.search(prose):
                 problems.append(
                     f"page {i}'s prose never lands on an investment implication (no "
                     f"'implies / means / therefore / argues for'). Q95 contract 2: the "
@@ -1286,6 +1301,11 @@ def assemble(thesis: Path, out_path: Path | None = None, *,
     problems += _gate_page_argument(content)   # T135 (Q95 contracts 1, 2)
     problems += _gate_charts(content)
     problems += _gate_self_consistency(content, _load_metrics(thesis))
+    # T089, corrected 2026-09-24: the interpretive floor runs at DOCUMENT scope because that is the
+    # granularity its threshold was calibrated at (73 documents, `scripts/measure_interpretive_floor.py`).
+    # It spent one day applied per page inside `_gate_page_argument`, where a per-document ratio is mostly
+    # noise — the convention was right and its scale was wrong.
+    problems += check_report_readability.check_interpretive_floor(content)
     # T091/FR-065 — the ONE thing in the scored tier that can refuse. The score itself never does: it is
     # not compared to any threshold, and a low score assembles exactly like a high one. What is refused
     # is a REGRESSION WITH NO EXPLANATION, because "MUST be explained in the deliverable" with no

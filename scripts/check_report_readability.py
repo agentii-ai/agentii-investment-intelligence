@@ -29,15 +29,18 @@ from is not a readability standard:
   * **lede-before-evidence** — supported, blocking, at REPORT scope. The corpus supports a lede rule;
     it does not support one that fires on every section.
   * **no numbers-only paragraph** — supported, blocking. The interpretive floor on numeric sentences is
-    ≥0.25 across every sampled document (observed minimum 0.27).
+    ≥0.117 across the archive (measured minimum **0.127**, re-derived 2026-09-24; the 0.27 this line used
+    to state was the corpus's *claimed* minimum and 42% of the archive fell below the 0.25 floor it
+    justified — `scripts/measure_interpretive_floor.py`).
   * **exhibit-takeaway** — **NOT supported.** Only 43–49% of the largest family's exhibit sections carry
     interpretive text after them. Reported, not blocking.
   * **conclusion-first** — **NOT supported** beyond the lede. 77–80 of the largest family's 103–106
     sections open preamble-first, by design: the call lives in the document lede. Reported, not blocking.
 
 Two corpus-derived checks replace them, both with stronger evidence than either: **interpretive-floor**
-(min 0.27 across 18 documents; a 0.5 floor would fail all 30 Market_Share documents) and
-**exhibit-monotonicity** (58/58 documents — the lowest false-positive risk in the corpus).
+(measured min **0.127** over 73 documents, max 0.418; the Market_Share family is 0.349–0.392 across
+exactly 30, so a 0.5 floor would still fail all 30) and **exhibit-monotonicity** (58/58 documents — the
+lowest false-positive risk in the corpus).
 
 `contracts/report-readability.md` §2 carries the full table and the family breakdown, and §4 lists the
 checks the corpus FALSIFIES — including the most tempting one, that inline exhibit references must
@@ -389,18 +392,33 @@ def numeric_sentences(content: str) -> list[str]:
     ]
 
 
-def check_interpretive_floor(content: str, *, floor: float = 0.25) -> list[str]:
+def check_interpretive_floor(content: str, *, floor: float = 0.117) -> list[str]:
     """CONVENTION 5 — figures are never left bare for long.
 
-    THE ONE RATIO WITH A DEFENSIBLE UNIVERSAL FLOOR. Across the sampled corpus, the share of
-    numeric sentences that also carry an interpretive or directional token ranged **0.27 to 0.66** —
-    every family, every size, no exceptions. So a floor of 0.25 passes all of them.
+    THE ONE RATIO WITH A DERIVED FLOOR — AND THE FLOOR WAS WRONG UNTIL 2026-09-24.
+
+    This docstring said the ratio ranged **0.27 to 0.66** "every family, every size, no exceptions", and
+    set the floor at 0.25 on that basis. **Neither number was the corpus's.** Re-measured with the
+    functions below over the Morgan Stanley archive's own 73 documents (the four `BIOPHARMA_*`
+    directories), via `scripts/measure_interpretive_floor.py`:
+
+        min 0.127   max 0.418   ·   31 of 73 documents below 0.25   (42%)
+
+    So the stated floor failed **42%** of the documents it was derived from. The clause that does hold is
+    the Market_Share one — 0.349–0.392 across exactly 30, this run and the prior one agreeing to three
+    decimals — which is still why a 0.5 floor would fail all 30. The 0.66 maximum does not occur under
+    either token set in this file.
+
+    The floor is now **0.117**: the measured minimum (0.127) less the same 0.01 margin the original used,
+    which is the method the contract declared, applied to the real distribution instead of a claimed one.
+    It is thin by construction — one margin above the barest document in the archive — and it is the
+    contract's own method, not a number chosen to pass.
 
     IT CANNOT BE SET HIGHER, and that is measured rather than cautious: the largest family sits at
     0.36–0.39, so a 0.5 floor would fail all 30 of its documents. A "reasonable-looking" threshold is
     precisely how a gate starts failing a whole genre.
 
-    ⚠️ A CALIBRATION CAVEAT THAT MATTERS. The 0.27 floor was measured on the corpus's **extracted text
+    ⚠️ A CALIBRATION CAVEAT THAT MATTERS. The floor was measured on the corpus's **extracted text
     layer**; this check runs on **rendered HTML**, where table cells flatten into the sentence stream and
     are numeric without interpretation. That inflates the denominator, so a report measured here is not
     strictly comparable to the corpus figure. Two delivered reports score **17%** under this check —

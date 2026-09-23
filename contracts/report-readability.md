@@ -36,7 +36,7 @@ them cleanly, contradicts one, and contradicts a fourth for the largest family i
 | `FR-064` names | Corpus finding | Verdict |
 |---|---|---|
 | lede-before-evidence | Ledes are **definitional scope first, headline figure second** — a scope sentence with no numeric token, then the metric with its comparator. Consistent across the long-form families. | **Supported**, as a report-level rule |
-| no paragraph consisting only of numbers | The interpretive floor on numeric sentences is **≥0.25** across all 18 sampled documents (observed minimum 0.27). Figures are never bare for long. | **Supported** |
+| no paragraph consisting only of numbers | The interpretive floor on numeric sentences is **≥0.117**, re-derived 2026-09-24 from the archive's own minimum (**0.127** over 73 documents; range 0.127–0.418). Figures are never bare for long. | **Supported — the floor corrected, the convention unchanged.** This row said 0.25 against an “observed minimum 0.27” on 18 sampled documents; re-measured over the full archive, **31 of 73 (42%)** fall below 0.25, so that floor failed the corpus it was derived from. `scripts/measure_interpretive_floor.py` prints the derivation. |
 | exhibit-takeaway presence | Only **43–49%** of exhibit sections in the largest family carry interpretive text after them; the rest are numeric-only **by design**. | **Contradicted** — cannot block |
 | conclusion-first section ordering | **77–80 of 103–106 sections** in the largest family open preamble-first. Those sections are not defective: the call lives in the document lede, not in every section. | **Contradicted** — cannot block |
 
@@ -76,7 +76,7 @@ implied. What is implemented is ordered so cheap structural integrity runs befor
 | 2 | Disclosure boundary present, body non-empty | 73/73 | negligible for presence; **must not assert a position**: body share ranges 0.056–0.865 |
 | 3 | Exhibit numbers monotonic in order of appearance | 58/58 | lowest of any check. **Gaps permitted; need not start at 1** |
 | 4 | An exhibit referencing form is present (inline **or** heading-embedded) | 71/73 | low. **Must not require references to resolve** — see §4 |
-| 5 | Interpretive floor ≥0.25 on numeric sentences | min 0.27 across 18 | low **at that floor**. A 0.5 floor would fail all 30 Market_Share documents. ⚠️ calibrated on the extracted text layer, applied to rendered HTML — see below |
+| 5 | Interpretive floor ≥0.117 on numeric sentences | min **0.127** across **73** (re-derived 2026-09-24); Market_Share 0.349–0.392 across exactly 30 | low **at that floor** — it sits one 0.01 margin above the barest document in the archive, by the same method the original 0.25 used. A 0.5 floor would fail all 30 Market_Share documents. ⚠️ calibrated on the extracted text layer, applied to rendered HTML — see below |
 | 6 | Enumerated-category coverage with placeholders | 22/73 have the structure | low, **family-gated** — conditioned on detecting the structure, never corpus-wide |
 | 7 | Series stability against the series median | Market_Share stable to a few % across 8 months | low, but **needs ≥2 documents**; per-series, never per-directory |
 | 8 | No section body composed solely of numeric tokens | no sampled document does this | low; weak discriminator, cheap to run |
@@ -173,7 +173,7 @@ described in its own comments as the enforcement point, and invoked by nothing.
 ### The interpretive-floor finding on the delivered reports, with its caveat
 
 Run against the six SPCX reports, `interpretive-floor` is the **only** blocking finding that survives
-(two reports, 17% against the 0.25 floor). It is the closest thing in this contract to a measurement of
+(two reports, 17% against the **0.25** floor — and therefore **passing** at the re-derived 0.117, which is the correct verdict: 17% is inside the archive's own 0.127–0.418 range). It is the closest thing in this contract to a measurement of
 the reported symptom — *a heap of facts and data* — and it is deliberately not presented as proof:
 the floor was calibrated on the corpus's **extracted text layer**, while the check runs on **rendered
 HTML** where table cells flatten into the sentence stream and are numeric without interpretation. That

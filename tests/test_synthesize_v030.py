@@ -496,19 +496,42 @@ def test_a_page_with_too_little_prose_fails():
     assert any("explanatory prose" in p for p in problems), problems
 
 
-def test_a_page_of_bare_figures_is_caught_where_the_four_word_proxy_could_not_see_it():
-    """FR-067 / T089: ONE keyword used to certify a PAGE of bare figures.
+def test_a_document_of_bare_figures_is_caught_where_the_four_word_proxy_could_not_see_it():
+    """FR-067 / T089: ONE keyword used to certify a DOCUMENT of bare figures.
 
     The strengthening, and the fixture is shaped to isolate it. Twelve figures with no reading, plus a
-    single sentence carrying `implies`. The keyword proxy was satisfied by that one sentence and
-    reported nothing, while the page was — in the reported symptom's words — a heap of data. The corpus
-    floor measures BREADTH, so it sees the eleven bare sentences a presence test cannot.
+    single sentence carrying `implies`. The four-word proxy was satisfied by that one sentence and
+    reported nothing, while the page was — in the reported symptom's words — a heap of data.
+
+    **AT DOCUMENT SCOPE, CORRECTED 2026-09-24.** This originally asserted the floor per PAGE, inside
+    `_gate_page_argument`. That function works per page; the floor's threshold was calibrated per
+    document (73 documents), and a per-document ratio computed over one page is mostly noise — at that
+    size `MIN_NUMERIC_SENTENCES` decides more cases than the ratio does. So the convention was right and
+    its scale was wrong, and it now runs once per report in `assemble`. The fixture is unchanged; only
+    the scope of the claim moved, which is exactly what the correction was.
     """
     prose = " ".join(["Revenue rose 12% to $1.2B in the quarter."] * 12
                      + ["This implies the mix shift is structural."])
     pages = f'<section class="page"><h2>Revenue mix moved 6 points</h2><p>{prose}</p></section>'
-    problems = synthesize_report._gate_page_argument(pages)
-    assert any("interpretive-floor" in p for p in problems), problems
+    # The page itself still clears contract 2 — the one `implies` satisfies the token test. That is the
+    # defect, and it is why a page-scope rule could not catch it.
+    assert synthesize_report._gate_page_argument(pages) == []
+    # The document does not clear the floor, because eleven of its thirteen numeric sentences are bare.
+    from check_report_readability import check_interpretive_floor
+    found = check_interpretive_floor(pages)
+    assert found and "interpretive-floor" in found[0], found
+
+
+def test_assemble_applies_the_interpretive_floor_at_document_scope(tmp_path):
+    """The floor must be WIRED, not merely available — a function nothing calls is this spec's defect."""
+    thesis = _thesis_for_readability(tmp_path)
+    prose = " ".join(["Revenue rose 12% to $1.2B in the quarter."] * 12
+                     + ["This implies the mix shift is structural."])
+    (thesis / "report" / "content.html").write_text(
+        f'<section class="page"><h2>Revenue mix moved 6 points</h2><p>{prose}</p></section>')
+    with pytest.raises(ValueError) as exc:
+        synthesize_report.assemble(thesis)
+    assert "interpretive-floor" in str(exc.value)
 
 
 def test_the_implication_requirement_still_stands_where_the_floor_is_clear():
