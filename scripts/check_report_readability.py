@@ -374,6 +374,21 @@ INTERPRET_RX = re.compile(
 )
 
 
+def numeric_sentences(content: str) -> list[str]:
+    """The sentences the floor measures — the denominator, in one place.
+
+    Extracted so that `check_interpretive_floor` and its callers cannot disagree about the count. The
+    caller needs to know whether the floor has a **denominator** (below `MIN_NUMERIC_SENTENCES` it
+    answers `[]` for "unmeasurable", not for "clean"), and a second implementation of that count is
+    how a check and its gate start reporting different numbers for the same document — the defect this
+    repository calls "two implementations of one number".
+    """
+    return [
+        s for s in re.split(r"(?<=[.!?])\s+", text_of(content))
+        if s.strip() and any(_is_figure_token(t) for t in words(s))
+    ]
+
+
 def check_interpretive_floor(content: str, *, floor: float = 0.25) -> list[str]:
     """CONVENTION 5 — figures are never left bare for long.
 
@@ -394,8 +409,7 @@ def check_interpretive_floor(content: str, *, floor: float = 0.25) -> list[str]:
     precise and is measured on a different layer than it is applied to is the kind of number that gets
     quoted without its caveat.
     """
-    sentences = [s for s in re.split(r"(?<=[.!?])\s+", text_of(content)) if s.strip()]
-    numeric = [s for s in sentences if any(_is_figure_token(t) for t in words(s))]
+    numeric = numeric_sentences(content)
     if len(numeric) < MIN_NUMERIC_SENTENCES:
         return []  # too few to be a ratio; a short page has no floor to miss
 

@@ -494,3 +494,51 @@ def test_a_page_with_too_little_prose_fails():
              '<p>Revenue rose, which means margin held.</p></section>')
     problems = synthesize_report._gate_page_argument(pages)
     assert any("explanatory prose" in p for p in problems), problems
+
+
+def test_a_page_of_bare_figures_is_caught_where_the_four_word_proxy_could_not_see_it():
+    """FR-067 / T089: ONE keyword used to certify a PAGE of bare figures.
+
+    The strengthening, and the fixture is shaped to isolate it. Twelve figures with no reading, plus a
+    single sentence carrying `implies`. The keyword proxy was satisfied by that one sentence and
+    reported nothing, while the page was — in the reported symptom's words — a heap of data. The corpus
+    floor measures BREADTH, so it sees the eleven bare sentences a presence test cannot.
+    """
+    prose = " ".join(["Revenue rose 12% to $1.2B in the quarter."] * 12
+                     + ["This implies the mix shift is structural."])
+    pages = f'<section class="page"><h2>Revenue mix moved 6 points</h2><p>{prose}</p></section>'
+    problems = synthesize_report._gate_page_argument(pages)
+    assert any("interpretive-floor" in p for p in problems), problems
+
+
+def test_the_implication_requirement_still_stands_where_the_floor_is_clear():
+    """A UNION, NOT A REPLACEMENT — the regression this pins.
+
+    Twelve directional sentences clear the floor (direction counts as interpretation, per the corpus:
+    `contracts/report-readability.md` §2 row 5) and still never say what any of it means for the
+    position, which is Q95 contract 2's requirement. This page was blocked before T089. Replacing the
+    token test rather than adding to it would have let it through, so the two checks are kept as two:
+    the floor asks whether the figures are read, contract 2 asks whether the prose lands.
+    """
+    prose = " ".join(["Revenue grew 12% to $1.2B as margin expanded."] * 12)
+    pages = f'<section class="page"><h2>Revenue mix moved 6 points</h2><p>{prose}</p></section>'
+    problems = synthesize_report._gate_page_argument(pages)
+    assert any("investment implication" in p for p in problems), problems
+
+
+def test_the_limit_of_this_change_is_pinned_rather_than_hidden():
+    """What T089 does NOT fix, asserted so the change is not read as more than it is.
+
+    Ten sentences of "Revenue therefore rose 12% to $1.2B" pass BOTH checks: `therefore` is an
+    interpretation token, so the ratio is 10/10. That sentence is FR-067's own example of a restatement
+    a keyword test cannot separate from a reading — the words are identical — so separating them needs
+    `FR-065`'s scored tier, where "the reading is shallow" is sayable at all. What T089 repairs is the
+    breadth defect, not the depth one.
+
+    Pinned as a passing expectation on purpose: if a later change makes this page block, that is an
+    improvement, and the right response is to update this test and its docstring — not to discover the
+    difference as a surprise.
+    """
+    prose = " ".join(["Revenue therefore rose 12% to $1.2B in the quarter."] * 10)
+    pages = f'<section class="page"><h2>Revenue mix moved 6 points</h2><p>{prose}</p></section>'
+    assert synthesize_report._gate_page_argument(pages) == []

@@ -41,6 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import write_boundary  # noqa: E402 — the single write boundary (T172)
 import check_page_overflow  # noqa: E402
 import chart_render  # noqa: E402
+import check_report_readability  # noqa: E402 — the corpus-derived bound (T089)
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "plugins" / "vertical-plugins" / "scenarios" / "templates" / "thesis-report.html"
@@ -566,12 +567,58 @@ def _gate_page_argument(content: str) -> list[str]:
                 f"contract 2 requires the page to say what its numbers mean, and a "
                 f"badge census is not an argument (the measured case: 35 words, "
                 f"half of them a badge census).")
-        elif not _CONCLUSION_RX.search(prose):
-            problems.append(
-                f"page {i}'s prose never lands on an investment implication (no "
-                f"'implies / means / therefore / argues for'). Q95 contract 2: the "
-                f"explanatory text must point at what this means for the position, "
-                f"not restate the data.")
+        else:
+            # ── T089 / FR-067: the four-word proxy is replaced where it could not work, and kept
+            #    only where nothing else can speak ────────────────────────────────────────────────
+            #
+            # THE PROXY PASSED THE VERY PAGES IT EXISTED TO CATCH. It asked whether the prose contained
+            # one of `implies / means / therefore / argues for`, and "Revenue therefore rose 12% to
+            # $1.2B" contains one while being a fact statement. That is the reported symptom — a heap
+            # of figures with no reading — and the check could not see it by construction.
+            #
+            # WHAT REPLACES IT IS THE ONE RATIO THE CORPUS SUPPORTS WITH A UNIVERSAL FLOOR: the share
+            # of numeric sentences that also carry a reading. `contracts/report-readability.md` §2 row
+            # 5 measured it at 0.27–0.66 across **every** family and every size in the 73-report
+            # Morgan Stanley archive, so a 0.25 floor passes all of them, and the same measurement is
+            # what forbids setting it higher (the largest family sits at 0.36–0.39, so 0.5 would fail
+            # all 30 of its documents). The implementation is not duplicated here — it is the gate
+            # T086 already wrote, called with the same prose this function already extracted.
+            #
+            # WHY THIS IS NOT A PURE REPLACEMENT, which is the one judgement in this edit.
+            #
+            # The floor is BLOCKING WHERE IT APPLIES and silent where it does not: below
+            # `MIN_NUMERIC_SENTENCES` numeric sentences it returns `[]`, which means "unmeasurable",
+            # not "clean" — the measured case being a badge census whose numerals are words
+            # ("fourteen facts and two badges"), so the ratio has nothing to divide. And the two checks
+            # ask DIFFERENT QUESTIONS rather than restating one: the floor asks whether the figures are
+            # read, Q95 contract 2 asks whether the prose lands on an implication. A page can fail
+            # either while clearing the other:
+            #
+            #   twelve bare figures + one interpretation   floor FAILS, contract 2 clears  (the
+            #                                              case the four-word proxy could not see)
+            #   twelve directional sentences, no implication   floor clears, contract 2 FAILS
+            #
+            # So the token test is KEPT — a union, never a loosening. It runs whenever the floor has
+            # not already failed, which is strictly more enforcement than before at both ends. The
+            # floor's finding is preferred where both fire, because it carries the ratio and is
+            # therefore the one an author can act on.
+            #
+            # MEASURED, AND ONE LIMIT THAT IS NOT FIXED HERE. Ten sentences of "Revenue therefore rose
+            # 12% to $1.2B" pass BOTH checks — `therefore` is an interpretation token, so the ratio is
+            # 10/10. FR-067's example sentence is a restatement that no token list can separate from a
+            # reading, because the words are the same; separating them needs the scored tier
+            # (`FR-065`, `score_report_readability.py`), which is where "the reading is shallow" can be
+            # said at all. What this edit fixes is the BREADTH defect — one keyword in one sentence can
+            # no longer certify a page of bare figures.
+            floor = check_report_readability.check_interpretive_floor(prose)
+            if floor:
+                problems.extend(f"page {i}: {finding}" for finding in floor)
+            elif not _CONCLUSION_RX.search(prose):
+                problems.append(
+                    f"page {i}'s prose never lands on an investment implication (no "
+                    f"'implies / means / therefore / argues for'). Q95 contract 2: the "
+                    f"explanatory text must point at what this means for the position, "
+                    f"not restate the data.")
     return problems
 
 
