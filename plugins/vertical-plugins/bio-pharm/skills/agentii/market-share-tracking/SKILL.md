@@ -41,7 +41,7 @@ parameter_free: false
 
 ## Preflight
 
-Run canonical pre-flight per `contracts/preflight.md`. Propagate X-Agentii-Trace per `contracts/x-agentii-trace-header.md`. Confirm ticker resolution via `search_companies` before commercial-track queries.
+Run canonical pre-flight per `contracts/preflight.md`. Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned). Confirm ticker resolution via `search_companies` before commercial-track queries.
 
 ## Triggers
 

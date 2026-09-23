@@ -207,15 +207,24 @@ Precedence: workspace `style.md` > package `style.md` > skill defaults.
 
 ## Agent Call Tracing
 
-Every skill's `## Preflight` section MUST include the agent call tracing instruction. The first tool call returns a `_run_id` in its result (per `contracts/x-agentii-trace-delivery.md`). All subsequent calls propagate the `X-Agentii-Trace` HTTP header.
+Every skill's `## Preflight` section MUST carry the agent call tracing instruction, and MUST NOT inline
+the full tracing block: a **one-line pointer** is the shape, and it must state the carry. The canonical
+text lives in the agent system prompt
+(`plugins/agent-plugins/agentii-equity-agent/agents/agentii-equity-agent.md`); the mechanism is in
+`contracts/x-agentii-trace-header.md` and `contracts/x-agentii-trace-delivery.md`.
 
-**Preflight block**:
+The line every skill's `## Preflight` must contain — the v1.1 lifecycle in one sentence (2026-09-23): the
+run id is minted once at `initialize`, arrives as `_run_id` in every tool result, and is **carried by the
+caller** on every subsequent call, which also names `agent` and — when it was spawned — `parent`.
 
 ```
-**Agent Call Tracing**: The first tool you call will return a `_run_id` in its result. On every subsequent tool call, include HTTP header `X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. The MCP server will inject run_id, depth, and user_id automatically. When spawning parallel sub-agents of the same type, assign each a unique instance label (e.g., equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for the full contract.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
 ```
 
-**CI validation**: `scripts/check.py` Check 18 verifies every committed SKILL.md `## Preflight` section contains `X-Agentii-Trace` or `_run_id` keyword.
+**CI validation**: `scripts/check.py` Check 18 verifies that every committed SKILL.md `## Preflight`
+carries that instruction — the `_run_id` carry, not merely the header's name — and that no Preflight
+block and no canonical source teaches the retired v1.0 claim (that the server
+supplies `run_id`, `depth` and `user_id` to a call: FR-131, D-22, removed).
 
 ## Scenario Analysis Cross-Cutting Mode
 

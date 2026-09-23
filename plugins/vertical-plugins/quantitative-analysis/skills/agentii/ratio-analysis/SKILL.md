@@ -24,11 +24,12 @@ Quantitative skill computing 6 categories of financial ratios from XBRL financia
 
 ## Preflight
 
-Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
+
+Run canonical pre-flight per `contracts/preflight.md`.
 
 **`get_realtime_quote` availability **: If `get_realtime_quote` is not yet deployed in the MCP surface, use `search_earnings_calendar` for PE/earnings data and flag valuation ratios as "current price unavailable — using latest reported data." Prompts user for current stock price as manual fallback.
 
-Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
 ## Triggers
 
 - analyze financial ratios for {ticker}

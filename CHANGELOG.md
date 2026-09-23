@@ -2,6 +2,54 @@
 
 All notable changes to `agentii-investment-intelligence`.
 
+## [Unreleased]
+
+### Fixed
+- **X-Agentii-Trace contract pair reconciled with the deployed behaviour** — `contracts/x-agentii-trace-header.md`
+  and `contracts/x-agentii-trace-delivery.md` to v1.1 (spec 060). v1.0 described a mechanism that was
+  never running: a Redis-counter `run_id` mint (the MCP runs with **no environment variables** and no
+  shared store, so no counter can exist there), a `depth` and `user_id` the caller sends (both are
+  platform values — FR-131 forbids trusting a depth, and accepting an identity from a caller would let
+  a client attribute its calls to another account), and a durable table that received no rows (the
+  lineage is a column set on `usage_logs`). Anyone implementing from the old text re-created the defect
+  it documented, which is why this is a contract change and not a doc tidy.
+- **The tracing instruction now states the carry — in every place an agent reads it** (2026-09-23, spec 060's
+  eleventh pass). The contract pair above was corrected and **five sources that teach agents kept the
+  retired story**: "The MCP server will inject run_id, depth, and user_id automatically"
+  (`contracts/skill-methodology-template.md`, `scripts/dev/complete-scaffolds.py`, the cookbook's subagent
+  prompt, the shipped agent prompt `contracts/preflight.md` names as canonical, and
+  `contracts/mcp-canonical.json`'s trace note). The mechanism depends on the opposite: the run id is minted
+  once at `initialize`, arrives as `_run_id` in **every** tool result, and the **caller** sends it onward —
+  the proxy's session id lives in one instance's memory, so a conversation that does not carry its own id
+  fragments into several runs, and a sub-agent that does not declare `parent=` leaves the call tree flat.
+  Measured across the 70 shipped skills before the fix: **zero** mentioned `_run_id`, `parent=` or
+  `instance=`, and four different pointer shapes were in use. `scripts/dev/trace_instruction_v1_1.py`
+  converges them (keeping each skill's own clause), the two generators that write new skills emit the same
+  sentence, and the shipped agent prompt carries the full lifecycle. Verified by the sibling implementation
+  the same day: a real `tools/call` now lands `agent=mcp:search_companies`, and a parent/child/sibling
+  sequence archives as `depth` 0→1→1 with `instance=dcf-2`.
+
+### Changed
+- **CI Check 19 now asserts the pair's substance rather than its existence**: the named durable store,
+  the five-field hot-tier member tuple, the absence of the removed per-call mint, and the absence of
+  caller-supplied `depth`/`user_id` in the wire format. It was run against the pre-amendment files
+  first and failed with 7 issues — the evidence that it has teeth.
+- **CI Check 18 now asserts the instruction, not a keyword** (2026-09-23). Its first version passed a
+  `## Preflight` block that merely *mentioned* `X-Agentii-Trace` or `_run_id` — which is how the retired
+  sentence above stayed green in every skill while teaching that the server supplies what the caller must
+  carry. It now requires the **carry** in every Preflight, forbids the retired mechanism in every Preflight
+  *and* in the four canonical sources, and requires the three generators to emit the template's pointer
+  sentence verbatim ("one sentence, four writers", checked). `tests/test_check_18_trace_instructions.py`
+  pins all of it — seven cases, six of them mutations that must fail the check.
+
+### Not in this release
+- **No kit version bump, and no mirror propagation.** The pair has exactly **one copy**: the export
+  mechanism (`packaging/export.py`) propagates *skills* into `packaging/targets/` and has never covered
+  `contracts/`, so there are no mirrors to sync and nothing to re-export. Bumping the version is a
+  release action, and the archive half of spec 060 (US3–US5) is not built — asserting a new version
+  would claim a capability the repository does not have. The pair carries its own v1.1 heading, which
+  is where a reader looks first.
+
 ## [3.3.0] — 2026-09-19 — spec 046 Governance + Report Pipeline
 
 ### Added

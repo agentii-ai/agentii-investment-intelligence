@@ -372,28 +372,29 @@ For analyses covering multiple tickers:
 
 Sessions are stored in `sessions/{YYYY-MM-DD}/` as archival JSONL transcripts. They are NOT auto-loaded (50K+ tokens). Consult `sessions/INDEX.md` on startup to know what history exists. Use the `read_session` tool to access full transcripts when investigating past decisions.
 
-### Agent Call Tracing (, , — )
+### Agent Call Tracing
 
-Every MCP tool call you make is traced via the `X-Agentii-Trace` HTTP header to enable workflow reconstruction, credit attribution, and debugging.
+Every MCP tool call you make is traced via the `X-Agentii-Trace` HTTP header, which is what lets the platform reconstruct a workflow, attribute credits, and debug a run.
 
 **How it works:**
 
-1. **First tool call**: The first tool you call returns a `_run_id` in its result (e.g., `"_run_id": "run-42"`). This is your run identifier — it spans your entire conversation.
+1. **The run id is minted once, at `initialize`.** The MCP server returns it in `serverInfo.run_id` and — the channel a model actually reads — as `_run_id` in **every** `tools/call` result. It is your conversation's identifier.
 
-2. **All subsequent calls**: Include `X-Agentii-Trace` header with your agent identity:
+2. **You carry it forward.** On every subsequent call, send the header with the id you were given and your own identity:
  ```
- X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}
+ X-Agentii-Trace: run_id={the _run_id you received}; agent={skill_name}; parent={caller_name}; instance={instance_label}
  ```
- The MCP server auto-injects `run_id`, `depth`, and `user_id` — you only declare `agent`, `parent`, and `instance`.
+ The id is **yours to carry**. The server does not re-attach it to calls that arrive without one (the proxy's session id lasts only as long as the instance holding it), and a call that arrives without a usable id is recorded as **untraced** — it is never given a fresh one. If your context still holds the id, send it; if it does not, send the call without the header rather than inventing an id.
 
-3. **When spawning parallel sub-agents**: Assign each a unique `instance` label (e.g., `equity-research-1`, `equity-research-2`). This enables the trace system to distinguish parallel siblings of the same agent type.
+3. **Declare only what you know**: `agent` is you; `parent` is the agent that spawned you, omitted by a root agent; `instance` distinguishes you from parallel siblings of the same type.
 
-4. **New conversation = new run_id**: Each Claude Code session gets a fresh `run_id`.
+4. **Two fields are never sent.** `depth` and `user_id` are **not** on the wire: the platform derives the depth from the run's own recorded calls, and reads the account from your API key. A header carrying either is ignored by the platform, and a user id must never appear in your context or your output.
 
 **Fields you declare:**
 
 | Field | When | Example |
 |-------|------|---------|
+| `run_id` | Every call after the first — the `_run_id` you received | `run-lc7q1d2cf` |
 | `agent` | Always | `recent-quarter`, `dcf-model`, `retrieval-subagent` |
 | `parent` | When spawned by another agent | `equity-research` |
 | `instance` | When running in parallel with same-type agents | `recent-quarter-3` |

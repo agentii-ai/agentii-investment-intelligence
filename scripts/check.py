@@ -496,22 +496,107 @@ if MCP_CANONICAL.exists():
 else:
     err("mcp-canonical: contracts/mcp-canonical.json missing (FR-010 / Round 4 Q15)")
 
-# --- Check 18: SKILL.md Preflight has agent call tracing instruction (FR-106g(c), Phase 22) ---
+# --- Check 18: SKILL.md Preflight carries the tracing instruction AND the carry (FR-106g(c), spec 060) ---
 # (The reclaimed numbers 14–17 and the never-assigned 26 are recorded at the SURFACES
 #  definition above, not here: a reclaim note inside a counted region occupies the
 #  inventory it declares empty — FR-007.)
+#
+# **Hardened 2026-09-23.** The first version asserted that a Preflight block *mentions*
+# `X-Agentii-Trace` **or** `_run_id` — a keyword test. Under it, a block that taught the *retired*
+# mechanism passed: "The MCP server will inject run_id, depth, and user_id automatically" (v1.0's
+# story, removed by spec 060 D-22 because the proxy is a stateless thin proxy that mints nothing per
+# call, and by FR-131/FR-204 because depth and identity never travel on the wire). Measured that day:
+# 149 counted files, and the retired sentence still sat in **five** sources no check read — the
+# authoring template, `scripts/dev/complete-scaffolds.py`, the cookbook's subagent prompt, the shipped
+# agent prompt, and `contracts/mcp-canonical.json`'s trace note. So this check now asserts three
+# things: (1) every Preflight states the **carry** — the run id is minted once at `initialize`, arrives
+# as `_run_id` in every tool result, and the caller sends it onward; (2) no Preflight and no canonical
+# source teaches the retired story; (3) the generators that write the pointer agree, verbatim, with the
+# sentence the template declares — "one sentence, four writers" as a checked property.
 
-_mark('Check 18: SKILL.md Preflight has agent call tracing instruction (FR-106g(c), Phase 22)')
+_mark('Check 18: SKILL.md Preflight carries the tracing instruction AND the carry (FR-106g(c), spec 060 D-22)')
+
+RETIRED_TRACE_RE = re.compile(
+    r"inject\w*[^.\n]{0,60}run_?id|auto-?generat\w*[^.\n]{0,40}run_?id|depth\s*=\s*\{|user_?id\s*=\s*\{",
+    re.IGNORECASE,
+)
+
 for sk in SKILL_FILES:
     checked += 1
     text = sk.read_text()
     preflight_match = re.search(r'## Preflight\n(.*?)(?=\n## )', text, re.DOTALL)
-    if preflight_match:
-        preflight = preflight_match.group(1)
-        if 'X-Agentii-Trace' not in preflight and '_run_id' not in preflight:
-            err(f"agent tracing: {rel(sk)}: ## Preflight missing X-Agentii-Trace or _run_id instruction (FR-106g(c))")
-    else:
+    if not preflight_match:
         err(f"agent tracing: {rel(sk)}: ## Preflight section not found")
+        continue
+    preflight = preflight_match.group(1)
+    if '_run_id' not in preflight:
+        err(
+            f"agent tracing: {rel(sk)}: ## Preflight does not state the _run_id carry — the run id is "
+            f"minted once at initialize and the CALLER sends it on every subsequent call (spec 060 D-22); "
+            f"a pointer that names only the header is the instruction that lets one run fragment"
+        )
+    retired = RETIRED_TRACE_RE.search(preflight)
+    if retired:
+        err(
+            f"agent tracing: {rel(sk)}: ## Preflight teaches the retired mechanism ({retired.group(0)!r}) — "
+            f"the server injects nothing: run_id is caller-carried, depth is platform-derived, identity "
+            f"comes from the API key (spec 060 D-22, FR-131, FR-204)"
+        )
+
+# ── The canonical sources: the text an agent actually reads, and the template the next skill is written from.
+# The shipped agent prompt is named as canonical by `contracts/preflight.md`; the cookbook prompt is the
+# kit's only subagent instruction; the template is what a future skill is authored against; the MCP
+# declaration's trace note is contract text.
+CANONICAL_TRACE_SOURCES = [
+    (PLUGINS / "agent-plugins/agentii-equity-agent/agents/agentii-equity-agent.md", "the canonical agent prompt"),
+    (CONTRACTS / "skill-methodology-template.md", "the authoring template"),
+    (MANAGED / "agentii-equity-agent/subagents/system-prompts/retrieval.md", "the cookbook subagent prompt"),
+    (CONTRACTS / "mcp-canonical.json", "the MCP declaration's trace note"),
+]
+for src, what in CANONICAL_TRACE_SOURCES:
+    checked += 1
+    if not src.exists():
+        err(f"agent tracing: {what} missing: {rel(src)} (spec 060 FR-106g(c))")
+        continue
+    src_text = src.read_text()
+    if '_run_id' not in src_text:
+        err(f"agent tracing: {rel(src)} ({what}): does not state the _run_id carry (spec 060 D-22)")
+    if 'parent' not in src_text:
+        err(f"agent tracing: {rel(src)} ({what}): does not state that a spawned agent declares parent= (spec 060 D-2/D-23)")
+    retired = RETIRED_TRACE_RE.search(src_text)
+    if retired:
+        err(
+            f"agent tracing: {rel(src)} ({what}): still teaches the retired mechanism ({retired.group(0)!r}) — "
+            f"spec 060 D-22/FR-131/FR-204 removed it"
+        )
+
+# ── The generators must write the template's sentence, or the next skill/export brings the old one back.
+_template_text = (CONTRACTS / "skill-methodology-template.md").read_text()
+_pointer_match = re.search(r"Include the `X-Agentii-Trace` header on every tool call[^\n]*", _template_text)
+CANONICAL_POINTER = _pointer_match.group(0).strip() if _pointer_match else None
+GENERATORS = [
+    ROOT / "scripts/dev/trace_instruction_v1_1.py",
+    ROOT / "scripts/scaffold_vertical.py",
+    ROOT / "scripts/dev/complete-scaffolds.py",
+]
+checked += 1
+if CANONICAL_POINTER is None:
+    err(
+        "agent tracing: contracts/skill-methodology-template.md declares no canonical tracing pointer — "
+        "the generators have nothing to agree with (spec 060 D-22)"
+    )
+else:
+    for gen in GENERATORS:
+        checked += 1
+        if not gen.exists():
+            err(f"agent tracing: generator missing: {rel(gen)}")
+            continue
+        if CANONICAL_POINTER not in gen.read_text():
+            err(
+                f"agent tracing: {rel(gen)}: writes a tracing pointer that differs from the template's — "
+                f"expected the sentence in contracts/skill-methodology-template.md, verbatim "
+                f"(run scripts/dev/trace_instruction_v1_1.py to converge the skills)"
+            )
 
 # --- Check 19: X-Agentii-Trace contract pair states the SHIPPED behaviour (FR-106g(c), spec 060 T024-T026) ---
 #

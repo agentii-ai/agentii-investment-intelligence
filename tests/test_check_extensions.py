@@ -51,8 +51,14 @@ def sandbox(tmp_path):
     """
     dst = tmp_path / "pkg"
     # Copy only what check.py touches to keep the fixture fast.
+    # `.github` and `tests` are part of "sufficient" for the third time (2026-09-23), and this time the
+    # reason is Check 3: its script-coverage section reads the CI definition (`.github`) to learn which
+    # scripts CI runs, then asks which of them a test *reaches* — by scanning `tests/`. Without either,
+    # the section reports scripts as uncovered and the BASELINE goes red for a reason that has nothing to
+    # do with the extension under test. Measured: adding both takes `test_baseline_green` and the
+    # conditional-state cases from red to green with no other change.
     for sub in ["scripts", "contracts", "plugins", "managed-agent-cookbooks",
-                ".claude-plugin", "data-tools"]:
+                ".claude-plugin", "data-tools", ".github", "tests"]:
         src = REPO_ROOT / sub
         if src.exists():
             shutil.copytree(src, dst / sub)

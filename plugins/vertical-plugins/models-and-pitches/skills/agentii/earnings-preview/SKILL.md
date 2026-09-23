@@ -23,6 +23,8 @@ min_tool_diversity: 5
 
 ## Preflight
 
+
+Run canonical pre-flight per `contracts/preflight.md`.
 Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace
 `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
@@ -38,8 +40,7 @@ If the Python library is absent, report the exact remediation (install the
 python-pptx package) and produce the `.md` degraded fallback per
 `contracts/office-tooling.md`.
 
-Include the `X-Agentii-Trace` header on every tool call per
-`contracts/x-agentii-trace-header.md`.
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
 ## Triggers
 
 - generate earnings preview deck

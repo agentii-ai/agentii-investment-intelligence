@@ -75,19 +75,15 @@ TOOL_JUSTIFY = {
     "batch_search": "consolidate 3+ same-tool queries into one metered call",
 }
 
-PREFLIGHT_PROBE = (
-    '!curl -s -o /dev/null -w "%{http_code}" --max-time 2 '
-    'https://mcp.agentii.ai/mcp/health 2>/dev/null || echo "UNREACHABLE"'
-)
-TRACE_BLOCK = (
-    "**Agent Call Tracing**: The first tool you call will return a `_run_id` in its "
-    "result. On every subsequent tool call, include HTTP header "
-    "`X-Agentii-Trace: agent={skill_name}; parent={caller_name}; instance={instance_label}`. "
-    "The MCP server will inject run_id, depth, and user_id automatically. When spawning "
-    "parallel sub-agents of the same type, assign each a unique instance label (e.g., "
-    "equity-research-1, equity-research-2). See `contracts/x-agentii-trace-header.md` for "
-    "the full contract."
-)
+# Both constants below were inline blocks: the `!curl` health probe and the full Agent Call Tracing
+# paragraph. The Phase 28 gates (`scripts/check.py:1274-1280`) reject both inside a SKILL.md — the
+# canonical tracing text belongs in the agent system prompt and the probe behind
+# `contracts/preflight.md` — so this script, whose whole job is to complete a missing `## Preflight`,
+# was writing content the repository's own gates fail. It writes the same **pointer** shape the
+# shipped skills carry (2026-09-23; the retired "the server injects run_id, depth and user_id" story
+# is in neither form: FR-131, D-22).
+PREFLIGHT_PTR = "Run canonical pre-flight per `contracts/preflight.md`."
+TRACE_PTR = "Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned)."
 
 MODELS = "models-and-pitches"
 
@@ -313,9 +309,9 @@ def process(path: Path) -> list[str]:
 
     # --- 4. Preflight section ---
     if "## Preflight" not in text:
-        pf = f"## Preflight\n\n{PREFLIGHT_PROBE}\n\n{TRACE_BLOCK}\n\n"
+        pf = f"## Preflight\n\n{PREFLIGHT_PTR}\n\n{TRACE_PTR}\n\n"
         # drop a loose trace block if present (it will live under Preflight)
-        text = text.replace(TRACE_BLOCK + "\n", "")
+        text = text.replace(TRACE_PTR + "\n", "")
         # insert before first '## ' section after the H1 title
         m = re.search(r"^(# .+\n)(.*?)(?=^## )", text, re.DOTALL | re.MULTILINE)
         if m:

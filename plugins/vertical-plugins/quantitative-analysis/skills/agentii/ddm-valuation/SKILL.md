@@ -20,9 +20,10 @@ Multi-stage DDM for mature dividend-paying companies. Values a stock as the pres
 
 ## Preflight
 
-Run the canonical pre-flight sequence — MCP health probe, ticker resolution, workspace `style.md` override, memory load, and coverage check. See `contracts/preflight.md`.
 
-Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md`.
+Run canonical pre-flight per `contracts/preflight.md`.
+
+Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
 ## Triggers
 
 - dividend discount model {ticker}

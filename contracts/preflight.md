@@ -51,3 +51,12 @@ The canonical tracing text lives in the agent system prompt
 (`plugins/agent-plugins/agentii-equity-agent/agents/agentii-equity-agent.md`).
 Skills reference `contracts/x-agentii-trace-header.md` in one line; do not inline
 the tracing block.
+
+That one line MUST state the **carry**, because the mechanism depends on it: the run id
+is minted once at `initialize`, arrives as `_run_id` in every `tools/call` result, and is
+carried by the caller on every subsequent call, which also names `agent` and — when it was
+spawned — `parent`. The retired story ("the server injects run_id, depth and user_id") is
+false and is not to be written anywhere: `depth` and `user_id` never travel on the wire.
+`scripts/check.py` Check 18 enforces both halves — the carry present, the retired story
+absent — across every committed `## Preflight`, the canonical sources, and the generators
+that write them.
