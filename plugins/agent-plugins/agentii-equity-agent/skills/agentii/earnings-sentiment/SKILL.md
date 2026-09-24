@@ -22,6 +22,8 @@ allowed_tools:
  - search_knowledge_entries
  - get_knowledge_entry
  - search_by_analogue
+ - search_insider_trades
+ - search_institutional_holdings
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 10
 ---

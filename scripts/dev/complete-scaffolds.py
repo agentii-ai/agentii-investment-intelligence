@@ -193,7 +193,7 @@ def build_methodology(name: str, rs: str, tools: list[str], dq: str, mq: str) ->
         proto = (
             "1. **Pre-flight (mandatory)**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`; route on coverage.\n"
             "2. **Layer 1 — discovery**: `search_documents` / `search_sec_filings` to find candidate filings by ticker/form_type/date.\n"
-            "3. **Layer 2 — page map**: `read_source_outline/{ticker}/{citation_id}`; skip NULL-description pages; escalate to `read_source_deep_outline` only when labels can't disambiguate.\n"
+            "3. **Layer 2 — page map**: `read_source_outline/{ticker}/{citation_id}` — every `description` is **platform-generated** (`description_provenance` says which kind), so never quote it as the filing's words; a `platform_metadata_placeholder` means the page was **not labelled**, which is a reason to read it, not to skip it. Escalate to `read_source_deep_outline` only when labels can't disambiguate.\n"
             "4. **Layer 2.5 (optional)**: `search_keyword_in_source` to narrow documents >50 pages.\n"
             "5. **Layer 3 — deep read**: `read_source_pages/{ticker}/{citation_id}?row_numbers=page<N>,...` for the 3–5 selected pages only.\n"
             "6. **Multi-period** (if applicable): `search_cross_period` after fiscal-calendar resolution.\n"

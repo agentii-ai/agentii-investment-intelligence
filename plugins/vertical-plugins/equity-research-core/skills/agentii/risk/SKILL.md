@@ -22,6 +22,8 @@ allowed_tools:
  - search_knowledge_entries
  - get_knowledge_entry
  - search_by_analogue
+ - get_company_profile
+ - search_earnings_calendar
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 10
 ---

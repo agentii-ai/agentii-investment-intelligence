@@ -15,6 +15,7 @@ allowed_tools:
  - read_source_deep_outline
  - read_source_pages
  - get_statement_structure
+ - get_company_financials
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 7
 ---

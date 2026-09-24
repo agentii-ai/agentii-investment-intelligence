@@ -13,6 +13,10 @@ allowed_tools:
  - get_company_profile
  - search_earnings_calendar
  - list_xbrl_concepts
+ - batch_search
+ - get_company_fiscal_calendar
+ - get_ticker_coverage
+ - list_coverage
  - Bash
 retrieval_scope: structured_only
 min_tool_diversity: 5

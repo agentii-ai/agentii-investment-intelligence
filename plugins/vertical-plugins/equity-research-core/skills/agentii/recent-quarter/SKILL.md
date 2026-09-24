@@ -23,6 +23,8 @@ allowed_tools:
  - search_documents
  - read_source_outline
  - read_source_pages
+ - search_insider_trades
+ - search_institutional_holdings
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 8
 ---

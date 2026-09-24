@@ -10,8 +10,9 @@ description: >-
   agentii.ai's agent-use-ready SEC filing data plane — SEC filings and 15K+ earnings
   call transcripts, 15.99M XBRL facts, and company profiles for 1,146+
   US-public-equity tickers. Features the three-layer retrieval protocol (Document
-  Discovery → Page Map → Deep Read, with deep-outline escalation) for ~99% token
-  efficiency, server-side parallel multi-period search via search_cross_period, a
+  Discovery → Page Map → Deep Read, with deep-outline escalation) — measured, not
+  asserted: 97.5% saved against a sequential read, and the page map itself is 10.0%
+  of one (spec 062 T030, 2026-09-23) — server-side parallel multi-period search via search_cross_period, a
   full Excel/PPT generation pipeline with 3-tier office backend support, and the
   spec-046 governance layer (constitution, thesis and single-skill modes,
   mechanical gates, and a template-owned disclaimer on generated reports).
@@ -37,7 +38,6 @@ tools:
   - get_company_profile
   - get_company_financials
   - get_company_fiscal_calendar
-  - get_earnings_calendar_event
   - get_statement
   - get_statement_structure
   - get_calculation_tree

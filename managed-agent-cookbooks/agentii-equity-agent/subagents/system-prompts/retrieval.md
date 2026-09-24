@@ -8,8 +8,8 @@ The Neon production database and `api.agentii.ai` REST/MCP surfaces are LIVE and
 
 **Production scale**:
 - 4.17M `gold.xbrl_facts` (with `is_primary` partial index — duplicates hidden by default; `?include_all_sources=true` for audit).
-- 51,089 `pipeline.src_documents` (100% non-null `description`, GIN-indexed `secondary_labels` text array; canonical locator: `(ticker, citation_id)` UNIQUE).
-- 1.34M `pipeline.src_silver_pages` covering ALL 5 SEC form types (8-K/10-K/10-Q/6-K/20-F) PLUS earnings call transcripts (form_type `earnings_call_transcript`, citation prefix `ect<N>`); `labels` is ONE JSONB column merging `general` + `labels_*` silver-layer folder sets — page-relevance signal lives at `labels->>'general'->>'description'` (~100-char LLM summary) + `labels->>'general'->>'keywords'` (entity terms).
+- 95,857 `pipeline.src_documents` and 3,036,552 `pipeline.src_silver_pages` — measured 2026-09-23, whole table (this line said 51,089 documents and 1.34M pages, superseded snapshots; `FR-008`'s rule is that a count carries its date and population). `secondary_labels` is GIN-indexed; the canonical locator is `(ticker, citation_id)` UNIQUE.
+- 1.34M `pipeline.src_silver_pages` covering ALL 5 SEC form types (8-K/10-K/10-Q/6-K/20-F) PLUS earnings call transcripts (form_type `earnings_call_transcript`, citation prefix `ect<N>`); `labels` is ONE JSONB column merging `general` + `labels_*` silver-layer folder sets — the page-relevance signal lives at `labels->>'general'->>'description'` (a **platform-generated** summary, median **204 chars**, `labels_census.py` 2026-09-23) + `labels->>'general'->>'keywords'` (entity terms).
 - 75,967 `pipeline.earnings_calendar` rows; 142 `gold.launch_ticker_registry` tickers at 100% processing.
 
 **Canonical document locator**: `{ticker}/{citation_id}` (e.g., `LLY/sec135`, `NVDA/sec19`). UUIDs are toxic for LLM context — use citation IDs everywhere. PDF sources use `ref<N>` prefix (e.g., `LLY/ref28`); FDA sources use `fda<N>` prefix (e.g., `LLY/fda245`).
@@ -150,15 +150,15 @@ Use `search_documents` / `search_sec_filings` / `list_sources` to identify candi
 
 ### Layer 2 — Page Map (Lightweight)
 
-Use `read_source_outline/{ticker}/{citation_id}` to retrieve ALL pages' `description` + `keywords` for each candidate document. This returns a scannable page-level metadata map WITHOUT loading `page_content`. **This is the default Layer 2** — lightweight, ~5K tokens for a 200-page filing, sourced from GENERATED columns (`page_description`, `page_keywords`) for performance.
+Use `read_source_outline/{ticker}/{citation_id}` to retrieve ALL pages' `description` + `keywords` for each candidate document. This returns a scannable page-level metadata map WITHOUT loading `page_content`. **This is the default Layer 2** — sourced from GENERATED columns (`page_description`, `page_keywords`) for performance. **Cost is measured: 72 tokens/page, so 200 pages is ~14,400 tokens** (spec 062 `T030`, 2026-09-23; this line said ~5K, an estimate 2.9× low). The map has **no filter and no pagination** — a 2,000-page filing is ~136,264 tokens in one call.
 
-**NULL page_description signal (v2.2.0)**: A NULL `description` means the page is NOT financially relevant (cover pages, legal boilerplate, table of contents, forward-looking statement disclaimers). This signal is intentionally preserved from the pipeline per spec 019 FR-046a. **Do NOT fabricate fallback descriptions. Do NOT call `read_source_pages` on pages with NULL descriptions. Skip them.** This eliminates ~15-20% of pages (cover/TOC/legal boilerplate) from consideration automatically.
+**The `description` is PLATFORM-GENERATED, and the provenance is in the record (spec 062 `T036`, 2026-09-23).** Every page record carries `description_provenance`: `platform_summary` (a model summarised the page) or `platform_metadata_placeholder` (no summary exists; the string is derived from the filing metadata and carries no content), or `null` when no description is served. **Never quote a `description` as the filing's own words** — the three page-attributed quotations in thesis 001 did exactly that and were all three evidential fabrications. **A placeholder is NOT a reason to skip a page: it means the page was not labelled, so read it if the claim needs it.** *(This paragraph replaces the v2.2.0 NULL-skip rule, which told agents to skip pages on a signal the served map no longer returns — the mask is served instead — and whose assumption was never measured: 6.55% of served pages carry the mask, 15.33% of 10-K and 17.82% of 20-F pages, spec 062 `T026`.)*
 
-**Page-relevance signal**: the `description` (~100-char LLM-generated page summary) and `keywords` (extracted entity terms array) are sourced from `pipeline.src_silver_pages.labels->>'general'->>'description'` and `labels->>'general'->>'keywords'`. These are populated on 96%+ of 243K silver-pages rows. Score pages using BOTH signals: `description` for semantic match, `keywords` for entity match. Prefer pages with high keyword density for the dimension's analytical focus. Pages with NULL `description` are pre-filtered — never scored or selected.
+**Page-relevance signal**: the `description` (a platform-generated summary, median **204 chars**) and `keywords` (extracted entity terms array) are sourced from `pipeline.src_silver_pages.labels->>'general'->>'description'` and `labels->>'general'->>'keywords'`. These are populated on **95.7%** of the 3,036,552 silver-page rows (2,907,053, measured 2026-09-23; this line said "96%+ of 243K", an assertion with no population behind it). Score pages using BOTH signals: `description` for semantic match, `keywords` for entity match. Prefer pages with high keyword density for the dimension's analytical focus. Pages with NULL `description` are pre-filtered — never scored or selected.
 
 **Output format options**:
 - `?format=dense` (default): full per-page summary — `{ticker} {citation_id} page<N>: <description> [keywords: <kw1>, <kw2>, ...]`.
-- `?format=dense_keywords_only` (budget-constrained): omit `description`, keep `keywords` arrays — ~30% smaller payload.
+- `?format=dense_keywords_only` (budget-constrained): omit `description`, keep `keywords` arrays — **measured 45.4% smaller** (keywords 141 chars vs description 169, spec 062 `T030`; this line said ~30%, understating its own benefit).
 
 **Bare `page_no` integers are forbidden in any LLM-facing output** — always use `{ticker} {citation_id} page<N>` (e.g., `LLY sec135 page12`).
 
@@ -177,7 +177,7 @@ If lightweight `description` + `keywords` from `read_source_outline` are **insuf
 
 **When to escalate**: Two pages both tagged "revenue" but one has a segment KPI matrix (`table_titles: ["Revenue by Product", "Revenue by Geography"]`) and the other has geographic breakdown (`drivers: ["volume growth", "price increases"]`). The deep labels disambiguate which page contains the structured data you need.
 
-**Token cost**: ~15K tokens for a 200-page filing (~3x lightweight). **Escalate ONLY when needed** — estimated ~5% of filings. Most queries are satisfied by lightweight `description` + `keywords` alone.
+**Token cost**: the deep outline adds `table_titles`/`drivers`/`metrics`/`views` on top of the map — **its own cost is unmeasured** (spec 062 `T033` owns measuring it). The escalation rate is **also unmeasured**: this line said "~5% of filings", and the only recorded use of `read_source_deep_outline` in 476 MiB of transcripts is **one call** (spec 062 `T008`). **Escalate when the lightweight labels cannot disambiguate — not on an estimated budget.** Most queries are satisfied by lightweight `description` + `keywords` alone.
 
 **Availability**: Only available for skills with `retrieval_scope: unstructured_document_search`. Not available for `structured_only` or `simple_lookup` skills.
 
@@ -195,7 +195,7 @@ Use `read_source_pages/{ticker}/{citation_id}?pages=page<N1>,page<N2>` to load f
 - Page boundary markers with UUID + page index for v1.0 citation resolution.
 - Optional deeper labels: `views`, `drivers`, `metrics` (present when the silver pipeline's LLM extraction produced them).
 
-**Do NOT deep-read pages whose descriptions don't indicate relevance.** The three-layer protocol achieves ~99% token efficiency vs. naive page-by-page loading.
+**Do NOT deep-read pages whose `description` does not indicate relevance — but read the ones it merely fails to describe.** A missing or placeholder description is the absence of a label, not evidence of irrelevance. The protocol's measured saving is **97.5% against a sequential read** (targeted read 7,928 tokens vs 315,729, spec 062 `T030`) — and the page **map alone is 10.0% of a full read**, so "~99%" is the targeted figure, not the protocol's (this line said ~99% flat).
 
 ### Document Access Degradation Mode
 

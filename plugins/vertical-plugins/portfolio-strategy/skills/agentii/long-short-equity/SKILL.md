@@ -6,7 +6,7 @@ temporal_scope:
   default_quarters: 8
   max_quarters: 20
   description: "8 quarters for portfolio construction; 20 for strategy backtesting."
-allowed_tools: [search_investment_strategies, get_investment_strategy, search_investment_cases, search_by_analogue, get_realtime_quote, search_xbrl_facts]
+allowed_tools: [search_investment_strategies, get_investment_strategy, search_investment_cases, search_by_analogue, get_realtime_quote, search_xbrl_facts, search_insider_trades, search_institutional_holdings]
 retrieval_scope: structured_only
 layer_tags: ["L3"]
 min_tool_diversity: 4

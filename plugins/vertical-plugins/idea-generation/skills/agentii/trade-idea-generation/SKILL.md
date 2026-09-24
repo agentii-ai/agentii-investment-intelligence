@@ -12,6 +12,8 @@ allowed_tools:
   - search_investment_cases
   - get_investment_case
   - search_by_analogue
+  - search_insider_trades
+  - search_institutional_holdings
 retrieval_scope: structured_only
 layer_tags: ["L2", "L3"]
 min_tool_diversity: 3

@@ -22,6 +22,9 @@ allowed_tools:
  - search_knowledge_entries
  - get_knowledge_entry
  - search_by_analogue
+ - get_company_fiscal_calendar
+ - get_ticker_coverage
+ - search_cross_period
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 8
 ---
@@ -83,7 +86,7 @@ Per frontmatter `allowed_tools`:
 
 1. **Pre-flight (mandatory)**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`; route on coverage.
 2. **Layer 1 — discovery**: `search_documents` / `search_sec_filings` to find candidate filings by ticker/form_type/date.
-3. **Layer 2 — page map**: `read_source_outline/{ticker}/{citation_id}`; skip NULL-description pages; escalate to `read_source_deep_outline` only when labels can't disambiguate.
+3. **Layer 2 — page map**: `read_source_outline/{ticker}/{citation_id}` — every `description` is **platform-generated** (`description_provenance` says which kind), so never quote it as the filing's words; a `platform_metadata_placeholder` means the page was **not labelled**, which is a reason to read it, not to skip it. Escalate to `read_source_deep_outline` only when labels can't disambiguate.
 4. **Layer 2.5 (optional)**: `search_keyword_in_source` to narrow documents >50 pages.
 5. **Layer 3 — deep read**: `read_source_pages/{ticker}/{citation_id}?pages=page<N>,...` for the 3–5 selected pages only.
 6. **Multi-period** (if applicable): `search_cross_period` after fiscal-calendar resolution.

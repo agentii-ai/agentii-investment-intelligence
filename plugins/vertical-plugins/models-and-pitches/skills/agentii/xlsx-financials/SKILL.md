@@ -11,6 +11,7 @@ allowed_tools:
  - get_statement
  - get_statement_structure
  - list_xbrl_concepts
+ - get_company_financials
  - Bash
 retrieval_scope: structured_only
 min_tool_diversity: 2

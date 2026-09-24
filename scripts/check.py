@@ -833,6 +833,17 @@ KNOWLEDGE_CASE_TOOLS.update(DEPRECATED_KNOWLEDGE_TOOLS)
 CANONICAL_TOOLS.update(FR011_TOOLS)
 CANONICAL_TOOLS.update(OFFICE_TOOLS)
 CANONICAL_TOOLS.update(DOCUMENT_TOOLS)
+# Tools the deployed MCP serves but that no literal above listed — added 2026-09-23 by spec 062's T045,
+# which granted 25 skills the tools their own bodies name and so made the gap visible: `search_institutional_holdings`
+# is granted by 9 skills and served by `mcp.agentii.ai` (verified against the deployed `tools/list`, 64 tools),
+# yet appeared in no canonical set, so the gate called nine correct declarations errors.
+#
+# The wider drift is RECORDED, not repaired here, because the canonical surface is FR-060's artifact: **three
+# served tools are listed nowhere** (these) and **27 names are listed but not served** (retired tools such as
+# `get_stock_quote`, `search_catalysts`, `read_rendered_statement`). Pruning those 27 is a capability-declaration
+# decision for that requirement's owner; the three below are added because a served, granted tool must be canonical.
+SERVED_BUT_UNLISTED = {"search_institutional_holdings", "get_eps_growth", "retrieve_and_contextualize"}
+CANONICAL_TOOLS.update(SERVED_BUT_UNLISTED)
 CANONICAL_TOOLS.update(KNOWLEDGE_CASE_TOOLS)
 CANONICAL_TOOLS.update(BUILTIN_TOOLS)
 # Also load from tool-name-map for any missing

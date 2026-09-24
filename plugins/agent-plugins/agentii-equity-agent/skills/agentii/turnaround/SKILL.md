@@ -25,6 +25,7 @@ allowed_tools:
  - search_by_analogue
  - search_investment_cases
  - get_investment_case
+ - search_earnings_calendar
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 10
 ---

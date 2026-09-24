@@ -12,6 +12,11 @@ allowed_tools:
  - get_calculation_tree
  - validate_calculation
  - list_sources
+ - get_company_fiscal_calendar
+ - get_company_profile
+ - get_ticker_coverage
+ - list_coverage
+ - search_xbrl_facts
  - xlsx-read
 retrieval_scope: simple_lookup
 min_tool_diversity: 3

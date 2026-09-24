@@ -16,6 +16,10 @@ allowed_tools:
  - search_knowledge_entries
  - get_knowledge_entry
  - search_by_analogue
+ - batch_search
+ - get_company_fiscal_calendar
+ - get_ticker_coverage
+ - list_coverage
 retrieval_scope: structured_only
 min_tool_diversity: 8
 ---

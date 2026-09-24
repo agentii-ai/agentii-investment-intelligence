@@ -57,7 +57,7 @@ Step-by-step numbered procedure (modeled on `himself65/finance-skills` pattern):
 The Neon production database and `api.agentii.ai` REST/MCP surfaces are LIVE and AUTHORITATIVE as of 2026-05-25. Every skill MUST treat the following as ground truth and call the pre-flight (`get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`) BEFORE any retrieval planning:
 
 - 4.17M `gold.xbrl_facts` (with `is_primary` partial index)
-- 51,089 `pipeline.src_documents` (100% non-null `description`, GIN-indexed `secondary_labels`)
+- 95,857 `pipeline.src_documents` / 3,036,552 `pipeline.src_silver_pages` (measured 2026-09-23, whole table — this line said 51,089 and "100% non-null `description`", a coverage claim that is unreachable and was never measured); `secondary_labels` is GIN-indexed
 - 1.34M `pipeline.src_silver_pages` covering ALL 5 SEC form types (8-K/10-K/10-Q/6-K/20-F) PLUS earnings call transcripts (`form_type=earnings_call_transcript`, citation prefix `ect<N>`)
 - 75,967 `pipeline.earnings_calendar` rows
 - 142 `gold.launch_ticker_registry` tickers at 100% processing
@@ -80,7 +80,7 @@ Skills performing unstructured document search at scale MUST follow the three-la
 - Score pages using BOTH `description` (semantic match) AND `keywords` (entity match).
 - Prefer pages with high keyword density for the dimension's analytical focus (e.g., `business-model` skill prefers pages whose keywords contain product/segment/channel terms).
 - Use the `dense` outline format by default: `{ticker} {citation_id} page<N>: <description> [keywords: <kw1>, ...]`.
-- Use the `dense_keywords_only` opt-in format (`?format=dense_keywords_only`, ~30% smaller payload) for budget-constrained skills.
+- Use the `dense_keywords_only` opt-in format (`?format=dense_keywords_only`, **measured 45.4% smaller** — spec 062 `T030`) for budget-constrained skills.
 - **Bare `page_no` integers are forbidden in any LLM-facing output** — always cite as `{ticker} {citation_id} page<N>`.
 
 ## Page Labels JSONB Contract
@@ -90,7 +90,7 @@ Skills performing unstructured document search at scale MUST follow the three-la
 ```json
 {
  "general": {
- "description": "<~100-char LLM-generated page summary>",
+ "description": "<platform-generated page summary, ~200 chars>",   // + "description_provenance": "platform_summary"
  "keywords": ["entity", "term", "..."],
  "category": "<page category>"
  },
@@ -102,7 +102,7 @@ Skills performing unstructured document search at scale MUST follow the three-la
 
 - Skills MUST read `labels->>'general'->>'description'` and `labels->>'general'->>'keywords'` as the primary page-relevance signal.
 - Secondary labels under other top-level keys are dimension-specific (e.g., a financial-results-focused skill may also read `labels->>'financial_results'->>'reported_period'`).
-- The `general` set is populated on 96%+ of 243K silver-pages rows; secondary `labels_*` sets appear in subsets per the dimension match.
+- The `general` set is populated on **95.7%** of 3,036,552 silver-page rows (2,907,053, measured 2026-09-23); secondary `labels_*` sets appear in subsets per the dimension match.
 
 ## Output File
 

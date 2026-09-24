@@ -21,6 +21,7 @@ allowed_tools:
   - search_clinical_trials
   - get_clinical_trial
   - search_earnings_calendar
+  - search_companies
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 3
 parameter_free: false
