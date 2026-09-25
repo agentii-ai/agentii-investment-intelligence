@@ -80,6 +80,52 @@ def _ask(model: str, temperature: float, system: str, user: str) -> tuple[str, d
                                                   "total_tokens": u.total_tokens}
 
 
+MCP_ENDPOINT = os.environ.get("AGENTII_MCP_ENDPOINT", "https://mcp.agentii.ai/mcp")
+
+
+def fetch_context(tag_axis: str, tag: str, page_size: int = 6) -> dict:
+    """The surface's own answer, fetched live. `(axis, tag)` → the payload `_context_block` consumes.
+
+    CALLED OVER THE MCP ENDPOINT because the v1 REST route is not usable with the key that was on hand:
+    `agentii-investment-intelligence/.env.local` answers `401 INVALID_API_KEY` ("Invalid or inactive")
+    while a key-less request answers a DIFFERENT code, `API_KEY_REQUIRED` — so the server sees a key and
+    rejects it. **Measured 2026-09-25: there are TWO keys and the file holds the dead one.** The
+    environment's `AGENTII_API_KEY` is a *different* value (51 chars vs 56) and it works — v1 returns 200
+    with data, and the MCP endpoint accepts it. So this reads the credential from the ENVIRONMENT and
+    never from that file; `_load_env` uses `setdefault`, so a real environment value is never overwritten.
+
+    **The first version of this function looked like it worked and did not**: a curl probe printed the
+    SSE envelope and I read `data: {"jsonrpc"...` as success, when the payload inside was
+    `{"error":{"code":"API_KEY_REQUIRED"}}`. The error was nested one level below what I looked at.
+
+    The response is SSE-framed (`data: {...}`) and nests its payload as a JSON string inside
+    `result.content[0].text`; both layers are unwrapped here rather than by the caller, **and the
+    unwrapped payload is checked for an `error` key** so a refusal cannot be mistaken for an answer.
+    """
+    import urllib.request
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                       "params": {"name": "search_by_analogue",
+                                  "arguments": {tag_axis: tag, "page_size": page_size}}}).encode()
+    headers = {"content-type": "application/json", "accept": "application/json, text/event-stream"}
+    key = os.environ.get("AGENTII_API_KEY")
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
+    req = urllib.request.Request(MCP_ENDPOINT, data=body, headers=headers)
+    with urllib.request.urlopen(req, timeout=60) as r:
+        raw = r.read().decode("utf-8", "replace")
+    for line in raw.splitlines():
+        if line.startswith("data:"):
+            raw = line[5:].strip()
+            break
+    payload = json.loads(json.loads(raw)["result"]["content"][0]["text"])
+    if "error" in payload:
+        raise RuntimeError(f"the surface refused: {payload['error']} — NOT an empty result. "
+                           f"A refusal read as a result is the defect this whole spec is about.")
+    payload["_fetched"] = {"axis": tag_axis, "tag": tag, "page_size": page_size,
+                           "endpoint": MCP_ENDPOINT, "when": "2026-09-25"}
+    return payload
+
+
 def _context_block(ctx: dict) -> str:
     keep = ("case_id", "title", "provenance", "analogue_tags", "tickers_referenced",
             "case_summary", "result_headline", "when_to_recall")
@@ -94,7 +140,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--skill", required=True)
     ap.add_argument("--modes", nargs="+", required=True)
     ap.add_argument("--tickers", nargs="+", required=True)
-    ap.add_argument("--context", type=pathlib.Path, required=True)
+    ap.add_argument("--context", type=pathlib.Path, default=None,
+                    help="a frozen context file; omit it and pass --fetch-tag to fetch live")
+    ap.add_argument("--fetch-tag", default=None, metavar="AXIS=VALUE",
+                    help="fetch the surface live, e.g. event_type=earnings-miss")
+    ap.add_argument("--context-out", type=pathlib.Path, default=None,
+                    help="write the fetched payload here, so the run is re-runnable from it")
     ap.add_argument("--out", type=pathlib.Path, required=True)
     ap.add_argument("--model", default=os.environ.get("ABLATION_MODEL", "deepseek/deepseek-chat"))
     ap.add_argument("--temperature", type=float, default=0.0)
@@ -108,7 +159,16 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     _load_env(args.env)
-    ctx = json.loads(args.context.read_text())
+    if args.context:
+        ctx = json.loads(args.context.read_text())
+    elif args.fetch_tag:
+        axis, _, value = args.fetch_tag.partition("=")
+        ctx = fetch_context(axis, value)
+        if args.context_out:
+            args.context_out.write_text(json.dumps(ctx, indent=2))
+    else:
+        print("ERROR: pass --context (frozen) or --fetch-tag AXIS=VALUE (live)", file=sys.stderr)
+        return 2
     block = _context_block(ctx)
 
     rows = []
@@ -177,8 +237,12 @@ def main(argv: list[str] | None = None) -> int:
                    if any(v is False for v in r["arms"]["without"]["verdicts"].values())]
         out["calibration"] = {"n": len(rows), "discriminating": len(discrim),
                               "flat": len(rows) - len(discrim),
+                              # The QUESTION TEXT is in here because `(mode, ticker)` is not unique — the
+                              # three framings share a pair. Its absence is what let the first selector
+                              # pull six controls in with five findings: a caller could not tell the
+                              # discriminating question from its siblings.
                               "discriminating_questions": [
-                                  {"mode": r["mode"], "ticker": r["ticker"],
+                                  {"mode": r["mode"], "ticker": r["ticker"], "question": r["question"],
                                    "failed": [k for k, v in r["arms"]["without"]["verdicts"].items()
                                               if v is False]}
                                   for r in discrim]}
