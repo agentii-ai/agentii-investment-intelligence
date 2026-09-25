@@ -25,8 +25,15 @@ is a property of the standard rather than of the corpus.
 **COST, AND WHY IT IS SMALLER THAN IT LOOKS.** Measured over both workspaces: **6,530 citations map to
 133 distinct documents** — citations cluster inside a filing. Caching by `(ticker, citation_id)` turns
 6,530 requests into **133**, and the rate limit is **20 per minute** (`x-ratelimit-limit: 20`, a
-~60-second window), so the complete verification is ~7 minutes. `--top N` bounds a first pass; the top
-20 documents cover 64.5% of all citations, the top 30 cover 76.6%.
+~60-second window). `--top N` bounds a first pass; the top 20 documents cover 64.5% of all citations,
+the top 30 cover 76.6%.
+
+**AND THE FIRST FULL RUN DID NOT FINISH IN ANY ESTIMATED TIME**, which is why there is a deadline. It
+stalled eight minutes on a single request — socket ESTABLISHED, 0.63s of CPU over five minutes, so
+blocked on I/O rather than spinning. Combined filing HTML runs past 5 MB and one document never
+completed. `MAX_FETCH_SECONDS` bounds each document, a truncated body is **not** cached, and it is
+reported as its own verdict (`fetch_timeout`) so the result can say how many documents were *not*
+checked — a document that silently disappears reads as one that passed.
 
 Documents are cached on disk, so a re-run costs nothing and a later full pass reuses an earlier batch.
 
@@ -69,7 +76,7 @@ def citations_in(paths: list[str]) -> dict[tuple[str, str], set[str]]:
     return out
 
 
-def _wait_for_window(headers: dict, used: int) -> None:
+def _wait_for_window(headers: dict) -> None:
     """Respect the service's own rate limit rather than discovering it by being refused."""
     remaining = int(headers.get("x-ratelimit-remaining", "20"))
     reset = int(headers.get("x-ratelimit-reset", "0"))
@@ -78,6 +85,26 @@ def _wait_for_window(headers: dict, used: int) -> None:
         if nap:
             print(f"    rate limit reached — sleeping {nap}s", file=sys.stderr)
             time.sleep(nap)
+
+
+#: A HARD WALL-CLOCK BOUND PER DOCUMENT, and it is not paranoia: the first full run stalled **8 minutes
+#: on one request** with the socket ESTABLISHED and CPU at 0.63s over 5 minutes — blocked on I/O, not
+#: spinning. `urlopen(timeout=)` bounds each socket operation, NOT the transfer, so a server that keeps
+#: the connection alive without finishing is unbounded by it. Some filings are 5 MB+ of combined HTML
+#: and one of them never completed.
+MAX_FETCH_SECONDS = float(os.environ.get("AGENTII_FETCH_DEADLINE", "120"))
+
+
+def _read_within_deadline(r, deadline: float) -> tuple[bytes, bool]:
+    """`(body, completed)`. Reads in chunks and gives up at the deadline rather than hanging."""
+    chunks, start = [], time.monotonic()
+    while True:
+        if time.monotonic() - start > deadline:
+            return b"".join(chunks), False
+        chunk = r.read(1 << 20)
+        if not chunk:
+            return b"".join(chunks), True
+        chunks.append(chunk)
 
 
 def fetch(ticker: str, cid: str) -> tuple[int, str, dict]:
@@ -95,15 +122,23 @@ def fetch(ticker: str, cid: str) -> tuple[int, str, dict]:
         req.add_header("Authorization", f"Bearer {key}")
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
-            body, status, hdrs = r.read().decode("utf-8", "replace"), r.status, dict(r.headers)
+            raw, completed = _read_within_deadline(r, MAX_FETCH_SECONDS)
+            body, status, hdrs = raw.decode("utf-8", "replace"), r.status, dict(r.headers)
     except urllib.error.HTTPError as e:
         body, status, hdrs = e.read().decode("utf-8", "replace"), e.code, dict(e.headers)
+        completed = True
     except Exception as e:                                     # network, timeout, DNS
         return 0, str(e), {}
 
+    if not completed:
+        # A TRUNCATED BODY IS NOT CACHED, and its status is recorded as its own number so the report
+        # can say how many documents were NOT checked. A silently missing document reads as a document
+        # that passed — the same failure this whole specification is about.
+        return -1, f"deadline {MAX_FETCH_SECONDS:.0f}s exceeded after {len(body)} bytes", {}
+
     f.write_text(body, errors="replace")
     meta.write_text(str(status))
-    _wait_for_window(hdrs, 0)
+    _wait_for_window(hdrs)
     return status, body, hdrs
 
 
@@ -120,6 +155,7 @@ def check(paths: list[str], top: int | None) -> dict:
         pages[f"{ticker}/{cid}"] = sorted(int(x) for x in present)
         for n in sorted(wanted, key=int):
             verdict = ("document_missing" if status == 404 else
+                       "fetch_timeout" if status == -1 else
                        "fetch_error" if status != 200 else
                        "resolves" if n in present else "page_missing")
             rows.append({"ticker": ticker, "citation_id": cid, "page": int(n),
