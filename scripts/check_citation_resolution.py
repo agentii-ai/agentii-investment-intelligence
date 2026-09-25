@@ -93,6 +93,22 @@ def _wait_for_window(headers: dict) -> None:
 #: the connection alive without finishing is unbounded by it. Some filings are 5 MB+ of combined HTML
 #: and one of them never completed.
 MAX_FETCH_SECONDS = float(os.environ.get("AGENTII_FETCH_DEADLINE", "120"))
+#: Statuses that are a statement about MY REQUEST rather than about the document. Never cached, always
+#: retried.
+TRANSIENT = {408, 425, 429, 500, 502, 503, 504}
+MAX_ATTEMPTS = 4
+
+
+def _backoff(attempt: int, headers: dict) -> float:
+    """`Retry-After` when the service offers one, otherwise exponential. Capped, so a hostile header
+    cannot park the run."""
+    ra = headers.get("retry-after") or headers.get("Retry-After")
+    if ra:
+        try:
+            return min(float(ra) + 1, 90.0)
+        except ValueError:
+            pass
+    return min(5.0 * (2 ** attempt), 60.0)
 
 
 def _read_within_deadline(r, deadline: float) -> tuple[bytes, bool]:
@@ -116,30 +132,50 @@ def fetch(ticker: str, cid: str) -> tuple[int, str, dict]:
         return int(meta.read_text().strip()), f.read_text(errors="replace"), {}
 
     url = API.format(ticker=ticker, citation_id=cid)
-    req = urllib.request.Request(url)
     key = os.environ.get("AGENTII_API_KEY")
-    if key:
-        req.add_header("Authorization", f"Bearer {key}")
-    try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            raw, completed = _read_within_deadline(r, MAX_FETCH_SECONDS)
-            body, status, hdrs = raw.decode("utf-8", "replace"), r.status, dict(r.headers)
-    except urllib.error.HTTPError as e:
-        body, status, hdrs = e.read().decode("utf-8", "replace"), e.code, dict(e.headers)
-        completed = True
-    except Exception as e:                                     # network, timeout, DNS
-        return 0, str(e), {}
+    last = ""
+    for attempt in range(MAX_ATTEMPTS):
+        req = urllib.request.Request(url)
+        if key:
+            req.add_header("Authorization", f"Bearer {key}")
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                raw, completed = _read_within_deadline(r, MAX_FETCH_SECONDS)
+                body, status, hdrs = raw.decode("utf-8", "replace"), r.status, dict(r.headers)
+        except urllib.error.HTTPError as e:
+            code, hdrs = e.code, dict(e.headers)
+            body = e.read().decode("utf-8", "replace")
+            # A 429 IS NOT AN ANSWER TO THE QUESTION THE CORPUS IS ASKING. The first full run cached 33
+            # of them and reported "fetch_error 57" — a finding about my burst, dressed as a finding
+            # about the corpus, which is this specification's defect class wearing its own clothes.
+            # Transient statuses are retried and never cached.
+            if code in TRANSIENT:
+                last = f"HTTP {code}"
+                time.sleep(_backoff(attempt, hdrs))
+                continue
+            # 404 IS an answer — a definitive one — and 200 is the other. Only those two are cached.
+            f.write_text(body, errors="replace")
+            meta.write_text(str(code))
+            if code != 404:
+                _wait_for_window(hdrs)
+            return code, body, hdrs
+        except Exception as e:                                 # network, timeout, DNS
+            last = str(e)
+            time.sleep(_backoff(attempt, {}))
+            continue
 
-    if not completed:
-        # A TRUNCATED BODY IS NOT CACHED, and its status is recorded as its own number so the report
-        # can say how many documents were NOT checked. A silently missing document reads as a document
-        # that passed — the same failure this whole specification is about.
-        return -1, f"deadline {MAX_FETCH_SECONDS:.0f}s exceeded after {len(body)} bytes", {}
+        if not completed:
+            # A TRUNCATED BODY IS NOT CACHED, and its status is recorded as its own number so the
+            # report can say how many documents were NOT checked.
+            return -1, f"deadline {MAX_FETCH_SECONDS:.0f}s exceeded after {len(body)} bytes", {}
 
-    f.write_text(body, errors="replace")
-    meta.write_text(str(status))
-    _wait_for_window(hdrs)
-    return status, body, hdrs
+        f.write_text(body, errors="replace")
+        meta.write_text(str(status))
+        _wait_for_window(hdrs)
+        return status, body, hdrs
+    # Its OWN verdict, never merged into `fetch_error`: "the service told me to slow down and I ran out
+    # of attempts" is a statement about the run, and the corpus has not been asked.
+    return -2, f"gave up after {MAX_ATTEMPTS} attempts: {last}", {}
 
 
 def check(paths: list[str], top: int | None) -> dict:
@@ -156,6 +192,7 @@ def check(paths: list[str], top: int | None) -> dict:
         for n in sorted(wanted, key=int):
             verdict = ("document_missing" if status == 404 else
                        "fetch_timeout" if status == -1 else
+                       "not_checked" if status == -2 else
                        "fetch_error" if status != 200 else
                        "resolves" if n in present else "page_missing")
             rows.append({"ticker": ticker, "citation_id": cid, "page": int(n),
