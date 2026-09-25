@@ -164,7 +164,7 @@ def _count_words(text: str) -> int:
     return len(re.findall(r"\S+", text))
 
 
-def _section(body: str, title: str) -> str | None:
+def section(body: str, title: str) -> str | None:
     """The body of the section whose heading starts with `title`."""
     lines = body.splitlines()
     n = _norm(title)
@@ -267,7 +267,7 @@ def check_text(text: str, *,
     # "the skill is the authority" already lives. One defect keeps one reporter.
     roll = None
     for cand in ("Coverage Gaps & Citations", "Citations", "Coverage Gaps"):
-        roll = _section(body, cand)
+        roll = section(body, cand)
         if roll is not None:
             break
     counts["has_citations_rollup"] = roll is not None
@@ -291,7 +291,7 @@ def check_text(text: str, *,
                 f"declared element absent: `{e}` — the skill's own `## Output Structure` "
                 f"lists it, and FR-002 holds an output to the standard its skill declared")
         budget = criteria["exec_words"]
-        es = _section(body, "Executive Summary")
+        es = section(body, "Executive Summary")
         if es is not None:
             n = _count_words(es)
             counts["exec_words"] = n

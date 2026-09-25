@@ -98,7 +98,7 @@ FACT_RX = re.compile(
 )
 
 
-def _split(text: str) -> tuple[str, str, list[str]]:
+def split_frontmatter(text: str) -> tuple[str, str, list[str]]:
     """(frontmatter, body, frontmatter lines). A file without `---` has an empty frontmatter."""
     if not text.startswith("---"):
         return "", text, []
@@ -107,6 +107,20 @@ def _split(text: str) -> tuple[str, str, list[str]]:
         return "", text, []
     fm = text[3:end]
     return fm, text[end + 4:], fm.splitlines()
+
+
+def fact_lines(body: str) -> list[str]:
+    """Every line carrying a material fact — the DENOMINATOR `bare_fact_lines` takes a subset of.
+
+    Exported for the rubric (spec 062 `T083`), which asks a question this lint deliberately does
+    not: *what share of the prose is facts?* The owner's complaint about the current output is a
+    pile of data rather than a readable report ("大量facts和数据的堆砌"), and a share needs both
+    halves. Exemptions are NOT applied here and no link is required — this is every fact-bearing
+    line, whatever else is true of it.
+    """
+    return [f"L{i}: {l.strip()[:90]}" for i, l in enumerate(body.splitlines(), 1)
+            if l.strip() and not l.strip().startswith(("#", "|", "---"))
+            and FACT_RX.search(l)]
 
 
 def bare_fact_lines(body: str) -> list[str]:
@@ -163,7 +177,7 @@ def bare_fact_lines(body: str) -> list[str]:
 
 def check(path: pathlib.Path, min_density: float = 1.0) -> dict:
     raw = path.read_text(encoding="utf-8", errors="replace")
-    fm, body, fm_lines = _split(raw)
+    fm, body, fm_lines = split_frontmatter(raw)
     findings: list[dict] = []
 
     # R1 — the frontmatter block and its pins.
