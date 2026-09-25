@@ -4,8 +4,15 @@
 Moves each skill's detailed `## Output Structure` template into
 `references/output-structure.md` and replaces the body section with a compact,
 CI-compliant summary (>=5 non-empty lines) that preserves the canonical
-`**Citations & memory**:` pointer and states the inline-primary / bottom-rollup
-citation policy (US8 T055). Creates a `references/` dir for every skill.
+`**Citations & memory**:` pointer and states the inline-primary citation
+policy (US8 T055). Creates a `references/` dir for every skill.
+
+**What element 4 says changed 2026-09-25** (spec 062 `T084`). It used to state
+`the bottom **Citations** section is a non-duplicative roll-up index`, which read
+as a required element; the standard is the link BESIDE the fact, and spec 062's
+`scripts/check_output.py` R3 rejects a trailing roll-up. The roll-up is optional
+now. This constant is a GENERATOR's, so leaving it behind would re-teach the old
+shape the next time this script runs over a lean skill.
 
 Only processes skills whose total word count exceeds the target threshold, so
 already-lean skills are left intact.
@@ -36,7 +43,9 @@ def build_summary(citation_pointer: str) -> str:
         "1. **Executive Summary** — headline conclusions (≤200 words).",
         "2. **Core analysis sections** — per this skill's methodology and analyst modes.",
         "3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.",
-        "4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.",
+        "4. **Coverage Gaps & Citations** — coverage gaps are required; inline `/v/` citations "
+        "are the citation surface (immediately after each fact). A bottom roll-up index is "
+        "optional, and where kept it must not repeat a link the prose already carries.",
         "5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.",
         "",
     ]

@@ -43,12 +43,32 @@ Inline bare text `{ticker} {citation_id} page<N>` is acceptable as the citation
    metric is immediately followed by its clickable
    `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link. Do NOT defer all
    citations to a bottom section.
-2. **Bottom "Citations" section = roll-up index** — a non-duplicative index of
-   the sources already linked inline, not the primary citation surface.
-3. **Final Summary (TUI)** — after writing the deliverable, the skill's closing
-   chat message MUST include a compact **Key Citations** list (the headline 5–10
-   facts) of clickable `/v/` URLs, so the user can cmd+click straight to the
-   exact SEC page without opening the file. Keep it terse — headline facts only.
+2. **Bottom "Citations" section (OPTIONAL) = roll-up index** — a non-duplicative
+   index of the sources already linked inline, not the primary citation surface.
+   Optional because item 1 is the whole standard: an artifact whose every fact
+   carries its link needs no second hop, and a roll-up that repeats a link the
+   prose already gives is duplication rather than an index. Changed 2026-09-25
+   (spec 062 `T084`) — the `equity-research-core` nine dropped it as a required
+   element, and the owner's rule is the link *beside* the fact.
+3. **Final Summary (TUI)** — after writing the deliverable, the closing chat message
+   MUST be a summary a reader can use **without opening the file**, in this order:
+   the **title** (`{ticker} · {skill} · {as_of}`); the **key conclusions** (3–5
+   one-liners, each carrying its `[FACT]`/`[DEDUCTED]`/`[VIEW]` tag); the **key
+   metrics** (3–6 numbers a reader would repeat to someone else); the deliverable's
+   own **Executive Summary**; and a compact **Key Citations** list — the headline
+   **5–10** facts, each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}`
+   link, so the user can cmd+click straight to the exact SEC page. Keep it terse.
+   **It is a summary, not a copy**: every headline in the chat must already appear in
+   the file, beside its link, and nothing may appear in the chat that the file does
+   not carry.
+
+   **The five parts and the 5–10 bound are the `equity-research-core` nine's shape, and
+   they are the standard** (recorded 2026-09-25, spec 062 `T084`). The nine previously
+   declared only the Key Citations part; the other four existed in the owner's
+   requirement and in the artifacts, not in any skill. **Known divergence, not repaired
+   here**: 40 skills in the other vertical plugins declare `### Key Citations` with a
+   **0–10** bound (canonical wording in `CHANGELOG.md`'s FR-081 entry), and 0–10 admits
+   an empty list where 5–10 does not. Aligning them is the kit's work, not this spec's.
 
 Never emit a vague `{Citations}` / `{Source(s)}` placeholder or a
 `_(cite source filing in standard agentii citation format at runtime)_` hint:

@@ -81,7 +81,7 @@ Skills performing unstructured document search at scale MUST follow the three-la
 - Prefer pages with high keyword density for the dimension's analytical focus (e.g., `business-model` skill prefers pages whose keywords contain product/segment/channel terms).
 - Use the `dense` outline format by default: `{ticker} {citation_id} page<N>: <description> [keywords: <kw1>, ...]`.
 - Use the `dense_keywords_only` opt-in format (`?format=dense_keywords_only`, **measured 45.4% smaller** — spec 062 `T030`) for budget-constrained skills.
-- **Bare `page_no` integers are forbidden in any LLM-facing output** — always cite as `{ticker} {citation_id} page<N>`.
+- **Bare `page_no` integers are forbidden in any LLM-facing output** — always write the page as the notation `{ticker} {citation_id} page<N>`. **This is a RETRIEVAL notation, not the citation format**: a citation that appears in a deliverable is the clickable link defined in **§ Citation Link Format** below. The two were read as one rule until 2026-09-25 (spec 062 `T084`), and a reader who took this line for the citation format produced a deliverable whose facts carried no clickable link.
 
 ## Page Labels JSONB Contract
 
@@ -126,7 +126,7 @@ Where:
 
 **Workspace path semantics**: the path is RELATIVE to the agent's invocation cwd, NOT to any plugin install directory. Skills MUST NOT write under absolute system paths.
 
-The skill's `## Output Structure` section MUST specify the affix template and the section ordering of the deliverable. Citation density: ≥1 citation per 200 words, format `{ticker} {citation_id} page<N>` .
+The skill's `## Output Structure` section MUST specify the affix template and the section ordering of the deliverable. Citation density: ≥1 citation per 200 words, counted over the clickable links defined in **§ Citation Link Format** below — the density applies to *those links* (as `:262` of this file already states), not to a bare `page<N>` notation.
 
 ### Multi-Ticker Output Convention
 

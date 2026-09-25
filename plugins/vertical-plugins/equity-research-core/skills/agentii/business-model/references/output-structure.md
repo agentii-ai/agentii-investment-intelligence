@@ -24,6 +24,6 @@ The deliverable file MUST contain (in order):
 7. **Business Unit Performance** — segment-level P&L where available (XBRL or narrative).
 8. **Market Sizing & Competitive Positioning** (mode 1_4) — TAM/SAM/SOM, relative growth vs. market.
 9. **Management & Leadership** (mode 1_5) — executive team, recent changes, strategic implications.
-10. **Coverage Gaps & Citations** — list of dimensions not retrievable + full citation index in `{ticker} {citation_id} page<N>` format.
+10. **Coverage Gaps & Citations** — cover what could not be retrieved; citations appear inline beside their facts (a bottom index is optional and never a repeat)
 
-**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; citations belong inline, a bottom roll-up index is optional and never a repeat of a link already given; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.

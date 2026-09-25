@@ -28,10 +28,13 @@ against a declared placeholder vocabulary and names the value when it fails.
 WHAT IT CANNOT SEE, stated because an unreported gap reads as coverage
 ---------------------------------------------------------------------
 * **Criterion 4 is a proximity proxy.** "Every material fact is immediately followed by its
-  inline link" is checked as *a line carrying a figure must carry a `/v/` link*. A figure
-  whose link sits on the next line fails, and a link that resolves to the wrong page
-  passes. The corpus-wide count is reported rather than a verdict, because the honest
-  answer is "N lines carry figures and no link", not "this artifact is wrong".
+  inline link" is checked as *a line stating a material fact must carry a `/v/` link on it or
+  one line either side* — and the definition is IMPORTED, `check_output.bare_fact_lines`,
+  rather than re-derived here: two definitions of one rule is the drift this kit keeps
+  removing. What it still cannot see: a link that resolves to the wrong page, and a fact
+  stated without a currency amount, a percentage or a quotation, which it does not recognise
+  as a fact at all. The corpus-wide count is reported rather than a verdict, because the
+  honest answer is "N lines state a fact and carry no link", not "this artifact is wrong".
 * **The element check matches HEADINGS.** An artifact that discusses "Business Model Type"
   in prose without a heading is scored absent. That is the declared convention (§ elements
   are sections) and it is why the corpus measures 0 of 206 on Executive Summary — the
@@ -44,6 +47,11 @@ import json
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Criterion 4's rule has ONE implementation and it is not this file's. See `criterion 4` below for
+# why the calibrated definition wins, and `check_output.bare_fact_lines` for the calibration.
+import check_output as lint  # noqa: E402
 
 try:
     import yaml
@@ -77,7 +85,12 @@ _WORD_BUDGET = re.compile(r"[≤<=]\s*(\d+)\s*words?", re.I)
 _PER_WORDS = re.compile(r"per\s+(\d+)\s+words?", re.I)
 _LINK = re.compile(r"https://agentii\.ai/v/[^\s)\"'\\>]+")
 _BADGE = re.compile(r"\[(?:FACT|DEDUCTED|VIEW)\]")
-_FIGURE = re.compile(r"(?:\$|€|£)\s?\d|\b\d+(?:\.\d+)?\s?(?:%|bn|billion|m|million|k|x)\b|\b\d{4}\b")
+#: `_FIGURE` USED TO LIVE HERE and is deleted rather than left: after criterion 4 began importing
+#: `check_output.bare_fact_lines` (2026-09-25) nothing read it. Its pattern was
+#: `[\$€£]\d|\d+(?:\.\d+)?(%|bn|billion|m|million|k|x)|\b\d{4}\b` — the last alternative is why it
+#: fired on a year, which the rule it duplicates explicitly refuses. A constant with no reader is
+#: a claim with no check (spec 058 `T261` deleted `TOKEN_BUDGETS` for the same reason); if a future
+#: criterion needs a figure pattern, it needs a criterion, not a resurrection.
 _HEADING = re.compile(r"^\s{0,3}#{1,6}\s")
 
 
@@ -173,7 +186,9 @@ def _section(body: str, title: str) -> str | None:
 def check_text(text: str, *,
                criteria: dict | None = None) -> tuple[list[str], dict]:
     """`(problems, counts)` for one artifact. `criteria` comes from `criteria_for`; when
-    omitted, only the criteria that need no skill are applied (the pins, the roll-up)."""
+    omitted, only the criteria that need no skill are applied (the pins, and the roll-up's
+    own non-duplication). Existence of a declared element is NOT one of them: it comes from
+    the skill, so a caller without criteria cannot check it and must not pretend to."""
     problems: list[str] = []
     counts: dict = {}
     fm = _frontmatter(text)
@@ -218,40 +233,52 @@ def check_text(text: str, *,
             "declares that findings are tagged, so an untagged artifact cannot be read "
             "for what is observed and what is inferred")
 
-    # ── criterion 4: a figure needs its inline link (a proximity proxy) ─────
-    unlinked = []
-    for i, line in enumerate(body.splitlines(), 1):
-        s = line.strip()
-        if not s or _HEADING.match(line) or s.startswith("```") or s.startswith("|"):
-            continue
-        if _FIGURE.search(s) and not _LINK.search(s):
-            unlinked.append(i)
+    # ── criterion 4: a material fact needs its link beside it ───────────────
+    # ONE RULE, ONE IMPLEMENTATION (D1) — and this criterion's was the second copy. Until
+    # 2026-09-25 it used its own `_FIGURE`, which matched `\b\d{4}\b` and therefore fired on a
+    # YEAR, plus a same-line-only window. `check_output.bare_fact_lines` was calibrated against
+    # the corpus this standard is about (28 of 50 artifacts, 2026-09-24; `specs/062-.../
+    # evidence/output-lint-calibration.md`), so it is the definition that survived measurement,
+    # and it is the one imported here. The two also disagreed on `[DEDUCTED]` lines, coverage
+    # gaps and methodology notes, which the calibrated rule exempts and this one flagged.
+    #
+    # THE COUNT CHANGES MEANING WITH THE DEFINITION, recorded rather than smoothed: a count
+    # taken before this date includes years and same-line-only misses; one taken after counts
+    # material facts with a one-line window. Comparing them compares two rules, not two corpora.
+    unlinked = lint.bare_fact_lines(body)
     counts["figures_without_inline_link"] = len(unlinked)
     if unlinked:
         problems.append(
-            f"criterion 4: {len(unlinked)} line(s) carry a figure with no inline `/v/` "
-            f"link (first: line {unlinked[0]}). The rule is that every material fact, "
-            f"table row and metric is immediately followed by its link")
+            f"criterion 4: {len(unlinked)} line(s) state a material fact with no `/v/` link "
+            f"beside them (same line or one either side). First: {unlinked[0]}")
 
-    # ── criterion 5: the roll-up ────────────────────────────────────────────
+    # ── criterion 5: a roll-up, IF PRESENT, must be non-duplicative ─────────
+    # THIS CRITERION WAS THE ONE PLACE THAT BROKE FR-002, and the repair is a removal.
+    #
+    # Until 2026-09-25 it REQUIRED a bottom Citations section outright — a rule this script
+    # INVENTED rather than derived, so a skill that declared no Citations element was still
+    # held to one. In the same tree, `scripts/check_output.py` R3 (spec 062 `FR-034`) REJECTS
+    # a trailing roll-up, because the owner's standard is the link beside the fact. Two
+    # instruments with opposite verdicts on one shape, and neither read the skill's own text.
+    #
+    # What is left is the roll-up's own property: a section that repeats its own lines verbatim
+    # is duplication by construction, declared or not. EXISTENCE IS NOT CHECKED HERE — a skill
+    # that declares the element is covered by the declared-elements check below, which is where
+    # "the skill is the authority" already lives. One defect keeps one reporter.
     roll = None
     for cand in ("Coverage Gaps & Citations", "Citations", "Coverage Gaps"):
         roll = _section(body, cand)
         if roll is not None:
             break
     counts["has_citations_rollup"] = roll is not None
-    if roll is None:
-        problems.append(
-            "criterion 5: no Citations roll-up section — the skill declares a bottom "
-            "index in addition to the inline links")
-    else:
+    if roll is not None:
         items = [l.strip() for l in roll.splitlines() if l.strip()]
         dupes = len(items) - len(set(items))
         counts["rollup_duplicate_lines"] = dupes
         if dupes:
             problems.append(
                 f"criterion 5: the Citations roll-up repeats {dupes} line(s) verbatim — "
-                f"it is declared as a NON-DUPLICATIVE index")
+                f"an index that restates what it already indexes is duplication, not an index")
 
     # ── criterion 1 + the declared elements ────────────────────────────────
     if criteria:

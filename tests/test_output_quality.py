@@ -143,15 +143,56 @@ def test_criterion_4_a_figure_without_its_inline_link_fails(tmp_path, skill):
 
 
 def test_criterion_5_a_duplicated_rollup_fails(tmp_path, skill):
+    """The half of criterion 5 that survives: a roll-up that repeats itself is duplication.
+
+    The assertion used to look for the word "non-duplicative", which came from the gate's own
+    invented framing — the phrase it used to REQUIRE the section. Dropped along with the
+    requirement; what is asserted now is the property, not the vocabulary.
+    """
     body = GOOD_BODY + "- https://agentii.ai/v/FLY/sec101/12\n"
     problems = _check(tmp_path, skill, body)
-    assert any("criterion 5" in p and "non-duplicative" in p.lower() for p in problems), problems
+    assert any("criterion 5" in p and "repeats" in p and "verbatim" in p for p in problems), problems
 
 
-def test_criterion_5_a_missing_rollup_fails(tmp_path, skill):
+def test_a_missing_rollup_is_not_criterion_5_and_is_still_reported_once(tmp_path, skill):
+    """The repair of 2026-09-25: existence moved to the check that already owned it.
+
+    Until that date criterion 5 REQUIRED a bottom Citations section outright — a rule this gate
+    INVENTED, because nothing made the element mandatory for a skill that did not declare it, and
+    `scripts/check_output.py` R3 (spec 062 `FR-034`) rejects one on the same tree. Two
+    instruments, opposite verdicts, neither reading the skill.
+
+    **Deleting the requirement must not delete the finding.** This skill DOES declare
+    `Coverage Gaps & Citations` as element 4, and the declared-elements check is where "the skill
+    is the authority" (FR-002) already lives. So the assertion is that the artifact still fails —
+    and fails exactly once — not that it now passes. A repair that turned a red fixture green
+    would be the defect this specification is named after.
+    """
     body = GOOD_BODY.split("## Coverage Gaps & Citations")[0]
     problems = _check(tmp_path, skill, body)
-    assert any("criterion 5" in p for p in problems), problems
+    assert not any("criterion 5" in p for p in problems), (
+        "criterion 5 no longer owns existence — a roll-up is optional unless the skill's own "
+        f"`## Output Structure` says otherwise: {problems}")
+    hits = [p for p in problems if "declared element absent" in p
+            and "Coverage Gaps & Citations" in p]
+    assert len(hits) == 1, f"the finding must survive the repair, exactly once: {problems}"
+
+
+def test_a_skill_declaring_no_rollup_is_not_held_to_one(tmp_path, skill):
+    """The other direction, and the one T084 depends on.
+
+    FR-002: the skill is the authority. A skill whose `## Output Structure` declares no Citations
+    element must NOT fail an artifact that carries none. Without this case the repair above is
+    indistinguishable from having deleted a rule and hoped — the test that says "the gate can say
+    no" has to be paired with one that says "the gate can say yes to the new shape".
+    """
+    (skill / "SKILL.md").write_text(SKILL_MD.replace(
+        "4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY; the bottom\n"
+        "   **Citations** section is a non-duplicative roll-up index.\n", ""))
+    assert "Coverage Gaps" not in (skill / "SKILL.md").read_text(), "the fixture kept element 4"
+    body = GOOD_BODY.split("## Coverage Gaps & Citations")[0]
+    problems = _check(tmp_path, skill, body)
+    assert not any("Coverage Gaps & Citations" in p for p in problems), problems
 
 
 def test_criterion_6_a_truthy_placeholder_pin_fails(tmp_path, skill):

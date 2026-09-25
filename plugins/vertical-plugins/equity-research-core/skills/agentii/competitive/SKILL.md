@@ -109,10 +109,10 @@ The deliverable is a structured markdown report written to the path in `## Outpu
 1. **Executive Summary** — headline conclusions (≤200 words).
 2. **Core analysis sections** — per this skill's methodology and analyst modes.
 3. **Data classification** — tag findings `[FACT]` / `[DEDUCTED]` / `[VIEW]` per `contracts/snapshot-synthesis.md`.
-4. **Coverage Gaps & Citations** — inline `/v/` citations are PRIMARY (immediately after each fact); the bottom **Citations** section is a non-duplicative roll-up index.
+4. **Coverage Gaps & Citations** — coverage gaps are required; inline `/v/` citations are the citation surface (immediately after each fact). A bottom roll-up index is optional, and where kept it must not repeat a link the prose already carries.
 5. **Output frontmatter** — emit the FR-090 structured block per `contracts/output-frontmatter-schema.md`.
 
-**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; a bottom **Citations** section provides a non-duplicative roll-up index; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
+**Citations & memory**: follow `contracts/citation-and-memory.md` — ≥1 citation per 200 words; every material fact, table row, and metric is immediately followed by its inline clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link; citations belong inline, a bottom roll-up index is optional and never a repeat of a link already given; the closing TUI reply includes a compact **Key Citations** list (headline 5–10 facts) of clickable `/v/` URLs; and append the run to `agentii.md` per `contracts/agentii-md-schema.md`.
 
 ## Memory & Snapshot
 
@@ -123,7 +123,7 @@ The deliverable is a structured markdown report written to the path in `## Outpu
 
 ## Final Summary (TUI)
 
-End the closing chat reply with a compact **Key Citations** list (headline 5–10 facts), each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link, so the user can cmd+click straight to the exact SEC page. See `contracts/citation-and-memory.md`.
+End the closing chat reply with the summary shape in `contracts/citation-and-memory.md` — Citation Placement Policy item 3: title · key conclusions · key metrics · Executive Summary · **Key Citations** (the headline 5–10 facts, each a clickable `https://agentii.ai/v/{ticker}/{citation_id}/{N}` link), so the user can cmd+click straight to the exact SEC page without opening the file.
 
 ## Error Handling
 

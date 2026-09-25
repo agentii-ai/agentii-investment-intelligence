@@ -2,8 +2,10 @@
 """check_output.py — the structural lint for a single-skill artifact (spec 062 FR-034 iii, T082).
 
 WHY THIS EXISTS. The nine `equity-research-core` skills already carry an `output format`, and it was
-not being met. Measured 2026-09-24 over the held-out workspace's **50 artifacts**
-(`B/agentii-physical-ai/theses/00{1,2,3}/artifacts/{TICKER}/*.md`, one per skill class):
+not being met. Measured over the held-out workspace's **50 artifacts** — `B/agentii-physical-ai/
+theses/00{1,2,3}-*/artifacts/{TICKER}/*.md`, one per skill class, and **note the `-*`**: theses 001-003
+carry a descriptive suffix, so a path written without it is a glob that matches nothing (`T084`'s
+reproduction found the shorthand in the first version of this docstring and it never resolved):
 
     49 of 50 artifacts carry a duplicated trailing roll-up (`## Coverage Gaps & Citations` + a
        numbered list of `/v/` links) while ALSO carrying inline links — so the roll-up is duplication,
@@ -13,8 +15,17 @@ not being met. Measured 2026-09-24 over the held-out workspace's **50 artifacts*
     1 artifact cites nothing inline in 1,756 words — density 0.0 against a floor of 1
        (`003-.../artifacts/PH/2026-09-17_1647_supply-chain_default.md`, the T082 red case: its only
        citations are in the frontmatter's machine list)
-    28 of 50 artifacts carry at least one material-fact line with no link beside it
-    corpus citation density: 0.0 – 8.77, median 6.24 — so the standard is not uniform
+    26 of 50 artifacts carry at least one material-fact line with no link beside it
+    corpus citation density: 0.0 – 8.77, median 6.225 — so the standard is not uniform
+
+**RE-MEASURED 2026-09-25, and two of the seven figures above did not reproduce.** The `R4` count was
+recorded as **28**; the shipped code produces **26** (the figure was taken when the window was widened
+and not re-taken after the derived/gap/methodology exemptions landed, which is where the last two
+artifacts left). The median was recorded as **6.24**, the upper middle value, not the median **6.225**.
+Both are corrected above. The reproduction table is in
+`specs/062-page-retrieval-evaluation/evidence/output-lint-calibration.md` — a number that reads as
+measured and is not reproducible from its producer is this specification's own defect, and it was in
+this specification's own evidence file.
 
 **The owner's requirement, in their words**: *"要求事实的后面有 agentii.ai/v 引用定位到页的链接（往往不需要
 在最后再输出 citation list，人们更希望看到事实或者数据旁边紧挨着的位置的链接）"* — the link belongs BESIDE
@@ -26,7 +37,9 @@ WHAT IT CHECKS, AND WHAT IT DELIBERATELY DOES NOT.
   R1  frontmatter block present, and carrying the five pins
   R2  citation density ≥ 1 per 200 words of body
   R3  no duplicated trailing Citations roll-up
-  R4  a line that states a MATERIAL FACT carries a link on that same line
+  R4  a line that states a MATERIAL FACT carries a link beside it — the same line or one line
+      either side (`bare_fact_lines`, exported: `check_output_quality.py`'s criterion 4 asks the
+      same question and now imports this answer instead of re-deriving it)
 
   NOT checked: whether the links resolve, whether they are the *right* page, or whether the prose is any
   good. The first two need the network and the corpus; the third is `T083`'s rubric, and structure cannot
@@ -96,6 +109,58 @@ def _split(text: str) -> tuple[str, str, list[str]]:
     return fm, text[end + 4:], fm.splitlines()
 
 
+def bare_fact_lines(body: str) -> list[str]:
+    """The lines stating a MATERIAL FACT with no link BESIDE them. R4's single implementation.
+
+    EXPORTED BECAUSE A SECOND SCRIPT ASKS THE SAME QUESTION, and two definitions of one rule is
+    the drift this kit keeps removing. `scripts/check_output_quality.py`'s criterion 4 is the
+    other one: it asks "does a figure line carry an inline `/v/` link", with its own `_FIGURE`
+    pattern and a same-line-only window. Which definition wins is not decided by seniority but by
+    provenance — **this one was calibrated against the corpus the standard is about** (measured
+    2026-09-24, re-measured 2026-09-25: **26** of 50 artifacts, `specs/062-page-retrieval-evaluation/
+    evidence/output-lint-calibration.md`), and the other matches `\\b\\d{4}\\b`, so it fires on a
+    year, which `FACT_RX`'s comment below explicitly refuses.
+
+    **"Beside" is the owner's own word** (*"紧挨着的位置"*), and the first version of this rule read
+    it as "on the same line", which is stricter than the standard: an artifact that cites on the
+    line beneath is citing beside the fact. One line of tolerance, in both directions, and no
+    more — a link two paragraphs away is a roll-up in disguise, and the roll-up is what R3 rejects.
+
+    Returns `L{n}: <line>` strings so a caller can report the line it means.
+    """
+    lines = body.splitlines()
+    bare: list[str] = []
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if not s or s.startswith("#") or s.startswith("|") or s.startswith("---"):
+            continue                       # headings, tables and rules are checked elsewhere / not prose
+        if not FACT_RX.search(s):
+            continue
+        # THREE LINE CLASSES LEGITIMATELY CARRY NO SOURCE, and the first version flagged all three —
+        # measured on the corpus, its hits were dominated by them. A rule that fires on these is the
+        # "gate that fails good pages" this programme keeps warning about, so they are excluded by name:
+        #   · derived lines (`[DEDUCTED]` / `[VIEW]`) — the platform's own reasoning, sourced from other
+        #     lines, not from a page;
+        #   · coverage-gap lines ("No X disclosure", "not disclosed", "unavailable") — a statement that
+        #     the source does NOT say something has no page to cite, by construction;
+        #   · methodology lines (`Structured verification:`, `Keyword scan`) — a description of how the
+        #     search was done.
+        if re.match(r"\s*[-*\d.\s]*(\[(DEDUCTED|VIEW|INFERENCE)\])", s):
+            continue
+        # A gap line is a NEGATION plus a source-verb ANYWHERE on the line, not within one sentence:
+        # the real lines read "**No BOM or per-system cost stack.** The issuer discloses product margin
+        # only", and a sentence-bounded window stops at that first period and misses `discloses`.
+        if (re.search(r"(?i)\b(no|not|none|never|without|absent|unavailable|gap|omit)\b", s)
+                and re.search(r"(?i)(disclos|discoverab|availab|reported|stated|found|present|filed|broken out)", s)):
+            continue
+        if re.search(r"(?i)^(structured verification|keyword scan|methodology|method)\b", s) or "Structured verification:" in s:
+            continue
+        window = " ".join(lines[max(0, i - 1):i + 2])
+        if not LINK_RX.search(window):
+            bare.append(f"L{i + 1}: {s[:90]}")
+    return bare
+
+
 def check(path: pathlib.Path, min_density: float = 1.0) -> dict:
     raw = path.read_text(encoding="utf-8", errors="replace")
     fm, body, fm_lines = _split(raw)
@@ -145,41 +210,10 @@ def check(path: pathlib.Path, min_density: float = 1.0) -> dict:
         where = f"a {run}-line citation block" if rollup_at is not None else "a heading named Citations"
         findings.append({"rule": "R3-rollup", "detail": f"duplicated roll-up: {where} stands alone instead of the link sitting beside the fact"})
 
-    # R4 — a material fact must carry a link BESIDE it. "Beside" is the owner's own word
-    # (*"紧挨着的位置"*), and the first version of this rule read it as "on the same line", which is
-    # stricter than the standard: an artifact that cites on the line beneath is citing beside the fact.
-    # One line of tolerance, in both directions, and no more — a link two paragraphs away is a roll-up
-    # in disguise, and the roll-up is exactly what R3 rejects.
-    lines = body.splitlines()
-    bare: list[str] = []
-    for i, line in enumerate(lines):
-        s = line.strip()
-        if not s or s.startswith("#") or s.startswith("|") or s.startswith("---"):
-            continue                       # headings, tables and rules are checked elsewhere / not prose
-        if not FACT_RX.search(s):
-            continue
-        # THREE LINE CLASSES LEGITIMATELY CARRY NO SOURCE, and the first version flagged all three —
-        # measured on the corpus, its hits were dominated by them. A rule that fires on these is the
-        # "gate that fails good pages" this programme keeps warning about, so they are excluded by name:
-        #   · derived lines (`[DEDUCTED]` / `[VIEW]`) — the platform's own reasoning, sourced from other
-        #     lines, not from a page;
-        #   · coverage-gap lines ("No X disclosure", "not disclosed", "unavailable") — a statement that
-        #     the source does NOT say something has no page to cite, by construction;
-        #   · methodology lines (`Structured verification:`, `Keyword scan`) — a description of how the
-        #     search was done.
-        if re.match(r"\s*[-*\d.\s]*(\[(DEDUCTED|VIEW|INFERENCE)\])", s):
-            continue
-        # A gap line is a NEGATION plus a source-verb ANYWHERE on the line, not within one sentence:
-        # the real lines read "**No BOM or per-system cost stack.** The issuer discloses product margin
-        # only", and a sentence-bounded window stops at that first period and misses `discloses`.
-        if (re.search(r"(?i)\b(no|not|none|never|without|absent|unavailable|gap|omit)\b", s)
-                and re.search(r"(?i)(disclos|discoverab|availab|reported|stated|found|present|filed|broken out)", s)):
-            continue
-        if re.search(r"(?i)^(structured verification|keyword scan|methodology|method)\b", s) or "Structured verification:" in s:
-            continue
-        window = " ".join(lines[max(0, i - 1):i + 2])
-        if not LINK_RX.search(window):
-            bare.append(f"L{i + 1}: {s[:90]}")
+    # R4 — a material fact must carry a link BESIDE it. The rule lives in `bare_fact_lines`, which is
+    # exported: `scripts/check_output_quality.py`'s criterion 4 asks the same question with a
+    # different definition, and one rule may not have two definitions (see that function's docstring).
+    bare = bare_fact_lines(body)
     if bare:
         findings.append({
             "rule": "R4-bare-fact",
