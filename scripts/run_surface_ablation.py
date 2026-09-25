@@ -101,6 +101,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--env", type=pathlib.Path,
                     default=pathlib.Path("/Users/frank/A/agenzym/packages/data-pipeline/.env.local"))
     ap.add_argument("--limit", type=int, default=0, help="stop after N questions (smoke test)")
+    ap.add_argument("--questions", type=pathlib.Path, default=None,
+                    help="a JSON list of {mode, ticker, question} to use instead of the generic form")
+    ap.add_argument("--calibrate", action="store_true",
+                    help="run the WITHOUT arm only, to measure which questions discriminate")
     args = ap.parse_args(argv)
 
     _load_env(args.env)
@@ -109,17 +113,27 @@ def main(argv: list[str] | None = None) -> int:
 
     rows = []
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="ablation-"))
-    qs = [(m, t) for m in args.modes for t in args.tickers]
+    if args.questions:
+        # Accepts a bare list AND `{"questions": [...]}` — the evidence file carries its own provenance
+        # alongside the list, and a loader that only understood the bare form would make the provenance
+        # impossible to keep next to what it describes.
+        qd = json.loads(args.questions.read_text())
+        qlist = qd["questions"] if isinstance(qd, dict) else qd
+        qs = [(q["mode"], q["ticker"], q["question"]) for q in qlist]
+    else:
+        qs = [(m, t, f"You are answering the `{m}` question for {t} as an equity analyst. "
+                      f"Produce the deliverable for that question class.")
+              for m in args.modes for t in args.tickers]
     if args.limit:
         qs = qs[:args.limit]
+    arms = ("without",) if args.calibrate else ("without", "with")
 
-    for i, (mode, ticker) in enumerate(qs, 1):
-        question = (f"You are answering the `{mode}` question for {ticker} as an equity analyst. "
-                    f"Produce the deliverable for that question class.")
+    for i, (mode, ticker, question) in enumerate(qs, 1):
         system = f"You are an equity research analyst. {SHAPE}"
         r = {"skill": args.skill, "mode": mode, "ticker": ticker, "question": question, "arms": {}}
-        for arm, extra in (("without", ""), ("with", block)):
-            ans, usage = _ask(args.model, args.temperature, system, question + "\n\n" + extra)
+        for arm in arms:
+            ans, usage = _ask(args.model, args.temperature, system,
+                              question + "\n\n" + (block if arm == "with" else ""))
             # The rubric reads the subject from the path, so the artifact must sit in artifacts/<TICKER>/.
             d = tmp / arm / "theses" / "001" / "artifacts" / ticker
             d.mkdir(parents=True, exist_ok=True)
@@ -130,31 +144,56 @@ def main(argv: list[str] | None = None) -> int:
                               "passed": sc["passed"], "scored": sc["scored"],
                               "fact_line_share": sc["fact_line_share"],
                               "interpretation_share": sc["interpretation_share"]}
-        r["delta"] = r["arms"]["with"]["passed"] - r["arms"]["without"]["passed"]
-        r["token_delta"] = (r["arms"]["with"]["usage"]["total_tokens"]
-                            - r["arms"]["without"]["usage"]["total_tokens"])
+        if not args.calibrate:
+            r["delta"] = r["arms"]["with"]["passed"] - r["arms"]["without"]["passed"]
+            r["token_delta"] = (r["arms"]["with"]["usage"]["total_tokens"]
+                                - r["arms"]["without"]["usage"]["total_tokens"])
         rows.append(r)
-        print(f"[{i}/{len(qs)}] {mode} · {ticker}: "
-              f"without {r['arms']['without']['passed']}/{r['arms']['without']['scored']} · "
-              f"with {r['arms']['with']['passed']}/{r['arms']['with']['scored']} · "
-              f"delta {r['delta']:+d}", flush=True)
+        w = r["arms"]["without"]
+        tail = (f"delta {r['delta']:+d}" if not args.calibrate
+                else f"failed rules: {sum(1 for v in w['verdicts'].values() if v is False)}")
+        print(f"[{i}/{len(qs)}] {mode} · {ticker}: without {w['passed']}/{w['scored']} · {tail}",
+              flush=True)
 
-    deltas = [r["delta"] for r in rows]
     out = {
         "bar": {"registered": "2026-09-25, before the run; erc-surface-ablation.md 1a",
                 "instrument": f"one completion per arm, {args.model}, temperature={args.temperature}",
                 "tie_rule": "a tie is INCONCLUSIVE, not a rejection — the stronger instrument has not run",
                 "scoring": "check_output_rubric.py (T083), four verdicts reported per arm"},
         "skill": args.skill, "n_questions": len(rows),
+        "mode": "calibrate (without arm only)" if args.calibrate else "ablation (both arms)",
         "arms": {a: {"mean_passed": round(sum(r["arms"][a]["passed"] for r in rows) / len(rows), 2),
                      "total_tokens": sum(r["arms"][a]["usage"]["total_tokens"] for r in rows)}
-                 for a in ("without", "with")},
-        "delta": {"mean": round(sum(deltas) / len(deltas), 3), "n": len(deltas),
-                  "with_better": sum(1 for d in deltas if d > 0),
-                  "tie": sum(1 for d in deltas if d == 0),
-                  "with_worse": sum(1 for d in deltas if d < 0)},
+                 for a in arms},
         "rows": rows,
     }
+    if args.calibrate:
+        # CALIBRATION IS NOT A VERDICT, and the output must not look like one. It measures whether a
+        # question can tell the arms apart at all: a question the without-arm passes on every rule has
+        # no room to show an effect, so a tie on it says nothing about the surface. Which is the whole
+        # reason this mode exists — the first run's 20-of-21 ties were partly a property of the
+        # questions, not of the surface.
+        discrim = [r for r in rows
+                   if any(v is False for v in r["arms"]["without"]["verdicts"].values())]
+        out["calibration"] = {"n": len(rows), "discriminating": len(discrim),
+                              "flat": len(rows) - len(discrim),
+                              "discriminating_questions": [
+                                  {"mode": r["mode"], "ticker": r["ticker"],
+                                   "failed": [k for k, v in r["arms"]["without"]["verdicts"].items()
+                                              if v is False]}
+                                  for r in discrim]}
+        args.out.write_text(json.dumps(out, indent=2))
+        print(f"\n{len(rows)} questions: {len(discrim)} discriminate (the without-arm fails ≥1 rule), "
+              f"{len(rows) - len(discrim)} are flat.\n"
+              f"**A flat question cannot show an effect** — a tie on it is about the question, not the "
+              f"surface.\nwrote {args.out}")
+        return 0
+
+    deltas = [r["delta"] for r in rows]
+    out["delta"] = {"mean": round(sum(deltas) / len(deltas), 3), "n": len(deltas),
+                    "with_better": sum(1 for d in deltas if d > 0),
+                    "tie": sum(1 for d in deltas if d == 0),
+                    "with_worse": sum(1 for d in deltas if d < 0)}
     args.out.write_text(json.dumps(out, indent=2))
     print(f"\nn={len(rows)}  mean delta {out['delta']['mean']:+.3f}  "
           f"(better {out['delta']['with_better']} · tie {out['delta']['tie']} · "
