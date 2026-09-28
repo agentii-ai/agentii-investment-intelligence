@@ -61,6 +61,17 @@ SKILLS = {
                             "current-quarter-fiscal-year-analyst-estimates"], ["AMZN", "CGNX", "NVDA"]),
 }
 
+#: THE FRAMINGS, AND WHICH ONE CARRIES THE INSTRUMENT. Measured over 27 candidate questions across the
+#: nine skills, 2026-09-25 — headroom, i.e. how often the without-arm failed at least one rule:
+#:
+#:     A-describe     0 of 27   (0%)   INERT — it never once produced a question the rubric could act on
+#:     B-verdict     14 of 24  (58%)   the discriminating framing
+#:     C-disconfirm   1 of 24   (4%)   almost never fires, despite being the stricter ask
+#:
+#: So the sweep's first pass used two framings that cannot discriminate out of three, gave each mode
+#: exactly ONE live question, and then reported five skills as unscoreable. **That thinness was partly the
+#: question set's composition, not the skills'.** `FRAMINGS_SWEEP` is the corrected set: `B-verdict` only,
+#: varied across tickers so a mode yields n>=3.
 FRAMINGS = {
     "A-describe": "You are answering the `{mode}` question for {ticker} as an equity analyst. Produce the "
                   "deliverable for that question class.",
@@ -70,15 +81,22 @@ FRAMINGS = {
                     "supports, then setting out what would have to be true for that reading to be WRONG, "
                     "and whether any of it is already observable.",
 }
+#: The corrected sweep set. `C-disconfirm` is dropped as well as `A-describe`: 1 of 24 is not a framing
+#: worth spending a third of every mode's budget on, and keeping it would re-introduce the dilution this
+#: exists to remove. It stays in `FRAMINGS` because the finding above is *about* it.
+FRAMINGS_SWEEP = {"B-verdict": FRAMINGS["B-verdict"]}
 
 
-def candidates(skill: str, modes: list[str], tickers: list[str]) -> list[dict]:
+def candidates(skill: str, modes: list[str], tickers: list[str],
+               framings: dict | None = None) -> list[dict]:
+    """One question per (mode, ticker, framing). The CROSS of tickers is what buys `n>=3` per mode."""
+    framings = framings or FRAMINGS_SWEEP
     out = []
-    for i, mode in enumerate(modes):
-        ticker = tickers[i % len(tickers)]
-        for framing, tmpl in FRAMINGS.items():
-            out.append({"mode": mode, "ticker": ticker, "framing": framing,
-                        "question": tmpl.format(mode=mode, ticker=ticker)})
+    for mode in modes:
+        for ticker in tickers:
+            for framing, tmpl in framings.items():
+                out.append({"mode": mode, "ticker": ticker, "framing": framing,
+                            "question": tmpl.format(mode=mode, ticker=ticker)})
     return out
 
 
@@ -86,10 +104,16 @@ def main() -> int:
     results = {}
     for skill, (axis, tag, kind, modes, tickers) in SKILLS.items():
         print(f"\n=== {skill}  ({axis}={tag}, {kind}) ===", flush=True)
+        # `V2` SUFFIX: the first sweep's files are referenced by the evidence and must not be
+        # overwritten. Re-running a measurement must not erase the one it corrects.
+        V2 = "-b2"
         ctx_path = EVIDENCE / f"erc-surface-ablation-context-{skill}.json"
-        ctx = abl.fetch_context(axis, tag, page_size=6)
-        ctx_path.write_text(json.dumps(ctx, indent=2))
-        cpath = EVIDENCE / f"erc-surface-ablation-candidates-{skill}.json"
+        if ctx_path.is_file():
+            ctx = json.loads(ctx_path.read_text())      # reuse: the surface has not changed
+        else:
+            ctx = abl.fetch_context(axis, tag, page_size=6)
+            ctx_path.write_text(json.dumps(ctx, indent=2))
+        cpath = EVIDENCE / f"erc-surface-ablation-candidates-{skill}{V2}.json"
         cpath.write_text(json.dumps({
             "_provenance": {"skill": skill, "tag_axis": axis, "tag": tag, "choice_kind": kind,
                             "modes_source": f"{skill}/SKILL.md, `essentials_modes`",
@@ -101,7 +125,7 @@ def main() -> int:
             "questions": candidates(skill, modes, tickers)}, indent=2))
 
         # 1. calibrate (without arm only)
-        cal_path = EVIDENCE / f"erc-surface-ablation-calibration-{skill}.json"
+        cal_path = EVIDENCE / f"erc-surface-ablation-calibration-{skill}{V2}.json"
         abl.main(["--skill", skill, "--modes", "x", "--tickers", tickers[0], "--calibrate",
                   "--questions", str(cpath), "--context", str(ctx_path), "--out", str(cal_path)])
         cal = json.loads(cal_path.read_text())
@@ -114,7 +138,7 @@ def main() -> int:
         assert len(keep_qs) == len(wanted), (
             f"{skill}: {len(wanted)} discriminating questions but {len(keep_qs)} matched — the "
             f"calibration's question text does not appear in the candidate file")
-        sel_path = EVIDENCE / f"erc-surface-ablation-selected-{skill}.json"
+        sel_path = EVIDENCE / f"erc-surface-ablation-selected-{skill}{V2}.json"
         sel_path.write_text(json.dumps({**src, "questions": keep_qs,
                                         "_selection": {"rule": "the without-arm failed >=1 rule in the "
                                                                "calibration sample",
@@ -131,14 +155,14 @@ def main() -> int:
             continue
 
         # 2. ablate on them
-        out_path = EVIDENCE / f"erc-surface-ablation-{skill}.json"
+        out_path = EVIDENCE / f"erc-surface-ablation-{skill}{V2}.json"
         abl.main(["--skill", skill, "--modes", "x", "--tickers", tickers[0],
                   "--questions", str(sel_path), "--context", str(ctx_path), "--out", str(out_path)])
         d = json.loads(out_path.read_text())
         results[skill] = {"choice_kind": kind, "tag": f"{axis}={tag}", "n": d["delta"]["n"],
                           "delta": d["delta"], "arms": d["arms"], "thin": False}
 
-    (EVIDENCE / "erc-surface-ablation-sweep.json").write_text(json.dumps(results, indent=2))
+    (EVIDENCE / "erc-surface-ablation-sweep-b2.json").write_text(json.dumps(results, indent=2))
     print("\n=== sweep ===")
     for s, r in results.items():
         if r.get("thin"):
