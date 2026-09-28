@@ -106,7 +106,12 @@ def main() -> int:
         print(f"\n=== {skill}  ({axis}={tag}, {kind}) ===", flush=True)
         # `V2` SUFFIX: the first sweep's files are referenced by the evidence and must not be
         # overwritten. Re-running a measurement must not erase the one it corrects.
-        V2 = "-b2"
+        #
+        # AND THE SAME RULE APPLIES TO REPLICATES. Hardening a single-run result means running it again
+        # with the SAME questions and the SAME frozen context and letting only the draw differ — so each
+        # replicate needs its own suffix or the second run erases the first and the "hardening" is one
+        # run wearing three names.
+        V2 = sys.argv[1] if len(sys.argv) > 1 else "-b2"
         ctx_path = EVIDENCE / f"erc-surface-ablation-context-{skill}.json"
         if ctx_path.is_file():
             ctx = json.loads(ctx_path.read_text())      # reuse: the surface has not changed
@@ -162,7 +167,7 @@ def main() -> int:
         results[skill] = {"choice_kind": kind, "tag": f"{axis}={tag}", "n": d["delta"]["n"],
                           "delta": d["delta"], "arms": d["arms"], "thin": False}
 
-    (EVIDENCE / "erc-surface-ablation-sweep-b2.json").write_text(json.dumps(results, indent=2))
+    (EVIDENCE / f"erc-surface-ablation-sweep{V2}.json").write_text(json.dumps(results, indent=2))
     print("\n=== sweep ===")
     for s, r in results.items():
         if r.get("thin"):
