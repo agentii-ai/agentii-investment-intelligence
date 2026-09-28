@@ -76,6 +76,12 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 
 **Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=material_definitive_agreement_1_01,other_events_8_01` to surface M&A / partnership / strategic-action 8-Ks before Layer 2.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### Temporal Scope
 
 Default: 8 fiscal quarters (max 16). Competitive landscape: 8 quarters for market-share trajectories and positioning shifts

@@ -73,6 +73,12 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 
 **Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=other_events_8_01` to surface risk-event 8-Ks (litigation, regulatory action, cyber incidents) before Layer 2. Also score Layer 2 pages whose `labels.general.keywords` contain "risk factors" entity terms.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### Temporal Scope
 
 Default: 4 fiscal quarters (max 8). Risk analysis: trailing 4 quarters for near-term risk exposure + forward indicators

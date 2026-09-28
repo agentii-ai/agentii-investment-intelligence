@@ -74,6 +74,12 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 
 **Layer 1 `secondary_label` allowlist **: prefer `?secondary_label=other_events_8_01` to surface trend-related 8-Ks (technology disruption, regulatory shifts, demographic events) before Layer 2.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### Temporal Scope
 
 Default: 12 fiscal quarters (max 20). Secular tech trends: 12 quarters (3 fiscal years) for long-range technology adoption cycles

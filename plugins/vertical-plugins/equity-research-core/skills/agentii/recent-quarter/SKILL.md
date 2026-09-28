@@ -70,6 +70,12 @@ This skill performs **structured data retrieval** (XBRL facts + earnings calenda
 3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])` — returns EPS actual/estimate/surprise. Use `get_company_fiscal_calendar` for fiscal period orientation, NOT `search_earnings_calendar` .
 4. **Consolidated P&L**: `get_company_financials/{ticker}` returns IS/BS/CF highlights with XBRL data.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### 3. Temporal Scope
 
 Default: 1 fiscal quarter (max 4). This skill is a temporal snapshot of the most recent quarter's financial performance.

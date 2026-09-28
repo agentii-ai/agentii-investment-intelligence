@@ -70,6 +70,12 @@ This skill performs unstructured document search at scale (10-K, 10-Q, 8-K filin
 
 See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### Temporal Scope
 
 Default: 4 fiscal quarters (max 8). Earnings sentiment: trailing 4 quarters for earnings-call tone and guidance trends

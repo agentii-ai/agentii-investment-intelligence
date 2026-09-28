@@ -84,6 +84,12 @@ This skill performs **unstructured document search at scale** (10-K, 10-Q, 8-K f
 
 See `contracts/retrieval.md` for the canonical decision tree; skill-specific retrieval detail is in `references/methodology.md`.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### 3. Temporal Scope
 
 Default: 4 fiscal quarters (max 8). A single-quarter snapshot is INSUFFICIENT for business-model classification — use the latest 10-K (annual) plus trailing 10-Qs. Extend the window when explicitly tracking channel-mix evolution (mode 1_2 default 12 quarters) or management changes (mode 1_5 default 4 quarters).

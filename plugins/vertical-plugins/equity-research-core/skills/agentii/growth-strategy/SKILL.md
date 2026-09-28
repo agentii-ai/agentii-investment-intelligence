@@ -73,6 +73,12 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 
 **Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=financial_results_2_02,material_definitive_agreement_1_01` to surface growth-investment-related 8-Ks (capex commitments, M&A, partnerships) before Layer 2.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### Temporal Scope
 
 Default: 8 fiscal quarters (max 16). Growth strategy: 8 quarters for organic/inorganic growth trend decomposition

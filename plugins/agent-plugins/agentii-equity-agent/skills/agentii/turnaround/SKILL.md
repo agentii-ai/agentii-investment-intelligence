@@ -75,6 +75,12 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 
 **Layer 1 `secondary_label` allowlist **: prefer `?secondary_labels=results_of_operations_8_01,other_events_8_01` to surface restructuring, cost-action, and operational-inflection 8-Ks before Layer 2.
 
+**Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
+words and must never be quoted as the filing's. When a description identifies a relevant page,
+`read_source_pages` that page and quote its `page_content`. **The description is a pointer, not a
+source**: a citation written from one is the fabricated quote this skill's output standard exists to
+prevent (`contracts/retrieval.md` § *Three-Layer Document Protocol*).
+
 ### Temporal Scope
 
 Default: 8 fiscal quarters (max 16). Turnaround/stagnation: 8 quarters for operational trend detection and inflection-point analysis
