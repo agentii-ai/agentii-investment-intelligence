@@ -232,6 +232,35 @@ Fiscal period format follows `system_v2_7.py` conventions:
 
 **Why this matters**: Some companies use `FY` for their 10-K while others use `Q4`. Passing the wrong format to `search_cross_period` yields empty results. `get_company_fiscal_calendar` is the authoritative source. The cross-validation step catches cases where the authoritative source itself is wrong (silent API data corruption).
 
+### TWO TIME FILTERS — they are different quantities, not two spellings of one
+
+`search_documents` takes **two separate period parameters**, and passing the wrong one returns nothing rather
+than something close:
+
+| Parameter | Matches | Example |
+|---|---|---|
+| `fiscal_quarter` | a period of the **fiscal** year — the quarter the filing reports | `2026Q2`, `2025FY` |
+| `calendar_quarter` | the **natural calendar** quarter of an **event filing** | `2026Q3` |
+
+**An 8-K or 6-K that corresponds to no fiscal period carries a natural calendar quarter instead.** Some such
+filings disclose history, some pre-announce the future, so *the information's effective time is unrelated to any
+fiscal quarter*; the calendar quarter exists to **locate the document**, not to characterise a period. Event
+filings that *do* correspond to a fiscal-quarter release (an earnings 8-K) get a fiscal quarter like any other
+report — so a calendar quarter is not a property of a form type.
+
+**Use the clock the question is on.** For "the quarter the company reported", use `fiscal_quarter`. For "what
+was disclosed during calendar Q3", use `calendar_quarter`. **Do not try one and fall back to the other**: they
+are not interchangeable, and for a company whose fiscal year is not the calendar year they can be far apart
+(NVDA's fiscal year ends in late January, so its fiscal Q3 and calendar Q3 are different periods entirely).
+
+**Two consequences that will otherwise cost a retrieval:**
+
+- **A fiscal filter finds no event filings.** `fiscal_quarter=2026Q3` matches only filings that report fiscal
+  Q3; the 8-Ks *disclosed* in that window are not among them. That is the design, not a gap.
+- **Never compare or join the two.** A calendar quarter is not a coarser fiscal quarter and not an
+  approximation of one, so a comparison between them is a **category error** — not a tolerance question. When
+  you cite or tabulate a period, name which clock it is on.
+
 **Skip conditions**:
 - `retrieval_scope: structured_only` — XBRL queries don't need fiscal period labels.
 - `retrieval_scope: simple_lookup` — no periods involved.
