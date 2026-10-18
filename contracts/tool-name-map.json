@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Canonical tool-name mapping for the agentii-investment-intelligence package. Maps legacy prompt tool names and upstream FSI MCP connector references to spec-019 endpoint names. Also documents citation rewrite rules (FR-050) and preflight health-check templates.",
   "system_v2_7": {
     "_comment": "Maps tool names used in references/prompts/system_v2_7.py (the well-tested agentic long-range financial analysis prompt set) to spec-019 endpoint names that agentii-ai/apps/api/ exposes.",
@@ -85,7 +85,8 @@
     "read_source_deep_outline": "Layer 2.5a page map (deep). Use AFTER read_source_outline ONLY when lightweight description + keywords cannot disambiguate similar-looking pages. Returns the same base map plus table_titles, drivers, metrics, views from LLM labels. Heavier context (~15K tokens for 200 pages, ~3x lightweight) — use sparingly (~5% of filings). Eligible only for retrieval_scope: unstructured_document_search skills.",
     "search_keyword_in_source": "Layer 2.5b optional keyword filter. Use AFTER read_source_outline and BEFORE read_source_pages to keyword-filter pages within a known document. Best for narrowing large documents (>50 pages) where the outline returns >10 candidate pages.",
     "read_source_pages": "Layer 3 deep read. Use AFTER read_source_outline (and optionally read_source_deep_outline / search_keyword_in_source) to load full page_content with [[Table{idx}]] markers for ONLY the pages identified in prior layers. Each page carries a citation_id (UUID+page_index) for FR-050 citation traceability.",
-    "search_cross_period": "Wraps the full three-layer protocol (Layer 1→2→2.5→3) in parallel across fiscal periods. Use AFTER get_company_fiscal_calendar to resolve period format labels. Each period's sub-agent independently executes the three-layer protocol against its assigned period's documents. Results merged by fiscal_quarter tag.",
+    "resolve_period": "Temporal resolver (spec 068). Turns a clock-qualified phrase (FY2026 Q3, Q4 FY2026, CY2025 Q3, this/last/next quarter) into the issuer's declared fiscal and calendar readings with a UUIDv5 period_id and typed errors. Use BEFORE search_cross_period or search_xbrl_facts when the query names a period; a bare quarter is ambiguous and must be qualified.",
+    "search_cross_period": "Resolves each period through resolve_period first, then runs the three-layer protocol across the resolved periods. A period that cannot be resolved is absent/error and issues no discovery query — it never widens to all dates. Status distinguishes ok, empty, absent and error; meta carries documents_discovered, date_range, date_range_source=authority, truncated, discovery_limit and discovered_by_class.",
     "batch_search": "Multi-query consolidation primitive (spec 019 US7 / FR-051a). Use when issuing 3+ independent queries of the SAME tool type (e.g., search_xbrl_facts across 5 tickers, or search_documents across 5 form types). Batch up to 8 sub-queries per call; each successful sub-query is metered 1 credit. For multi-PERIOD parallel search use search_cross_period instead."
   },
   "search_institutional_holdings": "search_institutional_holdings",
