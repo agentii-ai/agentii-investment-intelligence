@@ -1,0 +1,22 @@
+{
+  "name": "agentii-research-beachhead",
+  "owner": {
+    "name": "agentii-ai",
+    "url": "https://agentii.ai"
+  },
+  "metadata": {
+    "description": "Agentii 24-skill beachhead: 9 equity-research-core + 15 bio-pharm skills, backed by the Agentii MCP server."
+  },
+  "plugins": [
+    {
+      "name": "equity-research-core",
+      "source": "./plugins/equity-research-core",
+      "description": "9 equity-research skills."
+    },
+    {
+      "name": "bio-pharm",
+      "source": "./plugins/bio-pharm",
+      "description": "15 bio-pharm skills."
+    }
+  ]
+}

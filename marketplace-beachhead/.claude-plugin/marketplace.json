@@ -1,0 +1,23 @@
+{
+  "name": "agentii-research-beachhead",
+  "owner": {
+    "name": "agentii-ai",
+    "url": "https://agentii.ai"
+  },
+  "metadata": {
+    "description": "Agentii 24-skill beachhead: 9 equity-research-core + 15 bio-pharm skills, backed by the Agentii MCP server (SEC/XBRL, transcripts, clinical trials, FDA/PDUFA).",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "equity-research-core",
+      "source": "./plugins/equity-research-core",
+      "description": "9 equity-research skills: recent quarter, business model, competitive, growth strategy, secular trends, turnaround, risk, earnings sentiment, valuation methods."
+    },
+    {
+      "name": "bio-pharm",
+      "source": "./plugins/bio-pharm",
+      "description": "15 bio-pharm skills: FDA catalysts (devices/medicines/vaccines), pipelines, trial readout, market share, market sizing, event takeaways, CT status diff, and med-adapted sector/peer/earnings/recent-quarter."
+    }
+  ]
+}
