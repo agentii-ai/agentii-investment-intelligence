@@ -12,7 +12,7 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 
 ## Protocol
 
-1. Pre-retrieval: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format.
+1. Resolve first: call `resolve_period(ticker, expression, as_of?)` for the target and every peer; keep the fiscal `period_id`s. Choose and state `comparison_basis=fiscal|calendar`; do not derive quarters from a fiscal-calendar month.
 2. Concept discovery: call `list_xbrl_concepts(query=<term>, ticker=<T>)` for unfamiliar XBRL concepts.
 3. Retrieval: follow the three-layer protocol —
  - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.

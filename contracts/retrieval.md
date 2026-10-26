@@ -27,7 +27,8 @@ consolidate into one `batch_search` (≤8 sub-queries). Fall back to sequential 
 `PROXY_ERROR`.
 
 - **Branch (a) — Structured data** (Revenue, EPS, EBITDA, margins, BS/CF line
-  items): use `search_xbrl_facts`. `is_primary = true` is the default (dedup per
+  items): resolve the period first with `resolve_period`, then pass its
+  `period_id` to `search_xbrl_facts`. `is_primary = true` is the default (dedup per
   namespace — dual-filers can have a primary per namespace, so pass
   `namespace=us-gaap` for US filers or `namespace=ifrs-full` for foreign);
   pass `?include_all_sources=true` only for audit-grade reconciliation.
@@ -39,10 +40,12 @@ consolidate into one `batch_search` (≤8 sub-queries). Fall back to sequential 
   `GrossProfit`, `Assets`, `EarningsPerShareDiluted`, …) may be queried directly.
   Optionally call `get_statement_structure` for hierarchical concept navigation.
 - **Branch (b) — Multi-period unstructured** (qualitative data spanning 2+ fiscal
-  periods): `get_company_fiscal_calendar/{ticker}` → build `fiscal_periods` →
-  ONE `search_cross_period(ticker, query, fiscal_periods)` call (server-side
+  periods): `resolve_period(ticker, expression, as_of?)` for each requested
+  period → collect the fiscal `period_id`s → ONE
+  `search_cross_period(ticker, query, period_ids=[...])` call (server-side
   parallel dispatch across the full 10-K/10-Q/8-K/6-K/20-F surface) → verify
-  cross-period consistency.
+  cross-period consistency. `get_company_fiscal_calendar` supplies declared
+  periods and gaps, never a month-derived quarter.
 - **Branch (c) — Single period / single document**: direct `read_source_outline`
   (Layer 2) → `read_source_pages` (Layer 3). No parallel delegation.
 - **Branch (d) — Simple lookup** (company name, sector, earnings date):
@@ -104,8 +107,28 @@ citation MUST also carry the clickable `/v/` link — see
 
 ## Fiscal Period Conventions
 
-Annual = `FYxx` (e.g., `FY24`); quarterly = `yyyyQx` (e.g., `2025Q4`). For
-multi-period search, call `get_company_fiscal_calendar/{ticker}` and
-cross-validate the claimed FYE month against the most recent XBRL `period_end`;
-trust the XBRL dates on mismatch and flag `fiscal_calendar_mismatch`. Skip for
-`structured_only` / `simple_lookup` scopes.
+Periods are issuer-defined intervals, never a month grid. When a request names a
+period, call `resolve_period(ticker, expression, as_of?)` first. It returns the
+fiscal and calendar readings — dates, `period_id`, `record_status`, `ambiguous`
+and the temporal frame. Use the fiscal `period_id` as the key on every later
+call; never derive a quarter from `get_company_fiscal_calendar`'s month or from
+`period_end`.
+
+- **Wire labels:** fiscal `FY2026 Q3`; natural quarter `CY2025 Q3`. A bare
+  `YYYYQn` is not a served period label. A bare quarter in a *request* is
+  accepted; when its fiscal and calendar readings differ, choose one explicitly.
+  When their intervals are identical the response collapses to one reading.
+- **`as_of` is the knowledge cutoff** (`known_by`): a fact or document whose
+  `knowable_at` is after it must not appear. Use the user's decision date or the
+  report date, never the wall clock.
+- **Typed absence, not widening:** if the period is absent or ambiguous, return
+  the typed absence and the coverage gap. Do not widen the date range and retry
+  a different quarter.
+- **Facts use their own context:** `search_xbrl_facts(period_id=...)` selects the
+  resolved interval. `search_cross_period` takes `period_ids` (an array).
+- **Calendar questions:** use `calendar_quarter=YYYYQn` on `search_documents` or
+  `search_xbrl_facts`. A calendar quarter is a natural quarter, not a fiscal
+  one; annual reports are queried by `FY`/`period_id`, never through the calendar
+  door.
+- Skip the whole block for `structured_only` / `simple_lookup` scopes only when
+  the request names no period.

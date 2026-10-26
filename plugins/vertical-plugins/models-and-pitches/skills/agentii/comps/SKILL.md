@@ -28,12 +28,14 @@ essentials_modes: [retrieval-scope]
 temporal_scope:
  default_quarters: 4
  max_quarters: 12
- description: "Typical lookback: 4 quarters, max: 12"
+ description: "Resolve each issuer's period with resolve_period and compare on an explicit comparison_basis=fiscal|calendar; typical lookback 4 quarters, max 12. as_of is the knowledge cutoff; no widen fallback."
 allowed_tools:
  - search_companies
+ - resolve_period
  - search_xbrl_facts
  - get_company_financials
  - search_earnings_calendar
+ - get_company_fiscal_calendar
  - get_company_profile
  - list_xbrl_concepts
  - batch_search
@@ -56,6 +58,9 @@ min_tool_diversity: 5
 Run canonical pre-flight per `contracts/preflight.md`.
 
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
+Use the returned `temporal_frame` on every result; `period_id` is the cross-tool key.
+
+When a request names a period, call `resolve_period(ticker, expression, as_of?)` first and use its fiscal `period_id` on every later call. For multi-issuer comparison choose `comparison_basis=fiscal` (each issuer's own fiscal periods) or `comparison_basis=calendar` (natural quarters); state it and never mix clocks. `as_of` is the knowledge cutoff; return a typed absence instead of widening the date range.
 ## Triggers
 
 - analyze comps analysis
@@ -153,7 +158,7 @@ End the closing chat reply with a compact **Key Citations** list (headline 5–1
 
 | Failure Mode | Detection | Action | User-Facing Message |
 |---|---|---|---|
-| Missing data | Data API returns empty result set | Widen date range and retry once | "No data available for {ticker} in requested window." |
+| Missing data | Data API returns empty result set | Return the typed absence and the coverage gap; do not widen the date range | "No data available for {ticker} in the resolved period." |
 | Partial data | Data API returns <80% expected records | Proceed with coverage gaps section | "Analysis based on partial data; see Coverage Gaps section." |
 | Sector mismatch | Peer sector != target sector | Filter out mismatched peers | "Removed {n} peer(s) due to sector mismatch." |
 | Insufficient history | Ticker <3 years on public markets | Downgrade to limited-history profile | "Limited historical data; analysis adjusted accordingly." |

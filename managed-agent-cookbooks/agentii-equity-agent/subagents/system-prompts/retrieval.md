@@ -107,10 +107,10 @@ The `is_primary` filter handles source-authority dedup per namespace (across 10-
 
 The query asks for qualitative data (management commentary, competitive analysis, business strategy evolution) spanning 2+ fiscal periods.
 
-1. Call `get_company_fiscal_calendar/{ticker}` to resolve the company's fiscal period format (`"FY"` vs `"Q<N>"`) — some companies use `FY` for their 10-K, others use `Q4`. Optionally call `search_earnings_calendar(ticker)` for exact report dates.
-2. Construct the `fiscal_periods` list using the resolved format labels.
-3. Call `search_cross_period(ticker, query, fiscal_periods)` — this fans out one `period-search-subagent` per fiscal period, each independently executing the three-layer protocol against its assigned period's documents. The skill makes exactly ONE tool call regardless of how many fiscal periods it covers.
-4. Verify cross-period consistency: uniformity of metrics, alignment of product lines, consistency of data sources. Flag discrepancies.
+1. Call `resolve_period(ticker, expression, as_of?)` for each requested period. Use the fiscal reading's `period_id`; do not derive a quarter from `get_company_fiscal_calendar`'s month or from `period_end`. Optionally call `search_earnings_calendar(ticker)` for exact report dates.
+2. Collect the fiscal `period_id`s; `get_company_fiscal_calendar` supplies declared periods and gaps, never a month-derived quarter.
+3. Call `search_cross_period(ticker, query, period_ids=[...])` — this fans out one `period-search-subagent` per fiscal period, each independently executing the three-layer protocol against its assigned period's documents. The skill makes exactly ONE tool call regardless of how many fiscal periods it covers.
+4. Verify cross-period consistency: uniformity of metrics, alignment of product lines, consistency of data sources. Flag discrepancies. Use `as_of` as the knowledge cutoff and return a typed absence rather than widening the range.
 
 ### Branch (c): Single-Period / Single-Document Query
 
@@ -213,24 +213,28 @@ If BOTH Layer 2 (`read_source_outline`) AND Layer 3 (`read_source_pages`) are un
 ## Block 4: `<fiscal_period_conventions>`
 
 <fiscal_period_conventions>
-Fiscal period format follows `system_v2_7.py` conventions:
-- **Annual**: `FYxx` (e.g., `FY24`, `FY23`).
-- **Quarterly**: `yyyyQx` (e.g., `2024Q2`, `2025Q4`).
+Periods are issuer-defined intervals, never a month grid:
+- **Wire labels:** fiscal `FY2026 Q3`; natural quarter `CY2025 Q3`. A bare
+  `YYYYQn` is not a served period label.
+- **Resolve first:** call `resolve_period(ticker, expression, as_of?)` before any
+  period-scoped retrieval. It returns fiscal and calendar readings, each with
+  dates, `period_id`, `record_status`, `ambiguous` and the temporal frame.
+  Use the fiscal `period_id` as the key on every later call.
+- **`as_of` is the knowledge cutoff** (`known_by`): a fact/document whose
+  `knowable_at` is after it must not appear. Use the user's decision date or the
+  report date, never the wall clock.
+- **Typed absence, not widening:** if the period is absent or ambiguous, return
+  the typed absence and the coverage gap; do not widen the date range or retry a
+  different quarter.
+- **Facts use their own context:** `search_xbrl_facts(period_id=...)` selects the
+  resolved interval; `search_cross_period` takes `period_ids` (array).
+- **Calendar door:** `calendar_quarter=YYYYQn` is a natural quarter, not a fiscal
+  one. Annual reports are queried by `FY`/`period_id`, never through the calendar
+  door.
 
-**Mandatory pre-retrieval step** (for multi-period document search):
-
-1. Call `get_company_fiscal_calendar/{ticker}` ( fiscal calendar endpoint) to resolve:
- - `fiscal_year_end_month` / `fiscal_year_end_day`: when the company's fiscal year ends.
- - `period_label_format`: `"FY"` or `"Q<N>"` — the format this company uses for its filings.
-
-2. **Cross-validate the fiscal calendar** (mandatory — catches silent API data corruption):
- - Call `search_xbrl_facts(ticker, concept=["Revenues"], fiscal_year=[current])` and check the most recent `period_end` month.
- - If the claimed FYE month matches the XBRL `period_end` month, cross-validation passes.
- - If they disagree (e.g., calendar says December FYE but XBRL shows January `period_end`), the API returned wrong data. **Trust the XBRL dates**: derive the fiscal period grid from `period_end` values, and flag the mismatch in `coverage_attestation.gaps[]` as `{dimension: "fiscal_calendar_mismatch", claimed_fye, xbrl_derived_fye, remediation: "Using XBRL-derived fiscal period grid"}`. The XBRL call was already required — zero extra latency.
-
-3. Optionally call `search_earnings_calendar(ticker)` if exact report dates are needed for date-range scoping.
-
-**Why this matters**: Some companies use `FY` for their 10-K while others use `Q4`. Passing the wrong format to `search_cross_period` yields empty results. `get_company_fiscal_calendar` is the authoritative source. The cross-validation step catches cases where the authoritative source itself is wrong (silent API data corruption).
+`get_company_fiscal_calendar` supplies declared periods, gaps and status; it is
+not a month-to-quarter converter. Skip this block only for `structured_only` /
+`simple_lookup` scopes that name no period.
 
 ### TWO TIME FILTERS — they are different quantities, not two spellings of one
 
@@ -239,8 +243,9 @@ than something close:
 
 | Parameter | Matches | Example |
 |---|---|---|
-| `fiscal_quarter` | a period of the **fiscal** year — the quarter the filing reports | `2026Q2`, `2025FY` |
-| `calendar_quarter` | the **natural calendar** quarter of an **event filing** | `2026Q3` |
+| `period_id` (preferred) | the resolved fiscal period, from `resolve_period` | `f4e2…` |
+| `fiscal_quarter` (legacy) | a period of the **fiscal** year — the quarter the filing reports | `FY2026 Q2`, `FY2025` |
+| `calendar_quarter` | the **natural calendar** quarter of an **event filing** | `CY2026 Q3` |
 
 **An 8-K or 6-K that corresponds to no fiscal period carries a natural calendar quarter instead.** Some such
 filings disclose history, some pre-announce the future, so *the information's effective time is unrelated to any
@@ -255,7 +260,7 @@ are not interchangeable, and for a company whose fiscal year is not the calendar
 
 **Two consequences that will otherwise cost a retrieval:**
 
-- **A fiscal filter finds no event filings.** `fiscal_quarter=2026Q3` matches only filings that report fiscal
+- **A fiscal filter finds no event filings.** `fiscal_quarter=FY2026 Q3` matches only filings that report fiscal
   Q3; the 8-Ks *disclosed* in that window are not among them. That is the design, not a gap.
 - **Never compare or join the two.** A calendar quarter is not a coarser fiscal quarter and not an
   approximation of one, so a comparison between them is a **category error** — not a tolerance question. When

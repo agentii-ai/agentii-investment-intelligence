@@ -5,14 +5,16 @@ description: Financial ratio analysis, profitability ratios ROE ROA ROIC, liquid
 temporal_scope:
  default_quarters: 4
  max_quarters: 12
- description: "Trailing 4 quarters for current ratios, up to 12 for trend analysis"
+ description: "Resolve periods with resolve_period and use period_id; trailing 4 quarters for current ratios, up to 12 for trend. as_of is the knowledge cutoff; no widen fallback."
 allowed_tools:
  - get_financial_ratios
+ - resolve_period
  - search_xbrl_facts
  - search_companies
  - get_realtime_quote
  - search_earnings_calendar
  - get_company_financials
+ - get_company_fiscal_calendar
  - batch_search
 retrieval_scope: structured_only
 min_tool_diversity: 7
@@ -30,6 +32,9 @@ Run canonical pre-flight per `contracts/preflight.md`.
 **`get_realtime_quote` availability **: If `get_realtime_quote` is not yet deployed in the MCP surface, use `search_earnings_calendar` for PE/earnings data and flag valuation ratios as "current price unavailable — using latest reported data." Prompts user for current stock price as manual fallback.
 
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
+Use the returned `temporal_frame`; read `date_basis`/`fiscal_source` from earnings rows and never treat either as a fiscal boundary.
+
+When a request names a period, call `resolve_period(ticker, expression, as_of?)` first and use its fiscal `period_id` on every later call; never derive a quarter from a fiscal-calendar month. Pass `as_of` for historical analysis and return a typed absence rather than widening the date range.
 ## Triggers
 
 - analyze financial ratios for {ticker}
@@ -114,7 +119,7 @@ End the closing chat reply with a compact **Key Citations** list (headline 5–1
 
 | Failure Mode | Detection | Action | User-Facing Message |
 |-------------|-----------|--------|---------------------|
-| Missing data | XBRL returns empty for key concepts | Widen date range and retry once | "No financial data available for {ticker} in requested window." |
+| Missing data | XBRL returns empty for key concepts | Re-check the resolved `period_id`; return the typed absence and coverage gap; do not widen the date range | "No financial data available for {ticker} in the resolved period." |
 | Non-USD currency | `unit` field is not USD | Annotate with ISO 4217 code | "⚠ {ticker} reports in {currency}. Ratios computed in reporting currency." |
 | Peer data incomplete | <3 peers have comparable data | Reduce peer set; flag incomplete peers | "Cross-company comparison based on {n} of {m} peers with complete data." |
 | MCP unreachable | Preflight probe fails | Halt with actionable error | "agentii data plane unreachable; check connection." |

@@ -5,12 +5,14 @@ description: Earnings preview deck, quarterly earnings presentation, earnings su
 temporal_scope:
  default_quarters: 4
  max_quarters: 8
- description: "Typical lookback: 4 quarters, max: 8"
+ description: "Resolve the target period with resolve_period; typical lookback 4 quarters, max 8. as_of is the knowledge cutoff; estimates/guidance carry target_period_id; no widen fallback."
 allowed_tools:
  - search_companies
+ - resolve_period
  - search_xbrl_facts
  - search_earnings_calendar
  - get_company_financials
+ - get_company_fiscal_calendar
  - get_company_profile
  - list_xbrl_concepts
  - search_documents
@@ -41,6 +43,7 @@ python-pptx package) and produce the `.md` degraded fallback per
 `contracts/office-tooling.md`.
 
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
+Use the returned `temporal_frame` and bind guidance/estimates to `target_period_id`.
 ## Triggers
 
 - generate earnings preview deck
@@ -84,7 +87,7 @@ See frontmatter `allowed_tools`. This skill produces a polished `.md` slide-deck
 
 ### Protocol
 
-Step-by-step execution detail is in `references/methodology.md`.
+Resolve the target period first with `resolve_period(ticker, expression, as_of?)` and use its fiscal `period_id` on every later call; bind guidance and estimates to `target_period_id`. Step-by-step execution detail is in `references/methodology.md`.
 
 ## Deliverable Chain
 

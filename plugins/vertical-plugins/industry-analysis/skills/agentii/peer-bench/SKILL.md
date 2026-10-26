@@ -5,9 +5,10 @@ description: Peer benchmarking, multi-ticker financial comparison, growth value 
 temporal_scope:
  default_quarters: 4
  max_quarters: 12
- description: "Typical lookback: 4 quarters, max: 12"
+ description: "Resolve each issuer's period with resolve_period and compare on an explicit comparison_basis=fiscal|calendar; typical lookback 4 quarters, max 12. as_of is the knowledge cutoff; no widen fallback."
 allowed_tools:
  - search_companies
+ - resolve_period
  - search_xbrl_facts
  - search_documents
  - search_sec_filings
@@ -72,6 +73,7 @@ Default lookback: 4 fiscal quarter(s); maximum: 12. The default balances recency
 Per frontmatter `allowed_tools`:
 
 - `search_companies` — ticker resolution + company context (entity-alias fuzzy match)
+- `resolve_period` — resolve each issuer's fiscal period; `period_id` is the cross-tool key
 - `search_xbrl_facts` — primary structured financial facts (is_primary default)
 - `search_documents` — Layer 1 document discovery (page-level silver records)
 - `search_sec_filings` — Layer 1 SEC filing metadata index
@@ -86,13 +88,14 @@ Per frontmatter `allowed_tools`:
 
 ### 5. Protocol
 
-1. **Pre-flight (mandatory)**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`; route on coverage.
-2. **Layer 1 — discovery**: `search_documents` / `search_sec_filings` to find candidate filings by ticker/form_type/date.
-3. **Layer 2 — page map**: `read_source_outline/{ticker}/{citation_id}` — every `description` is **platform-generated** (`description_provenance` says which kind), so never quote it as the filing's words; a `platform_metadata_placeholder` means the page was **not labelled**, which is a reason to read it, not to skip it. Escalate to `read_source_deep_outline` only when labels can't disambiguate.
-4. **Layer 2.5 (optional)**: `search_keyword_in_source` to narrow documents >50 pages.
-5. **Layer 3 — deep read**: `read_source_pages/{ticker}/{citation_id}?pages=page<N>,...` for the 3–5 selected pages only.
-6. **Multi-period** (if applicable): `search_cross_period` after fiscal-calendar resolution.
-7. **Output**: write the deliverable per `## Output File`, then append to `agentii.md`.
+1. **Resolve periods first**: call `resolve_period(ticker, expression, as_of?)` for the target and every peer; keep the fiscal `period_id`s. `get_company_fiscal_calendar` supplies declared periods/gaps, never a month-derived quarter. Then `get_ticker_coverage/{ticker}` and route on coverage.
+2. **Comparison basis**: choose `comparison_basis=fiscal` when comparing each issuer's own fiscal quarters, or `comparison_basis=calendar` when normalizing to natural quarters; state it in the output and never mix the two clocks in one column. `period_id` remains the cross-tool key.
+3. **Layer 1 — discovery**: `search_documents` / `search_sec_filings` to find candidate filings by ticker/form_type/date.
+4. **Layer 2 — page map**: `read_source_outline/{ticker}/{citation_id}` — every `description` is **platform-generated** (`description_provenance` says which kind), so never quote it as the filing's words; a `platform_metadata_placeholder` means the page was **not labelled**, which is a reason to read it, not to skip it. Escalate to `read_source_deep_outline` only when labels can't disambiguate.
+5. **Layer 2.5 (optional)**: `search_keyword_in_source` to narrow documents >50 pages.
+6. **Layer 3 — deep read**: `read_source_pages/{ticker}/{citation_id}?pages=page<N>,...` for the 3–5 selected pages only.
+7. **Multi-period** (if applicable): `search_cross_period(ticker, query, period_ids=[...])` after resolve_period; `as_of` is the knowledge cutoff.
+8. **Output**: write the deliverable per `## Output File`, then append to `agentii.md`.
 
 ## Output File
 
@@ -114,6 +117,7 @@ Write the final deliverable to `_cross/{descriptive-slug}_{YYYY-MM-DD_HHMM}_peer
 Run canonical pre-flight per `contracts/preflight.md`.
 
 Include the `X-Agentii-Trace` header on every tool call per `contracts/x-agentii-trace-header.md` — carry the `_run_id` from your first tool result and name yourself (and your parent, if you were spawned).
+Use the returned `temporal_frame` on every result; `period_id` is the cross-tool key.
 
 ## Memory & Snapshot
 

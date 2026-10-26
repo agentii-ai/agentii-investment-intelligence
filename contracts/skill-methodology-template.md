@@ -42,7 +42,7 @@ Restates the `allowed_tools` YAML frontmatter list with a one-line justification
 
 Step-by-step numbered procedure (modeled on `himself65/finance-skills` pattern):
 
-1. **Pre-retrieval** (if multi-period): call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format labels.
+1. **Pre-retrieval** (if a period is named): call `resolve_period(ticker, expression, as_of?)` first; use the fiscal `period_id` on every later call. `get_company_fiscal_calendar` supplies declared periods and gaps, never a month-derived quarter.
 2. **Concept discovery** (if structured query with unfamiliar concept): call `list_xbrl_concepts(query=<term>, ticker=<T>)`.
 3. **Retrieval**: follow the three-layer protocol if applicable:
  - Layer 1: `search_documents` / `search_sec_filings` to discover candidate filings.

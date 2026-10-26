@@ -74,12 +74,12 @@ Before making ANY tool call, classify the query type using this decision tree (t
 ### Branch (a): Structured Data Query
 Financial metrics (Revenue, EPS, EBITDA, margins, balance-sheet items):
 1. **(a1)** If the exact XBRL concept name is unknown AND is NOT a standard concept, call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover it. **Skip (a1) entirely for these standard concepts — query them directly**: `Revenues`, `NetIncomeLoss`, `OperatingIncomeLoss`, `GrossProfit`, `Assets`, `Liabilities`, `Equity`, `OperatingCashFlow`, `ResearchAndDevelopment`, `SellingGeneralAndAdministrative`, `EarningsPerShareDiluted`, `EarningsPerShareBasic`. These are US-GAAP standards present in every filing. Only use `list_xbrl_concepts` for non-standard concepts (e.g., `RevenueFromContractWithCustomer`, `InterestIncomeExpenseNet`).
-2. **(a2)** Call `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` with ALL concepts and ALL years in a SINGLE call. One SQL query covers everything — batch 4 concepts × 3 years = 1 call, not 12.
+2. **(a2)** Call `resolve_period(ticker, expression, as_of?)` first, then `search_xbrl_facts(ticker, concept=[...], period_id=...)` with ALL concepts and the resolved period in a SINGLE call. One SQL query covers everything — batch 4 concepts × the period = 1 call, not 12. Use `period_ids` for `search_cross_period`, never a month-derived quarter.
 
 ### Branch (b): Multi-Period Unstructured Query
 Qualitative data (management commentary, competitive analysis) across 2+ fiscal periods:
-1. Call `get_company_fiscal_calendar/{ticker}` to resolve the company's fiscal period format (`"FY"` vs `"Q<N>"`).
-2. Call `search_cross_period(ticker, query, fiscal_periods)` — ONE call fans out parallel `period-search-subagent` instances server-side, each following the three-layer protocol.
+1. Call `resolve_period(ticker, expression, as_of?)` for each period; use the fiscal `period_id`s. `get_company_fiscal_calendar` supplies declared periods and gaps, never a month-derived quarter.
+2. Call `search_cross_period(ticker, query, period_ids=[...])` — ONE call fans out parallel `period-search-subagent` instances server-side, each following the three-layer protocol.
 > **Fallback**: If `search_cross_period` returns PROXY_ERROR, use sequential `search_documents` + `read_source_outline` + `read_source_pages` per period.
 
 ### Branch (c): Single-Period / Single-Document Query
@@ -113,7 +113,7 @@ If the outline yields >10 candidate pages for a single document (>50 pages), use
 
 Professional equity research requires up to 12 fiscal quarters of historical data. The skill's `temporal_scope` frontmatter declares the default lookback.
 
-**Cross-validate the fiscal calendar before trusting it**: After `get_company_fiscal_calendar`, verify the claimed FYE month against the most recent XBRL `period_end` from `search_xbrl_facts`. If they disagree (e.g., calendar says December but XBRL shows January), trust the XBRL dates and flag the mismatch in Coverage Gaps. This catches silent API data corruption.
+**Resolve the period; do not derive it from a month**: call `resolve_period(ticker, expression, as_of?)` and use its fiscal `period_id` on every later call. `get_company_fiscal_calendar` supplies declared periods, gaps and status; it is not a month-to-quarter converter. Pass `as_of` as the knowledge cutoff and return a typed absence instead of widening the range.
 
 ## Foreign Companies — 20-F / 6-K & Currency Handling
 

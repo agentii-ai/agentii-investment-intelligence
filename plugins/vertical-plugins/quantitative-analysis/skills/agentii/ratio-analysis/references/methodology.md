@@ -10,8 +10,8 @@ Follow the retrieval strategy decision tree in `contracts/retrieval.md`. This sk
 
 ## Protocol
 
-1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` .
-2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","Assets","Liabilities","Equity","OperatingCashFlow","InventoryNet","ReceivablesNet","CurrentAssets","CurrentLiabilities","InterestExpense","LongTermDebt"], fiscal_year=[latest, latest-1, latest-2, latest-3])` — batch all concepts × 4 years.
+1. **Resolve first**: call `resolve_period(ticker, "last quarter" or the user's period, as_of?)` for the target and the prior three quarters; keep the fiscal `period_id`s. Then `get_ticker_coverage/{ticker}`. `get_company_fiscal_calendar` supplies declared periods/gaps, never a month-derived quarter.
+2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","Assets","Liabilities","Equity","OperatingCashFlow","InventoryNet","ReceivablesNet","CurrentAssets","CurrentLiabilities","InterestExpense","LongTermDebt"], period_id=<resolved period_id>)` for each period; batch the concept queries with `batch_search`.
 3. **Price data**: `get_realtime_quote(ticker)` for current stock price, market cap, PE (TTM).
 4. **Peer identification**: `get_peer_comparison(ticker, metric)` (or `search_companies(search=<industry>)` — note there is no `sector` param) to identify peer tickers for cross-company comparison.
 5. **Compute ratios** into 6 categories per the Ratio Definitions below.

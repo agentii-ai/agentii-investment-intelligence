@@ -8,7 +8,7 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 
 **Objective**: Extract and present the most recent quarter's consolidated P&L — revenue, gross profit, operating income, net income, diluted EPS — with sequential (QoQ) and year-over-year (YoY) growth rates.
 
-**Tool calls**: `get_company_financials/{ticker}`, `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss"], fiscal_year=[latest], fiscal_period=[latest])`
+**Tool calls**: `resolve_period(ticker, "last quarter", as_of?)` → fiscal `period_id`; `get_company_financials(ticker, fiscal_year=<resolved year>, fiscal_period=<resolved period>)`; `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss"], period_id=<period_id>)`
 
 **Output**: Consolidated P&L table with QoQ and YoY growth rates. Citation format: `{ticker} {citation_id} page<N>`.
 
@@ -18,7 +18,7 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 
 **Objective**: Track gross margin, operating margin, and net margin across the most recent 4 quarters. Identify trends, inflection points, and drivers (pricing power, cost structure changes, operating leverage).
 
-**Tool calls**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss"], fiscal_year=[latest, latest-1])`
+**Tool calls**: `resolve_period(ticker, "last quarter", as_of?)` and the prior three quarters → fiscal `period_id`s; `batch_search` with one `search_xbrl_facts(ticker, concept=[...], period_id=<id>)` per period. No widen fallback.
 
 **Output**: Margin trend table with QoQ deltas. Commentary on margin drivers.
 
@@ -28,7 +28,7 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 
 **Objective**: Compare actual EPS against consensus estimates for the most recent quarter. Present surprise %, beat/miss track record (trailing 4 quarters), and guidance accuracy.
 
-**Tool calls**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])`
+**Tool calls**: `resolve_period(ticker, "last quarter", as_of?)` → resolved fiscal year; `search_earnings_calendar(ticker, fiscal_year=<resolved year>)`; read `date_basis`/`fiscal_source`, never a fiscal boundary.
 
 **Output**: EPS actual vs. estimated table with surprise % and beat/miss streak.
 
@@ -38,7 +38,7 @@ Extracted from SKILL.md for progressive disclosure (US5). The skill body keeps a
 
 **Objective**: Compute quarter-over-quarter growth rates for revenue, gross profit, operating income, and EPS across the trailing 4 quarters. Highlight accelerating or decelerating trends.
 
-**Tool calls**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","EarningsPerShareDiluted"], fiscal_year=[latest, latest-1])`
+**Tool calls**: `resolve_period(ticker, "last quarter", as_of?)` and the prior three quarters → fiscal `period_id`s; `batch_search` with one `search_xbrl_facts(ticker, concept=[...], period_id=<id>)` per period.
 
 **Output**: Sequential growth rate table with trend arrows and inflection detection.
 
