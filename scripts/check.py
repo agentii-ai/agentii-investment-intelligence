@@ -324,6 +324,31 @@ for bundled in sorted(PLUGINS.glob("agent-plugins/*/skills/agentii/*")):
     if cmp.diff_files or cmp.left_only or cmp.right_only:
         err(f"bundled-skill: {rel(bundled)}: drifted from {rel(src)} (run sync-agent-skills.py)")
 
+# --- 5b. marketplace-beachhead mirrors the vertical source (spec 062 FR-061, 2026-11-01) ---
+# The marketplace copy is distributed, not generated. Before this check existed it had drifted 0/9 on the
+# temporal rule and on the resolve_period grant while every other gate stayed green — the same
+# "two copies, one check" defect Check 5 exists for, one tree over. Byte parity is the standard the other
+# two trees already meet; a content comparison (shallow=False) is used so an mtime cannot excuse a diff.
+_mark('5b. marketplace-beachhead skills mirror the vertical source')
+MIRROR_SKILLS = ROOT / 'marketplace-beachhead' / 'plugins' / 'equity-research-core' / 'skills' / 'agentii'
+if MIRROR_SKILLS.is_dir():
+    for mirror in sorted(MIRROR_SKILLS.glob('*')):
+        if not mirror.is_dir():
+            continue
+        checked += 1  # 5b. mirror skills
+        src = src_by_name.get(mirror.name)
+        if not src:
+            err(f"mirror-skill: {rel(mirror)}: no vertical source named '{mirror.name}'")
+            continue
+        src_file, mir_file = src / 'SKILL.md', mirror / 'SKILL.md'
+        if not mir_file.is_file():
+            err(f"mirror-skill: {rel(mirror)}: no SKILL.md")
+            continue
+        if not filecmp.cmp(src_file, mir_file, shallow=False):
+            err(f"mirror-skill: {rel(mirror)}: drifted from {rel(src)} (copy the vertical source)")
+else:
+    err("mirror-skill: marketplace-beachhead skills tree not found — the check examined nothing")
+
 # --- 6. agent.md skill references -------------------------------------------
 
 _mark('6. agent.md skill references')
@@ -769,6 +794,10 @@ MODELS_SKILL_NAMES = {
 CANONICAL_TOOLS: set[str] = set()
 OFFICE_TOOLS = {"xlsx.build", "xlsx.recalc", "xlsx.evaluate", "xlsx.audit", "xlsx.convert", "pptx.build", "pptx.refresh", "pptx.edit", "xlsx.edit", "xlsx-read"}
 DOCUMENT_TOOLS = {"read_source_outline", "read_source_deep_outline", "read_source_pages", "search_keyword_in_source", "search_documents", "search_sec_filings"}
+# Spec 062 FR-061 (2026-11-01): the temporal resolver is a retrieval capability too. It is kept OUT of
+# DOCUMENT_TOOLS on purpose — `ratio-analysis` is `structured_only` and legitimately grants it, and
+# Check 21's structured_only clause would call that correct declaration an error.
+TEMPORAL_TOOLS = {"resolve_period"}
 # Full canonical surface: FR-011 MCP tools + office tools
 FR011_TOOLS = {
     "search_clinical_trials", "search_xbrl_facts", "read_rendered_statement",
@@ -1402,7 +1431,7 @@ for sk in SKILL_FILES:
     except (ValueError, yaml.YAMLError):
         continue
     at = set(meta.get("allowed_tools") or [])
-    for tool in DOCUMENT_TOOLS:
+    for tool in DOCUMENT_TOOLS | TEMPORAL_TOOLS:
         # if the body actively instructs calling the tool (not just a pointer mention)
         if _re.search(rf"`{_re.escape(tool)}`", body) and tool not in at:
             err(f"ctx-gate-tool-closure: {rel(sk)}: body references `{tool}` absent from allowed_tools (FR-060 closure)")

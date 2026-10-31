@@ -6,9 +6,10 @@ essentials_modes: [consolidated-p-and-l, margin-analysis, earnings-vs-consensus]
 temporal_scope:
  default_quarters: 1
  max_quarters: 4
- description: "Recent quarter analysis focuses on the most recent quarter's P&L. Max 4 quarters for sequential trend."
+ description: "Resolve the quarter with resolve_period, then use its period_id. Recent quarter analysis focuses on the most recent quarter's P&L; max 4 quarters for sequential trend. as_of is the knowledge cutoff; no widen fallback."
 allowed_tools:
  - search_companies
+ - resolve_period
  - search_xbrl_facts
  - get_company_financials
  - get_company_profile
@@ -65,10 +66,11 @@ This skill performs **structured data retrieval** (XBRL facts + earnings calenda
 
 ### 2. Retrieval Strategy
 
-1. ** Pre-flight (mandatory)**: `get_company_fiscal_calendar/{ticker}` then `get_ticker_coverage/{ticker}`. Route based on coverage.
-2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","EarningsPerShareDiluted"], fiscal_year=[latest])` — returns `is_primary: true` rows by default.
-3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])` — returns EPS actual/estimate/surprise. Use `get_company_fiscal_calendar` for fiscal period orientation, NOT `search_earnings_calendar` .
-4. **Consolidated P&L**: `get_company_financials/{ticker}` returns IS/BS/CF highlights with XBRL data.
+1. **Resolve the period first (mandatory)**: `resolve_period(ticker, "last quarter" or the user's period, as_of?)`; use the fiscal reading's `period_id`. Then `get_ticker_coverage/{ticker}` and route based on coverage. `get_company_fiscal_calendar` supplies declared periods/gaps, never a month-derived quarter.
+2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","EarningsPerShareDiluted"], period_id=<fiscal period_id>)` — returns `is_primary: true` rows by default.
+3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=<resolved fiscal year>)` — returns EPS actual/estimate/surprise. Read `date_basis` and `fiscal_source`; an estimate is not an observed date or a fiscal boundary.
+4. **Consolidated P&L**: `get_company_financials(ticker, fiscal_year=<resolved fiscal year>, fiscal_period=<resolved fiscal period>)` returns IS/BS/CF highlights for that authority period.
+5. **Knowledge cutoff**: pass `as_of` on every historical/point-in-time call; never use the wall clock. If the period is absent, return the typed absence and coverage gap; do not widen the date range.
 
 **Read before you quote.** A page's `description` is **platform-generated** — it is never the issuer's
 words and must never be quoted as the filing's. When a description identifies a relevant page,
@@ -82,15 +84,15 @@ Default: 1 fiscal quarter (max 4). This skill is a temporal snapshot of the most
 
 ### 4. Tool Allowlist
 
-See frontmatter `allowed_tools`. `search_xbrl_facts` is the primary data source for consolidated P&L metrics; `search_earnings_calendar` provides EPS actuals, estimates, and surprise data; `get_company_fiscal_calendar` resolves fiscal period orientation; `search_documents(form_type="earnings_call_transcript")` + `read_source_pages` cross-reference management commentary. Deep structural analysis belongs to `/agentii:business-model` .
+See frontmatter `allowed_tools`. `resolve_period` is the first call for any named period; `search_xbrl_facts(period_id=...)` is the primary data source for consolidated P&L metrics; `search_earnings_calendar` provides EPS actuals, estimates, and surprise data; `get_company_fiscal_calendar` supplies declared periods/gaps, never a month-derived quarter; `search_documents(form_type="earnings_call_transcript")` + `read_source_pages` cross-reference management commentary. Deep structural analysis belongs to `/agentii:business-model` .
 
 ### 5. Protocol
 
-1. **Pre-retrieval**: call `get_company_fiscal_calendar/{ticker}` to resolve fiscal period format, then `get_ticker_coverage/{ticker}` .
-2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","EarningsPerShareDiluted"], fiscal_year=[latest])` — returns `is_primary: true` rows by default.
-3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=[latest, latest-1])` for EPS actuals, estimates, and surprise percentages.
-4. **Financial highlights**: `get_company_financials/{ticker}` for IS/BS/CF summary data.
-5. **Output**: produce P&L progression table with QoQ and YoY growth rates, margin trend chart data, and earnings-vs-consensus comparison.
+1. **Resolve first**: call `resolve_period(ticker, "last quarter" or the user's period, as_of?)`; keep its fiscal `period_id`, then `get_ticker_coverage/{ticker}` .
+2. **XBRL retrieval**: `search_xbrl_facts(ticker, concept=["Revenues","GrossProfit","OperatingIncomeLoss","NetIncomeLoss","EarningsPerShareDiluted"], period_id=<fiscal period_id>)` — returns `is_primary: true` rows by default.
+3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=<resolved fiscal year>)` for EPS actuals, estimates, and surprise percentages; `date_basis`/`fiscal_source` are provenance, not a period boundary.
+4. **Financial highlights**: `get_company_financials(ticker, fiscal_year=<resolved fiscal year>, fiscal_period=<resolved fiscal period>)` for IS/BS/CF summary data.
+5. **Output**: produce P&L progression table with QoQ and YoY growth rates, margin trend chart data, and earnings-vs-consensus comparison; attach `temporal_frame` and use a typed absence instead of widening.
 
 ## Modes (5 — temporal / quantitative)
 
@@ -135,7 +137,7 @@ End the closing chat reply with the summary shape in `contracts/citation-and-mem
 
 | Failure Mode | Detection | Action | User-Facing Message |
 |-------------|-----------|--------|---------------------|
-| Missing data | Data API returns empty result set | Widen date range and retry once | "No data available for {ticker} in requested window." |
+| Missing data | Data API returns empty result set | Return the typed absence and the coverage gap; do not widen the date range | "No data available for {ticker} in the resolved period." |
 | Partial data | Data API returns <80% expected records | Proceed with coverage gaps section | "Analysis based on partial data; see Coverage Gaps section." |
 | MCP unreachable | Preflight probe fails | Halt with actionable error | "agentii data plane unreachable; check connection." |
 

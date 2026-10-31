@@ -22,6 +22,7 @@ allowed_tools:
  - search_knowledge_entries
  - get_knowledge_entry
  - search_by_analogue
+ - resolve_period
 retrieval_scope: unstructured_document_search
 min_tool_diversity: 10
 ---
@@ -30,6 +31,7 @@ min_tool_diversity: 10
 
 ## Preflight
 
+When a request names a period, call `resolve_period(ticker, expression, as_of?)` first and use its fiscal `period_id`; never derive a quarter from the fiscal-calendar month, pass `as_of` for historical analysis, and return a typed absence instead of widening the date range.
 
 Run canonical pre-flight per `contracts/preflight.md`.
 
