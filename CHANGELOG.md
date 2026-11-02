@@ -4,6 +4,19 @@ All notable changes to `agentii-investment-intelligence`.
 
 ## [Unreleased]
 
+### Added
+- **Context-management protocol in `contracts/retrieval.md`** (spec 062 `T166`, `FR-040a(iv)`). The
+  provider evicts tool results as the context grows; the protocol fires before that eviction — **~100K
+  trigger, ~90K warning**, warn-before-evict (write the figure, period and citation to memory first),
+  cited evidence retained, the acting model choosing, replacement in place with a recoverable archive,
+  and user/assistant messages immune. The warning number is deliberate: 90% of 128K (≈115K) fires after
+  a provider that evicts at ~100K has already dropped the evidence. It adds no `allowed_tools` entry and
+  no API route. **Check 36** asserts the six properties, not the heading alone.
+- **`event_label` stated as an event view, not a period** (spec 062 `T165`, `FR-043(v)`; 068 `T217`).
+  `display_label` is context even when it looks like `2025Q2`; the field carries no `fiscal_quarter`,
+  no `period_id` authority, and never substitutes for the 8-K/6-K disclosure tag rule. **Check 37**
+  asserts the contract sentence and fails any `SKILL.md` whose text treats `display_label` as a period.
+
 ### Fixed
 - **X-Agentii-Trace contract pair reconciled with the deployed behaviour** — `contracts/x-agentii-trace-header.md`
   and `contracts/x-agentii-trace-delivery.md` to v1.1 (spec 060). v1.0 described a mechanism that was

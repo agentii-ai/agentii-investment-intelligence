@@ -1797,6 +1797,62 @@ except Exception as _e:                       # noqa: BLE001
     err(f"build-output verification could not run: {type(_e).__name__}: {_e}")
 
 
+# --- Check 36: the context-management protocol is in the skills' contract (spec 062 T166) ---
+#
+# FR-040a(iv) puts the protocol in the wrapper, not on the served surface: the acting model warns
+# itself before a harness evicts tool results. The check asserts the properties a reader implements
+# from — the provider's trigger, the warning that must precede it, the ordering, and the immune set —
+# rather than that a section exists. A heading-only check would pass on an empty section, which is
+# the failure shape Check 19 was rewritten to stop.
+_mark("Check 36: context-management protocol in the skills' contract (spec 062 T166)")
+_context_contract = CONTRACTS / "retrieval.md"
+checked += 1
+if not _context_contract.exists():
+    err("context-management: contracts/retrieval.md is missing (spec 062 T166/FR-040a(iv))")
+else:
+    _ctx_text = _context_contract.read_text()
+    for _needle, _why in (
+        ("## Context management", "the protocol's section"),
+        ("~100K", "the provider's eviction trigger"),
+        ("~90K", "the warning that must precede eviction"),
+        ("warn-before-evict", "the ordering rule"),
+        ("user instructions", "the immune set"),
+        ("recoverable archive", "replacement, not deletion"),
+    ):
+        if _needle.lower() not in _ctx_text.lower():
+            err(
+                f"context-management: contracts/retrieval.md does not carry {_why} "
+                f"({_needle!r}) — spec 062 T166/FR-040a(iv)"
+            )
+
+# --- Check 37: `event_label` is context, never a period (spec 062 T165) ---
+#
+# The additive field 068 serves on event filings has `role='discussed'` and no `fiscal_quarter`.
+# A skill that reads `display_label` as a quarter prices an event into a period it does not report.
+# The contract must state the rule; no body may contradict it by assignment.
+_mark("Check 37: event_label is context, never a period (spec 062 T165, FR-043(v))")
+checked += 1
+if _context_contract.exists():
+    _ev_text = _context_contract.read_text()
+    if "event_label" not in _ev_text or "not a fiscal period" not in _ev_text:
+        err(
+            "event-label: contracts/retrieval.md does not state that `event_label` is not a "
+            "fiscal period — spec 062 T165/FR-043(v)"
+        )
+_PERIOD_MISREAD = re.compile(
+    r"display_label[^\n]{0,60}\b(?:is|as)\b[^\n]{0,30}(?:fiscal\s+)?(?:quarter|period)",
+    re.IGNORECASE,
+)
+for _sk in SKILL_FILES:
+    checked += 1
+    _misread = _PERIOD_MISREAD.search(_sk.read_text())
+    if _misread:
+        err(
+            f"event-label: {rel(_sk)}: treats `display_label` as a period "
+            f"({_misread.group(0)!r}) — it is an event view with role='discussed' "
+            f"(spec 062 T165/FR-043(v))"
+        )
+
 # --- report ----------------------------------------------------------------
 # T128: the surface table. Delta between consecutive marks = that section's
 # examined count; the final section runs to the end of the file.

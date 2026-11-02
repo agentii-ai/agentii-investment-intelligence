@@ -98,6 +98,28 @@ Layer 1 metadata + `search_keyword_in_source`, flag
 `document_access_degraded: true` and `three_layer_protocol: bypassed`, surface
 the gap, and do NOT halt.
 
+## Context management (long conversations, long documents)
+
+The provider evicts tool results when the context grows. This protocol fires **before** that
+eviction, so the acting model chooses what survives instead of discovering afterwards what did not.
+
+- **Trigger at ~100K tokens; warn at ~90K.** The warning must precede the eviction a harness actually
+  performs — a warning at 90% of 128K (≈115K) fires *after* a provider that evicts at ~100K has already
+  dropped the evidence. The 128K/90% pair is the harness-table figure, not the operative number.
+- **Warn-before-evict.** When the answer is *which evidence is at risk*, write it to memory **first** —
+  the figure, the period, and the citation (`{ticker} {citation_id} page<N>`) — then let the tool
+  results go. An eviction you did not prepare for cannot be recovered by re-reading a page you can no
+  longer name.
+- **Keep cited evidence.** A tool result the answer already cites is not evictable; compress the ones
+  that were read and not used.
+- **The acting model chooses.** Eviction is the agent's decision, not a fixed policy: only it knows
+  which document it is mid-way through.
+- **Replacement, not deletion.** Evict in place with a recoverable archive — a summary that names the
+  source, so the raw page can be re-read.
+- **Immune:** user instructions and the assistant's own messages are never evicted.
+- **No tool call is involved.** This is a wrapper protocol: it adds no `allowed_tools` entry and no API
+  route (spec 062 `FR-049`, `FR-040a(iv)`).
+
 ## Page References & Citations
 
 Always use `{ticker} {citation_id} page<N>` (e.g., `LLY sec135 page12`) as the
@@ -132,3 +154,10 @@ call; never derive a quarter from `get_company_fiscal_calendar`'s month or from
   door.
 - Skip the whole block for `structured_only` / `simple_lookup` scopes only when
   the request names no period.
+
+**`event_label` is an event view, not a fiscal period** (spec 068 `T217`, spec 062 `FR-043(v)`). A record
+may carry an additive `event_label` — `label_kind`, `display_label`, `role`, `target_period_id`,
+`observation_id`. Its `role` is `discussed`; it carries **no** `fiscal_quarter`, **no** `period_id`
+authority, and it never substitutes for the disclosure tag rule (an 8-K/6-K carries a fiscal label only
+when `secondary_labels` name results or guidance). Read `display_label` as context even when it looks like
+`2025Q2`: treating it as a period prices an event filing into a quarter it does not report.
