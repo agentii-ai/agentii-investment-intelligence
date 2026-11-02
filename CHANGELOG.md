@@ -43,6 +43,10 @@ All notable changes to `agentii-investment-intelligence`.
   sequence archives as `depth` 0→1→1 with `instance=dcf-2`.
 
 ### Changed
+- **Layer 2's "no filter" sentence is retired** (spec 062 `T167`, 2026-11-02): `read_source_outline` now
+  takes `page_from`/`page_to`, so the map can be narrowed to a range and echoes it in `meta`. The old
+  sentence was true until that day and would have told an agent to pay ~136K tokens for a 2,000-page
+  filing when a range was available. No new tool, no grant change.
 - **CI Check 19 now asserts the pair's substance rather than its existence**: the named durable store,
   the five-field hot-tier member tuple, the absence of the removed per-call mint, and the absence of
   caller-supplied `depth`/`user_id` in the wire format. It was run against the pre-amendment files

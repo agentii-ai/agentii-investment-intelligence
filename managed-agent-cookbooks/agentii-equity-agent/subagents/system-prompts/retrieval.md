@@ -150,7 +150,7 @@ Use `search_documents` / `search_sec_filings` / `list_sources` to identify candi
 
 ### Layer 2 — Page Map (Lightweight)
 
-Use `read_source_outline/{ticker}/{citation_id}` to retrieve ALL pages' `description` + `keywords` for each candidate document. This returns a scannable page-level metadata map WITHOUT loading `page_content`. **This is the default Layer 2** — sourced from GENERATED columns (`page_description`, `page_keywords`) for performance. **Cost is measured: 72 tokens/page, so 200 pages is ~14,400 tokens** (spec 062 `T030`, 2026-09-23; this line said ~5K, an estimate 2.9× low). The map has **no filter and no pagination** — a 2,000-page filing is ~136,264 tokens in one call.
+Use `read_source_outline/{ticker}/{citation_id}` to retrieve ALL pages' `description` + `keywords` for each candidate document. This returns a scannable page-level metadata map WITHOUT loading `page_content`. **This is the default Layer 2** — sourced from GENERATED columns (`page_description`, `page_keywords`) for performance. **Cost is measured: 72 tokens/page, so 200 pages is ~14,400 tokens** (spec 062 `T030`, 2026-09-23; this line said ~5K, an estimate 2.9× low). The map has **no pagination**, but it does take a range: **`page_from`/`page_to`** (spec 062 `T167`, 2026-11-02) return only the named pages and echo the effective range in `meta`. Pass them when the section is known — a 2,000-page filing read whole is ~136,264 tokens; a 20-page range is ~1,440.
 
 **The `description` is PLATFORM-GENERATED, and the provenance is in the record (spec 062 `T036`, 2026-09-23).** Every page record carries `description_provenance`: `platform_summary` (a model summarised the page) or `platform_metadata_placeholder` (no summary exists; the string is derived from the filing metadata and carries no content), or `null` when no description is served. **Never quote a `description` as the filing's own words** — the three page-attributed quotations in thesis 001 did exactly that and were all three evidential fabrications. **A placeholder is NOT a reason to skip a page: it means the page was not labelled, so read it if the claim needs it.** *(This paragraph replaces the v2.2.0 NULL-skip rule, which told agents to skip pages on a signal the served map no longer returns — the mask is served instead — and whose assumption was never measured: 6.55% of served pages carry the mask, 15.33% of 10-K and 17.82% of 20-F pages, spec 062 `T026`.)*
 
@@ -231,6 +231,10 @@ Periods are issuer-defined intervals, never a month grid:
 - **Calendar door:** `calendar_quarter=YYYYQn` is a natural quarter, not a fiscal
   one. Annual reports are queried by `FY`/`period_id`, never through the calendar
   door.
+- **`event_label` is an event view, not a fiscal period** (spec 068 `T217`, spec 062 `FR-043(v)`):
+  its `role` is `discussed`, it carries no `fiscal_quarter` and no `period_id` authority, and it
+  never substitutes for the 8-K/6-K disclosure tag rule. Read `display_label` as context even when it
+  looks like `2025Q2`; treating it as a period prices an event into a quarter it does not report.
 
 `get_company_fiscal_calendar` supplies declared periods, gaps and status; it is
 not a month-to-quarter converter. Skip this block only for `structured_only` /

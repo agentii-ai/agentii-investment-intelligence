@@ -70,8 +70,9 @@ answer pages are not known in advance.
 - **Layer 2 — Page map**: `read_source_outline/{ticker}/{citation_id}` returns
   per-page `description` + `description_provenance` + `keywords` without `page_content`.
   **Cost is measured, not estimated: 72 tokens/page (spec 062 `T030`, 2026-09-23), so 200 pages
-  is ~14,400 tokens** — and the map has **no filter and no pagination**, so a 2,000-page filing
-  is ~136,264 tokens in one call. Budget for that before calling it on a long filing.
+  is ~14,400 tokens** — and the map has **no pagination**, so a 2,000-page filing is ~136,264 tokens if
+  read whole. **Narrow it before that happens**: `page_from`/`page_to` (spec 062 `T167`) return only the
+  named page range and echo the effective range in `meta`; pass them when the section is known.
   **`description` is PLATFORM-GENERATED — never the filing's own words.** `description_provenance`
   says which kind: `platform_summary` (a model summarised the page) or
   `platform_metadata_placeholder` (no summary exists; the string is derived from the filing
