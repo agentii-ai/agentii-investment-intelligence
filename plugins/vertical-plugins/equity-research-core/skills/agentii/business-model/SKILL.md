@@ -100,6 +100,8 @@ Default: 4 fiscal quarters (max 8). A single-quarter snapshot is INSUFFICIENT fo
 
 See frontmatter `allowed_tools`.
 
+Retrieval: `search_documents`/`search_sec_filings` for discovery; `read_source_outline` (narrow with `page_from`/`page_to`) → `read_source_deep_outline`; `search_keyword_in_source`; `search_cross_period`; `search_xbrl_facts`/`get_company_financials`; `get_company_fiscal_calendar`; `resolve_period` first.
+
 - `search_companies`, `get_company_profile` — issuer resolution and sector classification.
 - `search_xbrl_facts`, `list_xbrl_concepts`, `get_company_financials` — segment-level P&L and revenue concentration metrics.
 - `search_documents`, `search_sec_filings` — Layer 1 document discovery (with `secondary_labels` filter).

@@ -82,6 +82,8 @@ Default: 4 fiscal quarters (max 8). Valuation methods: trailing 4 quarters for c
 
 See frontmatter `allowed_tools`.
 
+Retrieval layers: `search_documents` discovers the filings; `read_source_outline` gives the page map — **narrow it with `page_from`/`page_to`** on long filings — and `read_source_deep_outline` is the escalation; `search_keyword_in_source` filters before pages are opened; `read_source_pages` is the deep read; `search_xbrl_facts`/`get_company_financials` carry the reported figures behind each multiple; `resolve_period` runs before any period-scoped call.
+
 ### Protocol
 
 Step-by-step execution detail is in `references/methodology.md`.

@@ -137,6 +137,12 @@ and the temporal frame. Use the fiscal `period_id` as the key on every later
 call; never derive a quarter from `get_company_fiscal_calendar`'s month or from
 `period_end`.
 
+**The temporal frame is the carrier.** Every temporal result returns one `temporal_frame` sub-object —
+**echo it, never flatten it**. Read its `record_status`, `support_status`, `period_role`/`horizon` and
+`absence_reason` before deciding a period. When `temporal_frame` is `null`, the row carries a typed
+`frame_absence_reason`: return that absence and do **not** derive a period from a label to fill the gap
+(spec 068 contract R5.1/R5.11; spec 062 `FR-059`).
+
 - **Wire labels:** fiscal `FY2026 Q3`; natural quarter `CY2025 Q3`. A bare
   `YYYYQn` is not a served period label. A bare quarter in a *request* is
   accepted; when its fiscal and calendar readings differ, choose one explicitly.

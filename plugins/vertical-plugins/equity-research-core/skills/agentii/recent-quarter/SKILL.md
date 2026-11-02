@@ -84,7 +84,9 @@ Default: 1 fiscal quarter (max 4). This skill is a temporal snapshot of the most
 
 ### 4. Tool Allowlist
 
-See frontmatter `allowed_tools`. `resolve_period` is the first call for any named period; `search_xbrl_facts(period_id=...)` is the primary data source for consolidated P&L metrics; `search_earnings_calendar` provides EPS actuals, estimates, and surprise data; `get_company_fiscal_calendar` supplies declared periods/gaps, never a month-derived quarter; `search_documents(form_type="earnings_call_transcript")` + `read_source_pages` cross-reference management commentary. Deep structural analysis belongs to `/agentii:business-model` .
+See frontmatter `allowed_tools`.
+
+Retrieval layers: `search_documents` discovers transcripts and filings; `read_source_outline` gives the page map — **narrow it with `page_from`/`page_to`** on long transcripts or filings — then `read_source_pages` reads only the pages it identifies; `search_xbrl_facts`/`get_company_financials` carry the reported figures; `get_company_fiscal_calendar` supplies declared periods; `resolve_period` runs before any period-scoped call. `resolve_period` is the first call for any named period; `search_xbrl_facts(period_id=...)` is the primary data source for consolidated P&L metrics; `search_earnings_calendar` provides EPS actuals, estimates, and surprise data; `get_company_fiscal_calendar` supplies declared periods/gaps, never a month-derived quarter; `search_documents(form_type="earnings_call_transcript")` + `read_source_pages` cross-reference management commentary. Deep structural analysis belongs to `/agentii:business-model` .
 
 ### 5. Protocol
 

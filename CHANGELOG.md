@@ -5,6 +5,16 @@ All notable changes to `agentii-investment-intelligence`.
 ## [Unreleased]
 
 ### Added
+- **Check 21b — the retrieval capability matrix** (spec 062 `T159`, `FR-061(iii)`). Nine skills × eight
+  capabilities, each cell carrying `should` (derived from the body) beside `actual` (from `allowed_tools`);
+  the difference is the defect list and an empty difference is the pass condition. Its first run found **28
+  grants the bodies never instructed** — every one now has a body line, and the matrix is empty.
+- **Check 38 — the temporal frame is stated in the shared contract**: `contracts/retrieval.md` now tells every
+  skill to echo `temporal_frame` and to return `frame_absence_reason` instead of deriving a period (spec 062
+  K4/`FR-044`, 068 R5.1/R5.11).
+- **The nine `equity-research-core` bodies name their retrieval layers**, including the page-range narrowing
+  `page_from`/`page_to` on `read_source_outline` — previously only the shared contract taught it, and an agent
+  follows its body (spec 062 T167/K1).
 - **Context-management protocol in `contracts/retrieval.md`** (spec 062 `T166`, `FR-040a(iv)`). The
   provider evicts tool results as the context grows; the protocol fires before that eviction — **~100K
   trigger, ~90K warning**, warn-before-evict (write the figure, period and citation to memory first),
@@ -16,6 +26,11 @@ All notable changes to `agentii-investment-intelligence`.
   `display_label` is context even when it looks like `2025Q2`; the field carries no `fiscal_quarter`,
   no `period_id` authority, and never substitutes for the 8-K/6-K disclosure tag rule. **Check 37**
   asserts the contract sentence and fails any `SKILL.md` whose text treats `display_label` as a period.
+
+### Changed
+- **The nine bodies and every bundle were re-synced** after the retrieval-layer lines: `agent-plugins` via
+  `scripts/sync-agent-skills.py`, the marketplace mirror copied from the vertical source, and `packaging/targets`
+  rebuilt.
 
 ### Fixed
 - **X-Agentii-Trace contract pair reconciled with the deployed behaviour** — `contracts/x-agentii-trace-header.md`

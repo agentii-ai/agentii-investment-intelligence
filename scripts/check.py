@@ -940,8 +940,80 @@ for sk in SKILL_FILES:
                     f"declared by retrieval_scope: structured_only skill (FR-060)"
                 )
 
-# --- Check 22: three-layer protocol presence OR retrieval_scope opt-out (FR-056) ---
+# --- Check 21b: the retrieval capability matrix (spec 062 T159, FR-061(iii)) -----------------
+#
+# Check 21 above compares tool NAMES against the canonical surface. That cannot see whether a body
+# and its grants agree with **each other**: a skill can grant a capability its body never instructs,
+# or name a tool it cannot call. This matrix renders nine skills x eight retrieval capabilities,
+# each cell carrying `should` (derived from the body) beside `actual` (from allowed_tools); the
+# difference is the defect list and an empty difference is the pass condition (FR-061(iii)).
+_mark('Check 21b: retrieval capability matrix — nine skills x eight capabilities (spec 062 T159)')
 
+_RETRIEVAL_CAPABILITIES = {
+    'document discovery': ('search_documents', 'search_sec_filings', 'list_sources'),
+    'page map': ('read_source_outline',),
+    'keyword': ('search_keyword_in_source',),
+    'deep outline': ('read_source_deep_outline',),
+    'multi-period': ('search_cross_period',),
+    'fiscal calendar': ('get_company_fiscal_calendar',),
+    'xbrl': ('search_xbrl_facts', 'get_company_financials'),
+    'period resolution': ('resolve_period',),
+}
+_EQ_SKILLS = sorted(
+    (PLUGINS / 'vertical-plugins/equity-research-core/skills/agentii').glob('*/SKILL.md')
+)
+
+
+def _frontmatter_and_body(text: str) -> tuple[str, str]:
+    """Split YAML frontmatter from the body the agent reads."""
+    m = re.match(r'^---\n(.*?)\n---\n?(.*)$', text, re.S)
+    return (m.group(1), m.group(2)) if m else ('', text)
+
+
+_matrix_rows = []
+for _sk in _EQ_SKILLS:
+    checked += 1
+    _fm, _body = _frontmatter_and_body(_sk.read_text())
+    _allow = re.search(r'allowed_tools:\s*\n((?:\s*-\s*.+\n)+)', _fm)
+    _granted = set(re.findall(r'-\s*([A-Za-z0-9_.-]+)', _allow.group(1))) if _allow else set()
+    _cells = []
+    for _cap, _tools in _RETRIEVAL_CAPABILITIES.items():
+        # `should` is the body's own instruction, not the contract's: FR-061(iv) ties a grant to a
+        # body line, so a capability named only in `contracts/retrieval.md` is not this skill's.
+        _should = any(re.search(rf'\b{re.escape(t)}\b', _body) for t in _tools)
+        _actual = any(t in _granted for t in _tools)
+        _cells.append(('S' if _should else '-') + ('A' if _actual else '-'))
+        if _should and not _actual:
+            err(f"capability matrix: {rel(_sk)}: body instructs {_cap} but allowed_tools grants none "
+                f"of {_tools} — the skill would call a tool it cannot use")
+        elif _actual and not _should:
+            err(f"capability matrix: {rel(_sk)}: allowed_tools grants {_cap} but the body never names "
+                f"any of {_tools} — FR-061(iv): the grant and its body line move together")
+    _matrix_rows.append((_sk.parent.name, _cells))
+
+_cap_names = list(_RETRIEVAL_CAPABILITIES)
+print('capability matrix: ' + ' '.join(f'{c[:12]:>13}' for c in _cap_names))
+for _name, _cells in _matrix_rows:
+    # One cell per capability, each a two-character `should`+`actual` pair.
+    print(f'  {_name:22} ' + ' '.join(f'{_cell:<13}' for _cell in _cells))
+
+# --- Check 38: temporal_frame is stated in the shared contract (spec 062 K4 / FR-044) ----------
+#
+# The nine bodies point at `contracts/retrieval.md` for the protocol; eight of them never name the
+# frame themselves. If the contract does not either, no skill is told to echo the temporal frame or
+# read its `absence_reason` — the 068 authority's carrier stops at the API.
+_mark('Check 38: temporal_frame is stated in the shared retrieval contract (spec 062 K4)')
+_retrieval_contract = CONTRACTS / 'retrieval.md'
+checked += 1
+if not _retrieval_contract.exists():
+    err("temporal-frame: contracts/retrieval.md is missing (spec 062 K4)")
+elif 'temporal_frame' not in _retrieval_contract.read_text():
+    err(
+        "temporal-frame: contracts/retrieval.md never names `temporal_frame` — the nine bodies "
+        "point here, and none is told to echo the frame or read its absence_reason (spec 062 K4, FR-044)"
+    )
+
+# --- Check 22: three-layer protocol presence OR retrieval_scope opt-out (FR-056) ---
 _mark('Check 22: three-layer protocol presence OR retrieval_scope opt-out (FR-056)')
 for sk in SKILL_FILES:
     checked += 1  # Check 22

@@ -90,6 +90,8 @@ Default: 12 fiscal quarters (max 20). Secular tech trends: 12 quarters (3 fiscal
 
 See frontmatter `allowed_tools`.
 
+Retrieval layers: `search_documents`/`search_sec_filings` discover the filings; `read_source_outline` gives the page map — **narrow it with `page_from`/`page_to`** on long filings — and `read_source_deep_outline` is the escalation when its labels cannot disambiguate; `search_keyword_in_source` filters before pages are opened; `read_source_pages` is the deep read; `search_xbrl_facts`/`get_company_financials` carry the reported figures; `resolve_period` runs before any period-scoped call.
+
 ### Protocol
 
 This skill delivers analyst-grade output via 8 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
