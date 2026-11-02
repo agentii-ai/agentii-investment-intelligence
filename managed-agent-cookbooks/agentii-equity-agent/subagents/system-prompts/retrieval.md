@@ -80,7 +80,11 @@ Call `list_xbrl_concepts(query=<term>, ticker=<T>)` to discover the canonical US
 
 **Fuzzy fallback**: If `list_xbrl_concepts(query='RevenueFromContract')` returns empty, the concept name doesn't match. Retry with a shorter prefix: `query='Revenue'` → finds `Revenues`, `RevenueFromContractWithCustomer`, etc. Common mismatches: `RevenueFromContract` → use `Revenues`; `NetIncome` → also try `NetIncomeLoss`; `EarningsPerShare` → use `EarningsPerShareDiluted`.
 
-**(a2) Retrieve**: call `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` with ALL concepts and ALL years in a SINGLE call. **CRITICAL**: `fiscal_year` is integer (2025, 2024, 2023). `fiscal_period` IS a supported parameter (FY, Q1, Q2, Q3, Q4, H1) — use it to select quarterly/annual periods directly. Batch ALL concepts × ALL years = 1 call, not N calls. Batch ALL concepts × ALL years = 1 call, not N calls.
+**(a2) Retrieve**: call `search_xbrl_facts(ticker, concept=[...], fiscal_year=[2025,2024,2023])` with ALL concepts and ALL years in a SINGLE call. **CRITICAL**: `fiscal_year` is integer (2025, 2024, 2023). `fiscal_period` IS a supported parameter (FY, Q1, Q2, Q3, Q4, H1), and it selects the quarter the filing
+**declares** (its dei focus), never a calendar window. **Q4 is a typed absence**: no filing declares a
+single Q4 interval, so a Q4 request returns `absence_reason=no_single_quarter` with `derived_from=FY-9M`
+and **no annual facts** — ask for `FY` to read the annual period, or pass the `period_id` from
+`resolve_period` when you need the derived Q4 interval itself. Batch ALL concepts × ALL years = 1 call, not N calls. Batch ALL concepts × ALL years = 1 call, not N calls.
 
 **XBRL dimensional disambiguation via `view` parameter **: `search_xbrl_facts` supports a `view` parameter that controls dimensional breakdown exposure. The same US-GAAP concept (e.g., `Revenues`) can be reported under multiple XBRL `explicitMember` dimensions (ProductOrServiceAxis, BusinessSegmentsAxis, GeographicalAxis) within a single filing — without the `view` parameter, consolidated totals and segment sub-totals are mixed, producing confusing results (e.g., GOOG revenue showing a consolidated total alongside separate Google Services and Google Cloud segment sub-totals).
 
