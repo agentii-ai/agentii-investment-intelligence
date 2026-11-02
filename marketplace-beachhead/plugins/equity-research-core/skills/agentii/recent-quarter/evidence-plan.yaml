@@ -1,0 +1,86 @@
+# recent-quarter — the evidence plan (`FR-040(i)`, spec 062 T141)
+#
+# WHAT THIS IS. The skill's declaration of what evidence would answer each mode; the server executes it.
+# `inputs` on a `derived_metric` need are either XBRL concepts or other needs' ids — a metric whose inputs
+# are unnamed cannot be graded (spec 062 T091/T095), and the schema refuses it.
+#
+# THE PERIOD RULE IS NOT A QUARTER DERIVATION. Every need binds through `resolve_period` → the fiscal
+# `period_id`; `as_of` is the knowledge cutoff and is forwarded, never replaced by the wall clock.
+#
+# STOP RULE. `resolved` — the plan stops when every need is resolved. A budget or stagnation stop is a
+# coverage fact and must be reported as one; `fallback_exhausted` is the last resort, not a success.
+
+plans:
+  - skill: recent-quarter
+    mode: consolidated-p-and-l
+    stop_rule: resolved
+    needs:
+      - id: reported-pl
+        kind: figure
+        doc_classes: [10-Q, 10-K, 20-F]
+        period_rule: resolve_period → fiscal period_id; as_of is the knowledge cutoff
+        structured_first: true
+        not_disclosed_allowed: false
+        exhaustive: false
+      - id: sequential-and-yoy
+        kind: derived_metric
+        inputs: [reported-pl, prior-year-same-quarter-pl]
+        doc_classes: [10-Q, 10-K, 20-F]
+        period_rule: the resolved quarter plus the same fiscal quarter one year earlier
+        structured_first: true
+        not_disclosed_allowed: false
+        exhaustive: false
+      - id: management-commentary
+        kind: narrative
+        doc_classes: [earnings_call_transcript]
+        period_rule: the same fiscal quarter as reported-pl; as_of is the knowledge cutoff
+        structured_first: false
+        not_disclosed_allowed: true
+        exhaustive: false
+
+  - skill: recent-quarter
+    mode: margin-analysis
+    stop_rule: resolved
+    needs:
+      - id: margin-inputs
+        kind: derived_metric
+        inputs: [Revenues, GrossProfit, OperatingIncomeLoss, NetIncomeLoss]
+        doc_classes: [10-Q, 10-K, 20-F]
+        period_rule: resolve_period → fiscal period_id
+        structured_first: true
+        not_disclosed_allowed: false
+        exhaustive: false
+      - id: margin-drivers
+        kind: narrative
+        doc_classes: [earnings_call_transcript]
+        period_rule: the same fiscal quarter; as_of is the knowledge cutoff
+        structured_first: false
+        not_disclosed_allowed: true
+        exhaustive: false
+
+  - skill: recent-quarter
+    mode: earnings-vs-consensus
+    stop_rule: resolved
+    needs:
+      - id: reported-eps
+        kind: figure
+        doc_classes: [10-Q, 8-K, 20-F]
+        period_rule: resolve_period → fiscal period_id; the reported result, not an estimate
+        structured_first: true
+        not_disclosed_allowed: false
+        exhaustive: false
+      - id: consensus-estimate
+        kind: figure
+        doc_classes: [earnings_calendar]
+        period_rule: the same report_date; an estimate is not an observed date or a fiscal boundary
+        structured_first: true
+        not_disclosed_allowed: true
+        exhaustive: false
+      - id: surprise
+        kind: derived_metric
+        inputs: [reported-eps, consensus-estimate]
+        doc_classes: [earnings_calendar, 10-Q, 8-K]
+        period_rule: the same resolved quarter for both inputs
+        structured_first: true
+        not_disclosed_allowed: false
+        exhaustive: false

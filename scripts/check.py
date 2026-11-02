@@ -349,6 +349,92 @@ if MIRROR_SKILLS.is_dir():
 else:
     err("mirror-skill: marketplace-beachhead skills tree not found — the check examined nothing")
 
+# --- 5c. evidence plans (spec 062 T141 / FR-040(i)) -------------------------
+#
+# A skill's `evidence-plan.yaml` declares what evidence answers each of its modes. The **normative schema**
+# is `API/packages/schemas/src/evidence-plan.ts` (Zod); this check mirrors its structural rules in Python
+# because the kit cannot import the TypeScript, and it adds the one thing the schema cannot see: the plan's
+# modes must equal the skill's own `essentials_modes` frontmatter. A plan for a mode the skill does not run
+# is a declaration nobody executes; a mode with no plan is a mode the server cannot answer.
+
+_mark('5c. evidence plans declare their needs')
+ERN = PLUGINS / 'vertical-plugins' / 'equity-research-core' / 'skills' / 'agentii'
+_plan_files = sorted(ERN.glob('*/evidence-plan.yaml'))
+if not _plan_files:
+    err("evidence-plan: no plan files found under equity-research-core/skills/agentii — "
+        "the check examined nothing")
+for _pf in _plan_files:
+    checked += 1  # 5c. evidence plans
+    _where = rel(_pf)
+    try:
+        _doc = yaml.safe_load(_pf.read_text())
+    except yaml.YAMLError as _e:
+        err(f"evidence-plan: {_where}: YAML does not parse: {_e}")
+        continue
+    _plans = (_doc or {}).get('plans')
+    if not isinstance(_plans, list) or not _plans:
+        err(f"evidence-plan: {_where}: `plans` must be a non-empty list")
+        continue
+    _skill_dir = _pf.parent.name
+    _modes = []
+    for _i, _plan in enumerate(_plans):
+        _p = f"{_where}: plans[{_i}]"
+        if not isinstance(_plan, dict):
+            err(f"{_p}: not a mapping"); continue
+        if _plan.get('skill') != _skill_dir:
+            err(f"{_p}: skill {_plan.get('skill')!r} != directory {_skill_dir!r}")
+        if _plan.get('stop_rule') not in ('resolved', 'budget', 'stagnation', 'fallback_exhausted'):
+            err(f"{_p}: stop_rule {_plan.get('stop_rule')!r} is not a registered rule")
+        _mode = _plan.get('mode')
+        if not isinstance(_mode, str) or not _mode:
+            err(f"{_p}: no mode")
+        else:
+            _modes.append(_mode)
+        _needs = _plan.get('needs')
+        if not isinstance(_needs, list) or not _needs:
+            err(f"{_p}: `needs` must be a non-empty list"); continue
+        _ids = []
+        for _j, _need in enumerate(_needs):
+            _n = f"{_p}.needs[{_j}]"
+            if not isinstance(_need, dict):
+                err(f"{_n}: not a mapping"); continue
+            _id = _need.get('id')
+            if not isinstance(_id, str) or not _id:
+                err(f"{_n}: no id")
+            elif _id in _ids:
+                err(f"{_n}: duplicate need id {_id!r} — ids key the per-need tally")
+            else:
+                _ids.append(_id)
+            if _need.get('kind') not in ('narrative', 'derived_metric', 'figure'):
+                err(f"{_n}: kind {_need.get('kind')!r} is not registered")
+            _dc = _need.get('doc_classes')
+            if not isinstance(_dc, list) or not _dc or not all(isinstance(d, str) and d for d in _dc):
+                err(f"{_n}: doc_classes must be a non-empty list of strings")
+            _pr = _need.get('period_rule')
+            if not isinstance(_pr, str) or not _pr.strip():
+                err(f"{_n}: period_rule must be a non-empty string")
+            for _flag in ('structured_first', 'not_disclosed_allowed', 'exhaustive'):
+                if not isinstance(_need.get(_flag), bool):
+                    err(f"{_n}: {_flag} must be a boolean")
+            if _need.get('kind') == 'derived_metric':
+                _inputs = _need.get('inputs')
+                if not isinstance(_inputs, list) or not _inputs:
+                    err(f"{_n}: a derived_metric need must name its inputs")
+    if len(_modes) != len(set(_modes)):
+        err(f"{_where}: duplicate mode — a mode is one plan")
+    _skill_md = _pf.parent / 'SKILL.md'
+    if _skill_md.is_file():
+        try:
+            _fm = yaml.safe_load(_skill_md.read_text().split('---', 2)[1])
+            _expected = _fm.get('essentials_modes') or []
+        except Exception as _e:  # noqa: BLE001 — an unreadable frontmatter is a failed check
+            err(f"evidence-plan: {rel(_skill_md)}: frontmatter does not parse: {_e}")
+            _expected = []
+        if sorted(_modes) != sorted(_expected):
+            err(f"{_where}: modes {sorted(_modes)} != the skill's essentials_modes {sorted(_expected)}")
+    else:
+        err(f"evidence-plan: {_pf.parent.name}: no SKILL.md beside the plan")
+
 # --- 6. agent.md skill references -------------------------------------------
 
 _mark('6. agent.md skill references')
