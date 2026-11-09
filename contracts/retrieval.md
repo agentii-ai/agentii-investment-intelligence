@@ -51,6 +51,24 @@ consolidate into one `batch_search` (≤8 sub-queries). Fall back to sequential 
 - **Branch (d) — Simple lookup** (company name, sector, earnings date):
   `get_company_profile` / `search_earnings_calendar`. Zero document retrieval.
 
+## Temporal routing (stage 2)
+
+Call `resolve_period` first when the question names a period; carry `period_id`, `period_role` and
+`horizon` into every retrieval call. Route on `(form_type, period_id, period_role)` — never `form_type` alone.
+
+| period_role | route | tools | horizon |
+|---|---|---|---|
+| reported | actual | search_documents (10-Q/10-K) + search_xbrl_facts on the same period_id | lagging |
+| comparative | actual (comparative period_id) | search_documents (10-Q/10-K) + search_xbrl_facts on the same period_id | lagging |
+| guidance | guidance | search_documents(ticker, period_role='guidance') — no form_type/period_id; projected target_period_id | leading |
+| forecast / pro_forma / subsequent_event / discussed | unsupported_period_role refusal | — | — |
+
+A request carrying only `form_type` is refused with the missing axis named, never routed by
+`form_type` alone. A guidance `target_period_id` is a projection and never occupies a declared
+field. Omitting `period_role` is the `any` default; the deployed surface measured 2026-11-09
+returned **0 guidance rows** under the default, so a guidance question must ask for
+`period_role='guidance'` explicitly (SC-003 red).
+
 ## Three-Layer Document Protocol
 
 Apply whenever the candidate document set exceeds 1 filing / 50 pages and the

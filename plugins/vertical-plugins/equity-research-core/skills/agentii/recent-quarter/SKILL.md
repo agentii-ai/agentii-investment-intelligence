@@ -23,6 +23,7 @@ allowed_tools:
  - search_by_analogue
  - search_documents
  - read_source_outline
+ - search_keyword_in_source
  - read_source_pages
  - search_insider_trades
  - search_institutional_holdings
@@ -95,6 +96,12 @@ Retrieval layers: `search_documents` discovers transcripts and filings; `read_so
 3. **Earnings calendar**: `search_earnings_calendar(ticker, fiscal_year=<resolved fiscal year>)` for EPS actuals, estimates, and surprise percentages; `date_basis`/`fiscal_source` are provenance, not a period boundary.
 4. **Financial highlights**: `get_company_financials(ticker, fiscal_year=<resolved fiscal year>, fiscal_period=<resolved fiscal period>)` for IS/BS/CF summary data.
 5. **Output**: produce P&L progression table with QoQ and YoY growth rates, margin trend chart data, and earnings-vs-consensus comparison; attach `temporal_frame` and use a typed absence instead of widening.
+
+**Temporal routing (spec 070).** Call `resolve_period` first; carry `period_id`, `period_role`,
+`horizon`. Route on `(form_type, period_id, period_role)`. Actuals: `search_documents` +
+`search_xbrl_facts`, reported/lagging. Guidance: `search_documents(ticker,
+period_role='guidance')`, projected `target_period_id`, leading. Narrow large sets with
+`search_keyword_in_source`. Table: `contracts/retrieval.md`.
 
 ## Modes (5 — temporal / quantitative)
 

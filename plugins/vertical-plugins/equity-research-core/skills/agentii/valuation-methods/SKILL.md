@@ -94,6 +94,12 @@ Step-by-step execution detail is in `references/methodology.md`.
 
 This skill exposes addressable analysis modes (`--mode=<slug>` / `--modes=<s1>,<s2>` / `--mode=all`; see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md)). The full mode definitions and their output templates live in `references/modes.md`. The default invocation runs the essentials subset.
 
+**Temporal routing (spec 070).** Call `resolve_period` first; carry `period_id`, `period_role`,
+`horizon`. Route on `(form_type, period_id, period_role)`. Actuals: `search_documents` +
+`search_xbrl_facts`, reported/lagging. Guidance: `search_documents(ticker,
+period_role='guidance')`, projected `target_period_id`, leading. Narrow large sets with
+`search_keyword_in_source`. Table: `contracts/retrieval.md`.
+
 ## Tool Fallbacks
 
 Per-tool failure modes and fallback actions are tabulated in `references/tool-fallbacks.md`.

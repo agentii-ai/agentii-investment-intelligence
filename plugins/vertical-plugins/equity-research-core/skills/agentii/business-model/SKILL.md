@@ -114,6 +114,12 @@ Step-by-step execution detail is in `references/methodology.md`.
 
 **Moat Assessment**: When evaluating competitive advantage durability, apply the Sustainable Value Creation framework in `references/moat-methodology.md`. Quantify the ROIC−WACC spread magnitude, calibrate sustainability using sector-level ROIC autocorrelation data (Consumer Staples r=0.46 → Energy r=0.15), classify industry structure (Fragmented/Oligopoly/Dominant/Network/Commodity), and apply the 67-item Moat Checklist. High current ROIC in a rapid-mean-reversion industry is not a moat.
 
+**Temporal routing (spec 070).** Call `resolve_period` first; carry `period_id`, `period_role`,
+`horizon`. Route on `(form_type, period_id, period_role)`. Actuals: `search_documents` +
+`search_xbrl_facts`, reported/lagging. Guidance: `search_documents(ticker,
+period_role='guidance')`, projected `target_period_id`, leading. Narrow large sets with
+`search_keyword_in_source`. Table: `contracts/retrieval.md`.
+
 ## Modes (5 — structural equity analysis)
 
 This skill delivers analyst-grade output via 5 addressable mode(s); invoke with `--mode=<slug>` / `--modes=<slug1>,<slug2>` / `--mode=all` (see [Mode syntax](../../../../docs/commands/MODE_SYNTAX.md). The default invocation (no flag) runs the `essentials_modes` subset declared in this skill's frontmatter.
